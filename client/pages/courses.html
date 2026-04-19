@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMS | Course Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        body { font-family: 'Sora', sans-serif; background: #f0f2f7; }
+
+        /* ── File Viewer ── */
+        .file-link { cursor: pointer; color: #334155; text-decoration: none; word-break: break-all; font-size: .85rem; }
+        .file-link:hover { color: #0ea5e9; }
+        #fileViewerFrame { width: 100%; height: 600px; border: none; }
+        .resource-item { padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+        .resource-item:last-child { border-bottom: none; }
+
+        /* ── Upload ── */
+        #uploadProgressWrap { display: none; }
+        #uploadProgressWrap .progress { height: 8px; border-radius: 10px; }
+        #uploadProgressBar { transition: width .2s; border-radius: 10px; }
+        .drop-zone { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 28px 20px; text-align: center; cursor: pointer; transition: .2s; background: #f8fafc; }
+        .drop-zone:hover, .drop-zone.dragover { border-color: #0ea5e9; background: #f0f9ff; }
+        .drop-zone .drop-icon { font-size: 2rem; color: #cbd5e1; margin-bottom: 8px; }
+        .drop-zone.has-file .drop-icon { color: #0ea5e9; }
+        .drop-zone input[type="file"] { display: none; }
+
+        /* ── Action Buttons ── */
+        .btn-archive-course { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 7px; font-size: .72rem; font-weight: 700; background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; cursor: pointer; transition: .15s; text-decoration: none; }
+        .btn-archive-course:hover { background: #ffedd5; color: #9a3412; }
+        .btn-edit-course { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 7px; font-size: .72rem; font-weight: 700; background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; cursor: pointer; transition: .15s; }
+        .btn-edit-course:hover { background: #e0f2fe; color: #0c4a6e; }
+
+        /* ── Toast ── */
+        .toast-bar { position: fixed; top: 20px; right: 20px; z-index: 9999; padding: 12px 20px; border-radius: 10px; font-size: .8rem; font-weight: 600; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 20px rgba(0,0,0,.12); animation: slideIn .3s ease; transition: opacity .5s; }
+        .toast-arch { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* ── Table View ── */
+        .course-table-container { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; display: none; }
+        .course-table thead th { background: #f8fafc; font-size: .7rem; text-transform: uppercase; color: #64748b; font-weight: 700; padding: 14px 20px; border-bottom: 2px solid #f1f5f9; }
+        .course-table tbody td { padding: 14px 20px; vertical-align: top; border-bottom: 1px solid #f1f5f9; font-size: .85rem; }
+        .course-table tbody tr:hover { background: #f8fafc; }
+
+        /* ── View Toggle ── */
+        .view-toggle .btn { font-size: .8rem; font-weight: 600; border-color: #cbd5e1; color: #64748b; padding: 6px 14px; }
+        .view-toggle .btn.active { background: #1e293b; color: #fff; border-color: #1e293b; }
+        .view-toggle .btn:not(.active):hover { background: #f1f5f9; }
+
+        /* ── Add Course Button ── */
+        .btn-course { display: inline-flex; align-items: center; gap: 8px; background: #1e293b; color: #fff; border: none; border-radius: 10px; padding: 10px 20px; font-size: .82rem; font-weight: 600; font-family: 'Sora', sans-serif; transition: .2s; cursor: pointer; }
+        .btn-course:hover { background: #0f172a; color: #fff; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(15,23,42,.2); }
+
+        /* ── Search & Filter Bar ── */
+        .sf-bar { background: #fff; border: 1px solid #e9ecef; border-radius: 16px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .sf-search-wrap { position: relative; flex: 1; min-width: 250px; }
+        .sf-search-wrap i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: .9rem; pointer-events: none; }
+        .sf-input { width: 100%; padding: 10px 14px 10px 42px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: .85rem; font-family: 'Sora', sans-serif; color: #1e293b; background: #f8fafc; outline: none; transition: .2s; }
+        .sf-input:focus { border-color: #0ea5e9; background: #fff; box-shadow: 0 0 0 3px rgba(14,165,233,.08); }
+        .sf-select { padding: 10px 36px 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: .82rem; font-family: 'Sora', sans-serif; font-weight: 600; color: #475569; background: #f8fafc; outline: none; cursor: pointer; transition: .2s; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; max-width: 200px; }
+        .sf-select:focus { border-color: #0ea5e9; background-color: #fff; box-shadow: 0 0 0 3px rgba(14,165,233,.08); }
+        .sf-count { font-size: .75rem; font-weight: 700; color: #94a3b8; white-space: nowrap; margin-left: auto; }
+        .sf-count span { color: #0ea5e9; font-size: .85rem;}
+
+        /* ── No Results ── */
+        .course-card-container.hidden, .course-table-row.hidden { display: none !important; }
+        #noResultsGrid, #noResultsList { display: none; }
+        #noResultsGrid.show, #noResultsList.show { display: block; }
+    </style>
+</head>
+<body>
+
+<div id="sidebar-placeholder"></div>
+<div id="content">
+    <div id="header-placeholder"></div>
+
+    <main class="p-4 p-md-5">
+
+        <div class="module-header d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+            <div>
+                <h4 class="fw-bold m-0 text-dark">Course Management</h4>
+                <p class="text-muted small mb-0">Create, edit, and organize system courses and materials.</p>
+            </div>
+            <div class="d-flex gap-3 align-items-center flex-wrap">
+                <div class="btn-group view-toggle shadow-sm" role="group">
+                    <button type="button" class="btn active" id="btnGrid" onclick="toggleView('grid')"><i class="fas fa-th-large me-1"></i> Grid</button>
+                    <button type="button" class="btn" id="btnList" onclick="toggleView('list')"><i class="fas fa-list me-1"></i> List</button>
+                </div>
+                <button class="btn-course" data-bs-toggle="modal" data-bs-target="#addCourseModal">
+                    <i class="fas fa-plus-circle me-2"></i> Add Course
+                </button>
+            </div>
+        </div>
+
+        <div class="sf-bar mb-4">
+            <div class="sf-search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" class="sf-input" id="courseSearch" placeholder="Search course name, code, or dept…">
+            </div>
+            <select class="sf-select" title="Filter by Department" id="courseDeptFilter">
+                <option value="">All Departments</option>
+            </select>
+            <select class="sf-select" title="Filter by Units" id="courseUnitsFilter">
+                <option value="">All Units</option>
+            </select>
+            <select class="sf-select" title="Filter by Materials" id="courseMaterialFilter">
+                <option value="">All Materials</option>
+                <option value="has">Has Materials</option>
+                <option value="none">No Materials</option>
+            </select>
+            <div class="sf-count" id="courseCount">Showing <span id="courseCountNum">0</span> courses</div>
+        </div>
+
+        <div class="row g-4" id="gridView"></div>
+
+        <div id="noResultsGrid" class="text-center py-5">
+            <i class="fas fa-search d-block fs-2 text-muted opacity-25 mb-3"></i>
+            <div class="fw-bold text-muted">No courses match your search</div>
+            <div class="text-muted small">Try a different name, department, units, or material filter</div>
+        </div>
+
+        <div class="course-table-container shadow-sm" id="tableView">
+            <div class="table-responsive">
+                <table class="table course-table mb-0">
+                    <thead>
+                        <tr>
+                            <th class="ps-4" style="width:25%;">Course Details</th>
+                            <th style="width:25%;">Description</th>
+                            <th style="width:30%;">Learning Materials</th>
+                            <th class="text-end pe-4" style="width:20%;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="courseTableBody">
+                        <tr><td colspan="4" class="text-center py-5 text-muted">Loading Courses...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="noResultsList" class="text-center py-5">
+                <i class="fas fa-search d-block fs-2 text-muted opacity-25 mb-3"></i>
+                <div class="fw-bold text-muted">No courses match your search</div>
+                <div class="text-muted small">Try a different name, department, units, or material filter</div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<div class="modal fade" id="viewFileModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-light">
+                <h6 class="modal-title fw-bold" id="viewFileName">Viewer</h6>
+                <button type="button" title="Close" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0">
+                <iframe title="File Viewer" id="fileViewerFrame" src=""></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addCourseModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <form id="addCourseForm" class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white py-3">
+                <h6 class="modal-title fw-bold"><i class="fas fa-plus-circle me-2"></i>New Course</h6>
+                <button type="button" title="Close" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-3">
+                    <div class="col-md-7">
+                        <label class="form-label small fw-bold text-muted">Course Code</label>
+                        <input type="text" name="code" class="form-control bg-light border-0" placeholder="e.g. CS101" required>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label small fw-bold text-muted">Units</label>
+                        <input type="number" name="credits" class="form-control bg-light border-0" value="3" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-bold text-muted">Course Name</label>
+                        <input type="text" name="name" class="form-control bg-light border-0" placeholder="e.g. Intro to Programming" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-bold text-muted">Department <span class="text-muted fw-normal">(Optional)</span></label>
+                        <select name="department_id" id="add_course_dept" class="form-select bg-light border-0">
+                            <option value="">-- No Department --</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-bold text-muted">Description <span class="text-muted fw-normal">(Optional)</span></label>
+                        <textarea name="description" class="form-control bg-light border-0" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 px-4 pb-4">
+                <button type="submit" class="btn btn-dark w-100 py-3 fw-bold rounded-3">Create Record</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="editCourseModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <form id="editCourseForm" class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white py-3">
+                <h6 class="modal-title fw-bold"><i class="fas fa-edit me-2"></i>Edit Course</h6>
+                <button type="button" title="Close" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="edit_course_id">
+                <div class="row g-3">
+                    <div class="col-md-7">
+                        <label class="form-label small fw-bold text-muted">Course Code</label>
+                        <input type="text" id="edit_course_code" class="form-control bg-light border-0" required>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label small fw-bold text-muted">Units</label>
+                        <input type="number" id="edit_course_credits" class="form-control bg-light border-0" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-bold text-muted">Course Name</label>
+                        <input type="text" id="edit_course_name" class="form-control bg-light border-0" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-bold text-muted">Department</label>
+                        <select id="edit_course_dept" class="form-select bg-light border-0">
+                            <option value="">-- No Department --</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-bold text-muted">Description</label>
+                        <textarea id="edit_course_desc" class="form-control bg-light border-0" rows="3"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 px-4 pb-4">
+                <button type="submit" class="btn btn-primary w-100 py-3 fw-bold rounded-3">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white py-3">
+                <h6 class="modal-title fw-bold"><i class="fas fa-upload me-2"></i>Upload Material</h6>
+                <button type="button" title="Close" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="res_course_id">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Title <span class="text-muted fw-normal">(Optional)</span></label>
+                    <input type="text" id="res_custom_name" class="form-control bg-light border-0" placeholder="e.g. Chapter 1 Notes">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Description <span class="text-muted fw-normal">(Optional)</span></label>
+                    <textarea id="res_file_desc" class="form-control bg-light border-0" rows="2" placeholder="Brief description..."></textarea>
+                </div>
+                <div class="drop-zone" id="dropZone" onclick="document.getElementById('res_file_input').click()">
+                    <div class="drop-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                    <div class="fw-bold text-muted small" id="dropZoneLabel">Click to browse or drag & drop</div>
+                    <div class="text-muted mt-1 small" id="dropZoneFileName"></div>
+                    <input type="file" id="res_file_input" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.mp4,.zip">
+                </div>
+                <div id="uploadProgressWrap" class="mt-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <small class="fw-bold text-muted" id="uploadStatusText">Uploading...</small>
+                        <small class="text-muted" id="uploadPct">0%</small>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" id="uploadProgressBar" style="width:0%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 px-4 pb-4">
+                <button class="btn btn-primary w-100 fw-bold py-2 rounded-3" id="uploadSubmitBtn" onclick="submitResourceUpload()">
+                    <i class="fas fa-upload me-2"></i> Push File
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="../assets/js/modules/courses.js"></script>
+
+</body>
+</html>

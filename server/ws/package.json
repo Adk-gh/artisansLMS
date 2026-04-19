@@ -1,0 +1,17 @@
+{
+  "name": "artisans-lms-ws",
+  "version": "1.0.0",
+  "description": "LMS WebSocket Server for Real-time XP and Attendance",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "mysql2": "^3.22.0",
+    "ws": "^8.20.0"
+  },
+  "author": "Aderik P. Bermas",
+  "license": "ISC",
+  "keywords": []
+}

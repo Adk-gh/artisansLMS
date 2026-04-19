@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<style>
+#sidebar {
+    width: 260px;
+    min-width: 260px;
+    height: 100vh;
+    background: #1e293b;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    left: 0; top: 0;
+    z-index: 1000;
+    transition: width .28s cubic-bezier(.4,0,.2,1), min-width .28s cubic-bezier(.4,0,.2,1), transform .28s cubic-bezier(.4,0,.2,1);
+    overflow: hidden;
+    border-right: 1px solid #334155;
+}
+#sidebar.collapsed { width: 68px; min-width: 68px; }
+
+.sb-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 20px 18px; border-bottom: 1px solid #334155;
+    flex-shrink: 0; gap: 10px;
+}
+.sb-logo-wrap { display: flex; align-items: center; gap: 11px; overflow: hidden; }
+.sb-logo {
+    width: 36px; height: 36px; border-radius: 10px;
+    object-fit: cover; flex-shrink: 0;
+    box-shadow: 0 0 0 2px #334155, 0 0 0 4px #1e293b;
+}
+.sb-brand {
+    font-family: 'Sora', 'Segoe UI', sans-serif;
+    font-size: .95rem; font-weight: 800;
+    color: #f1f5f9; letter-spacing: .5px;
+    white-space: nowrap; overflow: hidden;
+    transition: opacity .2s, max-width .28s;
+    max-width: 140px;
+}
+#sidebar.collapsed .sb-brand { opacity: 0; max-width: 0; }
+
+.sb-toggle {
+    background: #273549; border: 1px solid #334155;
+    color: #64748b; width: 28px; height: 28px;
+    border-radius: 8px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: background .2s, color .2s, transform .28s;
+    font-size: .7rem;
+}
+.sb-toggle:hover { background: #2e3f55; color: #94a3b8; }
+#sidebar.collapsed .sb-toggle { transform: rotate(180deg); }
+
+.sb-nav {
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    padding: 12px 0 20px;
+    --scrollbar-width: thin;
+    --scrollbar-color: #334155 transparent;
+}
+.sb-nav::-webkit-scrollbar { width: 3px; }
+.sb-nav::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+.sb-section { margin-top: 6px; }
+.sb-divider { height: 1px; background: #334155; margin: 10px 16px 14px; }
+.sb-label {
+    font-size: .58rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.4px;
+    color: #475569; padding: 0 18px;
+    margin-bottom: 4px; display: block;
+    white-space: nowrap; overflow: hidden;
+    transition: opacity .2s;
+}
+#sidebar.collapsed .sb-label { opacity: 0; }
+
+.sb-link {
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 18px; color: #94a3b8;
+    text-decoration: none; font-size: .82rem; font-weight: 500;
+    transition: color .18s, background .18s;
+    position: relative; white-space: nowrap;
+    margin: 1px 8px; border-radius: 9px;
+    font-family: 'Sora', 'Segoe UI', sans-serif;
+}
+.sb-link:hover { color: #e2e8f0; background: #273549; text-decoration: none; }
+.sb-link.active { color: #fff; background: #273549; font-weight: 600; }
+.sb-link.active::before {
+    content: '';
+    position: absolute; left: 8px; top: 20%; bottom: 20%;
+    width: 3px; border-radius: 3px; background: #38bdf8;
+}
+
+.sb-icon {
+    width: 30px; height: 30px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .78rem; flex-shrink: 0; color: #64748b; transition: color .18s;
+}
+.sb-link:hover .sb-icon  { color: #94a3b8; }
+.sb-link.active .sb-icon { color: #38bdf8; }
+
+.sb-link-text {
+    overflow: hidden; white-space: nowrap;
+    transition: opacity .2s, max-width .28s;
+    max-width: 160px;
+}
+#sidebar.collapsed .sb-link-text { opacity: 0; max-width: 0; }
+
+#sidebar.collapsed .sb-link { justify-content: center; padding: 9px 0; }
+#sidebar.collapsed .sb-link:hover::after {
+    content: attr(data-label);
+    position: absolute; left: calc(100% + 10px); top: 50%;
+    transform: translateY(-50%);
+    background: #1e293b; color: #f1f5f9;
+    font-size: .72rem; padding: 5px 10px;
+    border-radius: 7px; white-space: nowrap;
+    border: 1px solid #334155;
+    pointer-events: none; z-index: 9999;
+    box-shadow: 0 4px 12px rgba(0,0,0,.4);
+}
+
+/* Role-based visibility — set by JS below */
+.role-admin,
+.role-teacher,
+.role-student { display: none; }
+
+#content {
+    margin-left: 260px;
+    transition: margin-left .28s cubic-bezier(.4,0,.2,1);
+}
+#sidebar.collapsed ~ #content { margin-left: 68px; }
+
+#sb-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(10,14,23,.55);
+    --backdrop-filter: blur(3px);
+    z-index: 999;
+    opacity: 0;
+    transition: opacity .28s ease;
+}
+#sb-overlay.active { opacity: 1; }
+
+@media (max-width: 768px) {
+    #sidebar {
+        transform: translateX(-100%);
+        width: 260px !important;
+        min-width: 260px !important;
+        z-index: 1050;
+    }
+    #sidebar.mobile-open { transform: translateX(0); }
+    #sidebar .sb-brand    { opacity: 1 !important; max-width: 140px !important; }
+    #sidebar .sb-label    { opacity: 1 !important; }
+    #sidebar .sb-link     { justify-content: flex-start !important; padding: 9px 18px !important; }
+    #sidebar .sb-link-text{ opacity: 1 !important; max-width: 160px !important; }
+    #sidebar .sb-link:hover::after { display: none; }
+    #content { margin-left: 0 !important; }
+}
+</style>
+
+<div id="sb-overlay"></div>
+
+<nav id="sidebar">
+    <div class="sb-header">
+        <div class="sb-logo-wrap">
+            <img src="/artisansLMS/client/assets/img/logo.png" class="sb-logo" alt="LMS Logo">
+            <span class="sb-brand">Artisans</span>
+        </div>
+        <button class="sb-toggle d-none d-md-flex" id="btnCollapse" title="Toggle sidebar">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+    </div>
+
+    <div class="sb-nav">
+
+        <div class="sb-section" >
+            <span class="sb-label">General</span>
+ <div class="sb-section role-teacher role-admin">
+            <a href="/artisansLMS/client/pages/dashboard.html"
+               class="sb-link"
+               data-label="Dashboard"
+               data-active-page="dashboard.html">
+                <span class="sb-icon"><i class="fas fa-th-large"></i></span>
+                <span class="sb-link-text">Dashboard</span>
+            </a>
+</div>  
+            <a href="/artisansLMS/client/pages/collaborations.html"
+               class="sb-link"
+               data-label="Classes"
+               data-active-page="collaborations.html">
+                <span class="sb-icon"><i class="fas fa-user-friends"></i></span>
+                <span class="sb-link-text">Classes</span>
+            </a>
+
+            <a href="/artisansLMS/client/pages/messages.html"
+               class="sb-link"
+               data-label="Direct Messages"
+               data-active-page="messages.html">
+                <span class="sb-icon"><i class="fas fa-comments"></i></span>
+                <span class="sb-link-text">Direct Messages</span>
+            </a>
+        </div>
+
+        <div class="sb-section role-student">
+            <div class="sb-divider"></div>
+            <span class="sb-label">Student Portal</span>
+
+            <a href="/artisansLMS/client/pages/my_grades.html"
+               class="sb-link"
+               data-label="My Grades"
+               data-active-page="my_grades.html">
+                <span class="sb-icon"><i class="fas fa-graduation-cap"></i></span>
+                <span class="sb-link-text">My Grades</span>
+            </a>
+
+            <a href="/artisansLMS/client/pages/my_analytics.html"
+               class="sb-link"
+               data-label="Achievement Board"
+               data-active-page="my_analytics.html">
+                <span class="sb-icon"><i class="fas fa-gamepad"></i></span>
+                <span class="sb-link-text">Achievement Board</span>
+            </a>
+        </div>
+
+        <div class="sb-section role-teacher">
+            <div class="sb-divider"></div>
+            <span class="sb-label">Faculty Portal</span>
+
+            <a href="/artisansLMS/client/pages/instructor_courses.html"
+               class="sb-link"
+               data-label="Course Materials"
+               data-active-page="instructor_courses.html">
+                <span class="sb-icon"><i class="fas fa-book-reader"></i></span>
+                <span class="sb-link-text">Course Materials</span>
+            </a>
+
+            <a href="/artisansLMS/client/pages/instructor_assignments.html"
+               class="sb-link"
+               data-label="Task Manager"
+               data-active-page="instructor_assignments.html">
+                <span class="sb-icon"><i class="fas fa-tasks"></i></span>
+                <span class="sb-link-text">Task Manager</span>
+            </a>
+            
+        </div>
+
+        <div class="sb-section role-admin">
+            <div class="sb-divider"></div>
+            <span class="sb-label">Faculty Portal</span>
+
+            <a href="/artisansLMS/client/pages/instructor_assignments.html"
+               class="sb-link"
+               data-label="Task Manager"
+               data-active-page="instructor_assignments.html">
+                <span class="sb-icon"><i class="fas fa-tasks"></i></span>
+                <span class="sb-link-text">Task Manager</span>
+            </a>
+        </div>
+
+        <div class="sb-section role-admin">
+            <div class="sb-divider"></div>
+            <span class="sb-label">System Admin</span>
+
+            <a href="/artisansLMS/client/pages/enrollment.html"
+               class="sb-link"
+               data-label="Student Enrollment"
+               data-active-page="enrollment.html">
+                <span class="sb-icon"><i class="fas fa-link"></i></span>
+                <span class="sb-link-text">Student Enrollment</span>
+            </a>
+
+            <a href="/artisansLMS/client/pages/students.html"
+               class="sb-link"
+               data-label="Manage Students"
+               data-active-page="students.html">
+                <span class="sb-icon"><i class="fas fa-user-graduate"></i></span>
+                <span class="sb-link-text">Manage Students</span>
+            </a>
+
+            <a href="/artisansLMS/client/pages/courses.html"
+               class="sb-link"
+               data-label="Master Courses"
+               data-active-page="courses.html">
+                <span class="sb-icon"><i class="fas fa-layer-group"></i></span>
+                <span class="sb-link-text">Master Courses</span>
+            </a>
+
+            <a href="/artisansLMS/client/pages/classes.html"
+               class="sb-link"
+               data-label="Class Management"
+               data-active-page="classes.html">
+                <span class="sb-icon"><i class="fas fa-chalkboard"></i></span>
+                <span class="sb-link-text">Class Management</span>
+            </a>
+
+            <a href="/artisansLMS/client/pages/instructors.html"
+               class="sb-link"
+               data-label="Master Instructors"
+               data-active-page="instructors.html">
+                <span class="sb-icon"><i class="fas fa-user-tie"></i></span>
+                <span class="sb-link-text">Master Instructors</span>
+            </a>
+
+            <a href="/artisansLMS/client/pages/reports.html"
+               class="sb-link"
+               data-label="System Reports"
+               data-active-page="reports.html">
+                <span class="sb-icon"><i class="fas fa-chart-pie"></i></span>
+                <span class="sb-link-text">System Reports</span>
+            </a>
+
+            <a href="/artisansLMS/client/pages/archived.html"
+               class="sb-link"
+               data-label="Archives"
+               data-active-page="archived.html">
+                <span class="sb-icon" ><i class="fas fa-archive"></i></span>
+                <span class="sb-link-text">Archives</span>
+            </a>
+        </div>
+
+    </div></nav>
+
+<script>
+(function () {
+    const sidebar     = document.getElementById('sidebar');
+    const overlay     = document.getElementById('sb-overlay');
+    const btnCollapse = document.getElementById('btnCollapse');
+    const STORE_KEY   = 'sb_collapsed';
+    const isMobile    = () => window.innerWidth <= 768;
+
+    // ── 1. Restore collapsed state (desktop only) ──
+    if (!isMobile() && localStorage.getItem(STORE_KEY) === '1') {
+        sidebar.classList.add('collapsed');
+    }
+
+    if (btnCollapse) {
+        btnCollapse.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            localStorage.setItem(STORE_KEY, sidebar.classList.contains('collapsed') ? '1' : '0');
+        });
+    }
+
+    // ── 2. Active link highlight (runs immediately, no role needed) ──
+    const currentPage = window.location.pathname.split('/').pop();
+    document.querySelectorAll('.sb-link[data-active-page]').forEach(link => {
+        if (link.dataset.activePage === currentPage) link.classList.add('active');
+    });
+
+    // ── 3. Role-based visibility — fetched from PHP session ──
+    function applyRole(role) {
+        role = (role || '').toLowerCase().trim();
+        if (role === 'admin') {
+            document.querySelectorAll('.role-admin').forEach(el => el.style.display = 'block');
+        } else if (role === 'teacher') {
+            document.querySelectorAll('.role-teacher').forEach(el => el.style.display = 'block');
+        } else {
+            document.querySelectorAll('.role-student').forEach(el => el.style.display = 'block');
+        }
+    }
+
+    // Try cache first so sidebar does not flash on every page load
+    const cachedRole = sessionStorage.getItem('sb_role');
+    if (cachedRole) applyRole(cachedRole);
+
+    // Always verify against the live server session
+    fetch('/artisansLMS/backend/middleware/session_info.php')
+        .then(r => r.json())
+        .then(data => {
+            if (data.role) {
+                const freshRole = data.role.toLowerCase().trim();
+                if (freshRole !== cachedRole) {
+                    document.querySelectorAll('.role-admin, .role-teacher, .role-student')
+                        .forEach(el => el.style.display = 'none');
+                    applyRole(freshRole);
+                }
+                sessionStorage.setItem('sb_role', freshRole);
+            }
+        })
+        .catch(() => {
+            if (!cachedRole) applyRole('student');
+        });
+
+    // ── 4. Mobile open/close ──
+    function openMobile() {
+        sidebar.classList.add('mobile-open');
+        overlay.style.display = 'block';
+        requestAnimationFrame(() => overlay.classList.add('active'));
+        document.body.style.overflow = 'hidden';
+    }
+    function closeMobile() {
+        sidebar.classList.remove('mobile-open');
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+        overlay.addEventListener('transitionend', () => {
+            overlay.style.display = 'none';
+        }, { once: true });
+    }
+
+    window.openSidebar  = openMobile;
+    window.closeSidebar = closeMobile;
+
+    overlay.addEventListener('click', closeMobile);
+    document.querySelectorAll('.sb-link').forEach(link => {
+        link.addEventListener('click', () => { if (isMobile()) closeMobile(); });
+    });
+    window.addEventListener('resize', () => {
+        if (!isMobile()) {
+            closeMobile();
+            overlay.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    });
+})();
+</script>

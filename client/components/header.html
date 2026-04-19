@@ -1,0 +1,55 @@
+<header class="d-flex justify-content-between align-items-center px-3 px-md-4 py-3 bg-white border-bottom shadow-sm">
+    
+    <div class="d-flex align-items-center gap-2 gap-md-3 flex-grow-1 overflow-hidden">
+        
+        <button class="btn btn-light d-md-none border text-secondary d-flex align-items-center justify-content-center" onclick="if(window.openSidebar) window.openSidebar();" aria-label="Open menu">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <div class="text-truncate">
+            <h5 class="m-0 fw-bold text-dark lh-1 text-truncate" id="headerPageTitle">
+                Loading...
+            </h5>
+            <small class="text-muted d-block mt-1 text-truncate" id="headerPageSubtitle">
+                Please wait...
+            </small>
+        </div>
+    </div>
+
+    <div class="dropdown flex-shrink-0 ms-2">
+
+        <button class="btn p-0 border-0 bg-transparent d-flex align-items-center gap-2"
+                id="profileDropdown"
+                data-bs-toggle="dropdown"
+                aria-expanded="false">
+
+            <div class="text-end d-none d-md-block">
+                <small class="d-block fw-bold text-dark lh-1" id="headerUserName">Loading...</small>
+                <small class="text-muted text-uppercase fw-semibold" id="headerUserRole">...</small>
+            </div>
+
+            <img src="https://ui-avatars.com/api/?name=User&background=e2e8f0&color=94a3b8"
+                 class="rounded-circle border shadow-sm"
+                 width="38" height="38"
+                 id="headerAvatar"
+                 alt="User Avatar">
+        </button>
+
+        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 rounded-3" aria-labelledby="profileDropdown">
+            <li class="pt-2">
+                <a class="dropdown-item py-2 d-flex align-items-center gap-2 text-secondary fw-medium"
+                   href="/artisansLMS/client/pages/profile.html">
+                    <i class="fas fa-user-circle text-muted"></i> My Profile
+                </a>
+            </li>
+            <li><hr class="dropdown-divider mx-3"></li>
+            <li class="pb-1">
+                <a class="dropdown-item py-2 d-flex align-items-center gap-2 text-danger fw-medium"
+                   href="#" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt text-danger"></i> Logout
+                </a>
+            </li>
+        </ul>
+    </div>
+
+</header>

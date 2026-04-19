@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMS | Faculty Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        body { font-family:'Sora',sans-serif; background:#f0f2f7; }
+
+        /* ── Faculty cards ── */
+        .faculty-card { transition:.2s; border:1px solid #e2e8f0 !important; }
+        .faculty-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,.08) !important; }
+        .info-label { font-size:.6rem; text-transform:uppercase; font-weight:700; color:#94a3b8; letter-spacing:.5px; }
+
+        /* ── Action buttons ── */
+        .btn-archive-inst {
+            display:inline-flex; align-items:center; gap:4px;
+            padding:5px 12px; border-radius:8px; font-size:.72rem; font-weight:700;
+            background:#fff7ed; color:#c2410c; border:1px solid #fed7aa;
+            cursor:pointer; transition:.15s; text-decoration:none;
+        }
+        .btn-archive-inst:hover { background:#ffedd5; color:#9a3412; }
+        .btn-edit-inst {
+            display:inline-flex; align-items:center; gap:4px;
+            padding:5px 12px; border-radius:8px; font-size:.72rem; font-weight:700;
+            background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd;
+            cursor:pointer; transition:.15s;
+        }
+        .btn-edit-inst:hover { background:#e0f2fe; color:#0c4a6e; }
+        .btn-instructor {
+            display:inline-flex;align-items:center;gap:8px;
+            background:#1e293b;color:#fff;border:none;border-radius:10px;
+            padding:10px 20px;font-size:.82rem;font-weight:600;
+            font-family:'Sora',sans-serif;transition:.2s;cursor:pointer;
+        }
+        .btn-instructor:hover {
+            background:#0f172a;color:#fff;
+            transform:translateY(-1px);
+            box-shadow:0 6px 16px rgba(15,23,42,.2);
+        }
+
+        /* ── Toast ── */
+        .toast-bar { position:fixed; top:20px; right:20px; z-index:9999; padding:12px 20px; border-radius:10px; font-size:.8rem; font-weight:600; display:flex; align-items:center; gap:8px; box-shadow:0 4px 20px rgba(0,0,0,.12); animation:slideIn .3s ease; transition:opacity .5s; }
+        .toast-arch { background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; }
+        .toast-ok   { background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; }
+        @keyframes slideIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+
+        /* ── Search & Filter bar ── */
+        .sf-bar {
+            background:#fff; border:1px solid #e9ecef; border-radius:14px;
+            padding:14px 18px; margin-bottom:20px;
+            display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+        }
+        .sf-search-wrap { position:relative; flex:1; min-width:180px; }
+        .sf-search-wrap i { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:.8rem; pointer-events:none; }
+        .sf-input {
+            width:100%; padding:9px 12px 9px 34px;
+            border:1.5px solid #e9ecef; border-radius:10px;
+            font-size:.82rem; font-family:'Sora',sans-serif;
+            color:#1e293b; background:#f8fafc; outline:none; transition:.2s;
+        }
+        .sf-input:focus { border-color:#0ea5e9; background:#fff; box-shadow:0 0 0 3px rgba(14,165,233,.08); }
+        .sf-select {
+            padding:9px 32px 9px 12px; border:1.5px solid #e9ecef; border-radius:10px;
+            font-size:.8rem; font-family:'Sora',sans-serif; font-weight:600;
+            color:#475569; background:#f8fafc; outline:none; cursor:pointer; transition:.2s; appearance:none;
+            background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat:no-repeat; background-position:right 10px center;
+        }
+        .sf-select:focus { border-color:#0ea5e9; background-color:#fff; box-shadow:0 0 0 3px rgba(14,165,233,.08); }
+        .sf-count { font-size:.72rem; font-weight:700; color:#94a3b8; white-space:nowrap; }
+        .sf-count span { color:#0ea5e9; }
+
+        /* ── Table ── */
+        .faculty-table-container { background:#fff; border-radius:16px; border:1px solid #e2e8f0; overflow:hidden; display:none; }
+        .faculty-table thead th { background:#f8fafc; font-size:.7rem; text-transform:uppercase; color:#64748b; font-weight:700; padding:14px 20px; border-bottom:2px solid #f1f5f9; }
+        .faculty-table tbody td { padding:14px 20px; vertical-align:middle; border-bottom:1px solid #f1f5f9; font-size:.85rem; }
+        .faculty-table tbody tr:hover { background:#f8fafc; }
+
+        /* ── View toggle ── */
+        .view-toggle .btn { font-size:.8rem; font-weight:600; border-color:#cbd5e1; color:#64748b; padding:6px 14px; }
+        .view-toggle .btn.active { background:#1e293b; color:#fff; border-color:#1e293b; }
+        .view-toggle .btn:not(.active):hover { background:#f1f5f9; }
+
+        /* ── Hidden states ── */
+        .inst-card-col.hidden { display:none !important; }
+        .inst-table-row.hidden { display:none; }
+        .no-results-block { display:none; }
+        .no-results-block.show { display:block; }
+
+        /* ── Mobile tweaks ── */
+        @media (max-width:576px) {
+            .sf-bar { padding:12px 14px; gap:8px; }
+            .sf-select { font-size:.75rem; }
+            .sf-count { width:100%; text-align:center; }
+            .faculty-card { padding:16px !important; }
+            .faculty-card .d-flex.gap-2 { flex-wrap:wrap; }
+            .faculty-card .d-flex.gap-2 .flex-grow-1 { flex:1 1 100%; }
+            .faculty-table thead th,
+            .faculty-table tbody td { padding:10px 12px; font-size:.78rem; }
+            .faculty-table th:nth-child(4),
+            .faculty-table td:nth-child(4),
+            .faculty-table th:nth-child(5),
+            .faculty-table td:nth-child(5) { display:none; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="sidebar-placeholder"></div>
+<div id="content">
+    <div id="header-placeholder"></div>
+
+    <main class="p-4 p-md-5">
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+            <div>
+                <h4 class="fw-bold m-0 text-dark">Master Instructors</h4>
+                <p class="text-muted small mb-0">Manage faculty accounts, profiles, and records.</p>
+            </div>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <div class="btn-group view-toggle shadow-sm" role="group">
+                    <button type="button" class="btn active" id="btnGrid" onclick="toggleView('grid')">
+                        <i class="fas fa-th-large me-1"></i><span class="d-none d-sm-inline">Grid</span>
+                    </button>
+                    <button type="button" class="btn" id="btnList" onclick="toggleView('list')">
+                        <i class="fas fa-list me-1"></i><span class="d-none d-sm-inline">List</span>
+                    </button>
+                </div>
+                <button class="btn-instructor px-3 px-md-4 shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addInstructorModal">
+                    <i class="fas fa-user-plus me-1 me-md-2"></i><span class="d-none d-sm-inline">Add </span>Instructor
+                </button>
+            </div>
+        </div>
+
+        <div class="sf-bar">
+            <div class="sf-search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" class="sf-input" id="instSearch" placeholder="Search name or email…">
+            </div>
+            <select class="sf-select" title="Filter by Department" id="instDeptFilter">
+                <option value="">Loading Departments...</option>
+            </select>
+            <select class="sf-select" title="Filter by Class Count" id="instClassFilter">
+                <option value="">Any Classes</option>
+                <option value="0">No Classes</option>
+                <option value="1">1+ Classes</option>
+                <option value="3">3+ Classes</option>
+            </select>
+            <div class="sf-count">
+                Showing <span id="instCountNum">0</span> instructors
+            </div>
+        </div>
+
+        <div class="row g-3 g-md-4" id="gridView">
+            </div>
+
+        <div class="no-results-block" id="noResultsGrid">
+            <div class="text-center py-5 bg-white rounded-4 border">
+                <i class="fas fa-search d-block fs-2 text-muted opacity-25 mb-3"></i>
+                <div class="fw-bold text-muted">No instructors match your search</div>
+                <div class="text-muted small mt-1">Try a different name, department, or class filter</div>
+            </div>
+        </div>
+
+        <div class="faculty-table-container shadow-sm" id="tableView">
+            <div class="table-responsive">
+                <table class="table faculty-table mb-0 align-middle">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Instructor</th>
+                            <th>Contact</th>
+                            <th>Department</th>
+                            <th>Classes</th>
+                            <th>Hired</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="instTableBody">
+                        <tr><td colspan="6" class="text-center py-5 text-muted small">Loading Instructors...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="no-results-block p-4" id="noResultsList">
+                <div class="text-center py-4">
+                    <i class="fas fa-search d-block fs-2 text-muted opacity-25 mb-3"></i>
+                    <div class="fw-bold text-muted">No instructors match your search</div>
+                    <div class="text-muted small mt-1">Try a different name, department, or class filter</div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<div class="modal fade" id="addInstructorModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <form id="addInstructorForm" class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white border-0 py-3 px-4">
+                <h5 class="modal-title fw-bold"><i class="fas fa-user-tie me-2 text-info"></i>New Faculty Registration</h5>
+                <button type="button" title="Close" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label class="small fw-bold text-muted">First Name</label>
+                        <input type="text" name="fname" title="First Name" class="form-control bg-light border-0" required>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="small fw-bold text-muted">Last Name</label>
+                        <input type="text" name="lname" title="Last Name" class="form-control bg-light border-0" required>
+                    </div>
+                    <div class="col-12 col-sm-4">
+                        <label class="small fw-bold text-muted">Birth Date</label>
+                        <input type="date" name="dob" title="Birth Date" class="form-control bg-light border-0">
+                    </div>
+                    <div class="col-12 col-sm-4">
+                        <label class="small fw-bold text-muted">Gender</label>
+                        <select name="gender" title="Select Gender" class="form-select bg-light border-0">
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-sm-4">
+                        <label class="small fw-bold text-muted">Hire Date</label>
+                        <input type="date" title="Hire Date" name="hire_date" class="form-control bg-light border-0" required>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="small fw-bold text-muted">Department</label>
+                        <select name="department_id" title="Select Department" id="add_dept" class="form-select bg-light border-0" required>
+                            <option value="">Loading Departments...</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="small fw-bold text-muted">Position</label>
+                        <select name="position_id" title="Select Position" id="add_pos" class="form-select bg-light border-0" required>
+                            <option value="">Loading Positions...</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="small fw-bold text-muted">Monthly Salary</label>
+                        <input type="number" step="0.01" name="salary" class="form-control bg-light border-0" placeholder="0.00">
+                    </div>
+                    <div class="col-12 border-top mt-2 pt-3">
+                        <label class="small fw-bold text-muted">Official Email</label>
+                        <input type="email" title="Official Email" name="email" class="form-control bg-light border-0" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="small fw-bold text-muted">Temporary Password</label>
+                        <div class="input-group">
+                            <input type="text" title="Temporary Password" name="password" id="passInput" class="form-control bg-light border-0" required>
+                            <button class="btn btn-dark" type="button" title="Generate Password" onclick="generatePass()">Generate</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0">
+                <button type="submit" class="btn btn-primary w-100 py-3 shadow fw-bold">Register Instructor</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="editInstructorModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <form id="editInstructorForm" class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white border-0 py-3 px-4">
+                <h5 class="modal-title fw-bold"><i class="fas fa-user-edit me-2"></i>Edit Instructor</h5>
+                <button type="button" title="Close" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="edit_emp_id">
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label class="small fw-bold text-muted">First Name</label>
+                        <input type="text" id="edit_fname" title="First Name" class="form-control bg-light border-0" required>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="small fw-bold text-muted">Last Name</label>
+                        <input type="text" id="edit_lname" title="Last Name" class="form-control bg-light border-0" required>
+                    </div>
+                    <div class="col-12 col-sm-4">
+                        <label class="small fw-bold text-muted">Birth Date</label>
+                        <input type="date" id="edit_dob" title="Birth Date" class="form-control bg-light border-0">
+                    </div>
+                    <div class="col-12 col-sm-4">
+                        <label class="small fw-bold text-muted">Gender</label>
+                        <select id="edit_gender" title="Select Gender" class="form-select bg-light border-0">
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-sm-4">
+                        <label class="small fw-bold text-muted">Hire Date</label>
+                        <input type="date" title="Hire Date" id="edit_hire" class="form-control bg-light border-0">
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="small fw-bold text-muted">Department</label>
+                        <select id="edit_dept" title="Select Department" class="form-select bg-light border-0" required>
+                            <option value="">Loading Departments...</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-6">
+                        <label class="small fw-bold text-muted">Position</label>
+                        <select id="edit_pos"   title="Select Position" class="form-select bg-light border-0" required>
+                            <option value="">Loading Positions...</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="small fw-bold text-muted">Monthly Salary</label>
+                        <input type="number" title="Monthly Salary" step="0.01" id="edit_salary" class="form-control bg-light border-0">
+                    </div>
+                    <div class="col-12 border-top mt-2 pt-3">
+                        <label class="small fw-bold text-muted">Official Email</label>
+                        <input type="email" title="Official Email" id="edit_email" class="form-control bg-light border-0" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="small fw-bold text-muted">New Password <span class="text-muted fw-normal">(leave blank to keep current)</span></label>
+                        <div class="input-group">
+                            <input type="text" id="edit_password" class="form-control bg-light border-0" placeholder="Leave blank to keep unchanged">
+                            <button class="btn btn-dark" type="button" onclick="generatePassEdit()">Generate</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0">
+                <button type="submit" class="btn btn-primary w-100 py-3 shadow fw-bold">
+                    <i class="fas fa-save me-2"></i>Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="../assets/js/modules/instructors.js"></script>
+</body>
+</html>

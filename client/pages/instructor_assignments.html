@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMS | Task Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/artisansLMS/client/assets/css/style.css">
+    <style>
+        /* ── Absolute Essentials Not Covered by Bootstrap ── */
+        body { font-family: 'Sora', sans-serif; background-color: #f8fafc; }
+        
+        /* Sidebar Offset */
+        @media (min-width: 768px) { #content { margin-left: 260px !important; transition: margin-left .28s; } }
+
+        /* Hover Lift Animation */
+        .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important; }
+
+        /* ── Custom UI Components ── */
+        .font-monospace-sm { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+        
+        /* Filter Pills */
+        .filter-pill { transition: all 0.2s ease; cursor: pointer; white-space: nowrap; }
+        .filter-pill.active { background-color: #0f172a !important; color: white !important; border-color: #0f172a !important; }
+        .filter-pill.active .badge { background-color: rgba(255,255,255,0.2) !important; color: white !important; }
+        
+        /* Modals Checkboxes & Radios */
+        .type-radio-lbl { border: 2px solid #e9ecef; cursor: pointer; transition: all 0.2s ease; }
+        .type-radio:checked + .type-radio-lbl { border-color: #0ea5e9; background-color: #f0f9ff; color: #0ea5e9 !important; }
+        
+        .cls-item { border: 1px solid #e9ecef; cursor: pointer; transition: all 0.15s ease; }
+        .cls-item:hover { background-color: #f8fafc; }
+        .cls-item.chk { background-color: #f0f9ff; border-color: #bae6fd; }
+        .cls-item.disabled-cls { opacity: 0.5; pointer-events: none; background: #f8fafc; }
+
+        /* Scrollable List Utility */
+        .scrollable-list { max-height: 150px; overflow-y: auto; }
+        .scrollable-list::-webkit-scrollbar { width: 5px; }
+        .scrollable-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    
+    <div class="d-flex min-vh-100 overflow-hidden">
+        
+        <div id="sidebar-container"></div>
+        
+        <div id="content" class="flex-grow-1 d-flex flex-column h-100 min-vw-0">
+            
+            <div id="header-container"></div>
+
+            <main class="p-4 p-md-5 overflow-auto flex-grow-1">
+                
+                <div id="alertsContainer"></div>
+
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+                    <div>
+                        <h4 class="fw-bold text-dark mb-1">Global Task Manager</h4>
+                        <p class="text-muted small mb-0">Create and manage tasks across all your classes.</p>
+                    </div>
+                    <button class="btn btn-dark fw-bold rounded-pill px-4 py-2 shadow-sm d-flex align-items-center gap-2 hover-lift" data-bs-toggle="modal" data-bs-target="#createModal" title="Create New Task">
+                        <i class="fas fa-plus text-info"></i> Create New Task
+                    </button>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4 mb-4 d-none d-md-flex bg-white">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center gap-3 flex-wrap mb-3" id="classFilters">
+                            <span class="small fw-bold text-muted text-uppercase me-2">Class</span>
+                            <button class="btn btn-outline-secondary rounded-pill filter-pill active" data-filter-type="class" data-val="all" title="Filter by All Classes">
+                                All Classes <span class="badge bg-secondary ms-1 rounded-pill" id="cnt-cls-all">0</span>
+                            </button>
+                        </div>
+                        
+                        <hr class="text-muted opacity-25 my-3">
+                        
+                        <div class="d-flex align-items-center gap-3 flex-wrap" id="typeFilters">
+                            <span class="small fw-bold text-muted text-uppercase me-2">Type</span>
+                            <button class="btn btn-outline-secondary rounded-pill filter-pill active" data-filter-type="type" data-val="all" title="Filter by All Types">
+                                All <span class="badge bg-secondary ms-1 rounded-pill" id="cnt-type-all">0</span>
+                            </button>
+                            <button class="btn btn-outline-secondary rounded-pill filter-pill" data-filter-type="type" data-val="assignment" title="Filter by Assignments">
+                                <i class="fas fa-file-alt text-primary me-1"></i> Assignments <span class="badge bg-secondary ms-1 rounded-pill" id="cnt-type-assignment">0</span>
+                            </button>
+                            <button class="btn btn-outline-secondary rounded-pill filter-pill" data-filter-type="type" data-val="activity" title="Filter by Activities">
+                                <i class="fas fa-running text-success me-1"></i> Activities <span class="badge bg-secondary ms-1 rounded-pill" id="cnt-type-activity">0</span>
+                            </button>
+                            <button class="btn btn-outline-secondary rounded-pill filter-pill" data-filter-type="type" data-val="quiz" title="Filter by Quizzes">
+                                <i class="fas fa-brain text-warning me-1"></i> Quizzes <span class="badge bg-secondary ms-1 rounded-pill" id="cnt-type-quiz">0</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex d-md-none gap-2 mb-4">
+                    <select class="form-select border-0 shadow-sm rounded-3 fw-semibold text-dark bg-white" id="mobClassFilter" title="Filter by Class"></select>
+                    <select class="form-select border-0 shadow-sm rounded-3 fw-semibold text-dark bg-white" id="mobTypeFilter" title="Filter by Task Type">
+                        <option value="all">All Types</option>
+                        <option value="assignment">Assignments</option>
+                        <option value="activity">Activities</option>
+                        <option value="quiz">Quizzes</option>
+                    </select>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light text-muted small text-uppercase fw-bold">
+                                <tr>
+                                    <th class="ps-4 py-3">Task</th>
+                                    <th class="py-3">Type</th>
+                                    <th class="py-3">Class</th>
+                                    <th class="py-3">Due Date</th>
+                                    <th class="py-3">Responses</th>
+                                    <th class="text-end pe-4 py-3">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="taskTableBody">
+                                <tr>
+                                    <td colspan="6" class="text-center py-5">
+                                        <div class="spinner-border text-primary"></div>
+                                        <div class="text-muted mt-2 small fw-bold">Loading tasks...</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <div class="modal fade" id="createModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+            <form id="createTaskForm" class="modal-content border-0 shadow-lg rounded-4 bg-light">
+                <div class="modal-header bg-dark text-white border-0 py-3 px-4">
+                    <h6 class="modal-title fw-bold"><i class="fas fa-plus text-info me-2"></i> Create New Task</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" title="Close Modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    
+                    <label class="small fw-bold text-muted text-uppercase mb-2">Task Type</label>
+                    <div class="row g-2 mb-4">
+                        <div class="col-4 text-center">
+                            <input type="radio" class="d-none type-radio" name="task_type" id="tt-a" value="assignment" checked>
+                            <label for="tt-a" class="type-radio-lbl w-100 rounded-3 py-3 fw-bold bg-white text-muted shadow-sm">
+                                <i class="fas fa-file-alt d-block mb-1 fs-5"></i> Assignment
+                            </label>
+                        </div>
+                        <div class="col-4 text-center">
+                            <input type="radio" class="d-none type-radio" name="task_type" id="tt-ac" value="activity">
+                            <label for="tt-ac" class="type-radio-lbl w-100 rounded-3 py-3 fw-bold bg-white text-muted shadow-sm">
+                                <i class="fas fa-running d-block mb-1 fs-5"></i> Activity
+                            </label>
+                        </div>
+                        <div class="col-4 text-center">
+                            <input type="radio" class="d-none type-radio" name="task_type" id="tt-q" value="quiz">
+                            <label for="tt-q" class="type-radio-lbl w-100 rounded-3 py-3 fw-bold bg-white text-muted shadow-sm">
+                                <i class="fas fa-brain d-block mb-1 fs-5"></i> Quiz
+                            </label>
+                        </div>
+                    </div>
+
+                    <label class="small fw-bold text-muted text-uppercase mb-2">Assign to Class(es) *</label>
+                    <div class="d-flex flex-column gap-2 mb-4 scrollable-list" id="createClassList"></div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-8">
+                            <label class="small fw-bold text-muted text-uppercase mb-1">Title *</label>
+                            <input type="text" name="title" class="form-control border-0 shadow-sm" required placeholder="e.g. Chapter 3 Essay">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="small fw-bold text-muted text-uppercase mb-1">Due Date *</label>
+                            <input type="date" title="Select Due Date" name="due_date" class="form-control border-0 shadow-sm" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="small fw-bold text-muted text-uppercase mb-1">Instructions / Description</label>
+                            <textarea name="description" class="form-control border-0 shadow-sm" rows="3" placeholder="Describe what students need..."></textarea>
+                        </div>
+                    </div>
+
+                    <div id="sec-file" class="mb-4">
+                        <label class="small fw-bold text-muted text-uppercase mb-1">Reference File (optional)</label>
+                        <input type="file" title="Upload Reference File" name="ref_file" class="form-control border-0 shadow-sm bg-white">
+                    </div>
+
+                    <div id="sec-quiz" class="d-none border-top border-light-subtle pt-4 mt-4">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="small fw-bold text-muted text-uppercase mb-1">Time Limit (mins, 0=none)</label>
+                                <input type="number" name="time_limit" class="form-control border-0 shadow-sm" min="0" placeholder="0">
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end pb-2">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="randomize" id="randomizeCheck" checked value="1">
+                                    <label class="form-check-label fw-bold text-dark small" for="randomizeCheck">Randomize questions</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold m-0">Questions <span class="badge bg-primary rounded-pill ms-1" id="qcnt">0</span></h6>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary bg-white fw-bold rounded-pill shadow-sm" onclick="addQ('multiple_choice')" title="Add Multiple Choice Question">
+                                    <i class="fas fa-plus me-1"></i>Multiple Choice
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-success bg-white fw-bold rounded-pill shadow-sm" onclick="addQ('true_false')" title="Add True/False Question">
+                                    <i class="fas fa-plus me-1"></i>True/False
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="qlist"></div>
+                        
+                        <div id="qhint" class="text-center py-4 text-muted small bg-white rounded-4 shadow-sm border border-light-subtle">
+                            <i class="fas fa-plus-circle fs-3 opacity-25 mb-2 d-block"></i> Add questions.
+                        </div>
+                        <input type="hidden" name="questions_json" id="qjson">
+                    </div>
+
+                </div>
+                <div class="modal-footer border-0 p-3 bg-white rounded-bottom-4">
+                    <button type="submit" class="btn btn-dark w-100 fw-bold py-2 rounded-pill shadow-sm" id="createSubmitBtn" title="Post Task to Selected Classes">
+                        <i class="fas fa-paper-plane me-2"></i> Post to Selected Classes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade" id="reassignModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <form id="reassignForm" class="modal-content border-0 shadow-lg rounded-4 bg-light">
+                <input type="hidden" name="reassign_id" id="ri_id">
+                <input type="hidden" name="reassign_type" id="ri_type">
+
+                <div class="modal-header bg-dark text-white border-0 py-3 px-4">
+                    <h6 class="modal-title fw-bold"><i class="fas fa-share-nodes text-success me-2"></i> Assign to Other Classes</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" title="Close Modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+                        <div class="card-body p-3 d-flex align-items-center gap-3">
+                            <div class="fs-3" id="ri_icon"></div>
+                            <div>
+                                <div class="fw-bold text-dark mb-1" id="ri_title">—</div>
+                                <div class="badge bg-light text-muted border text-uppercase" id="ri_meta">—</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <label class="small fw-bold text-muted text-uppercase mb-2">Select Target Class(es) *</label>
+                    <div class="d-flex flex-column gap-2 scrollable-list" id="ri_classList"></div>
+                </div>
+                <div class="modal-footer border-0 p-3 bg-white rounded-bottom-4">
+                    <button type="submit" class="btn btn-success w-100 fw-bold py-2 rounded-pill shadow-sm" id="reassignSubmitBtn" title="Assign to Selected Classes">
+                        <i class="fas fa-share-nodes me-2"></i> Assign to Selected Classes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            $("#sidebar-container").load("../components/sidebar.html");
+            $("#header-container").load("../components/header.html", function(res, status) {
+                if (status !== 'error' && typeof initHeader === 'function') {
+                    initHeader();
+                }
+            });
+        });
+    </script>
+    
+    <script src="/artisansLMS/client/assets/js/app.js"></script>
+    <script src="../assets/js/modules/instructor_assignments.js"></script>
+</body>
+</html>

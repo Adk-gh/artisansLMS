@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMS | Student Management</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        body { font-family: 'Sora', sans-serif; background: #f0f2f7; }
+        .page-strip { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; gap:16px; flex-wrap:wrap; }
+        .page-strip h4 { font-size:1.25rem; font-weight:800; color:#0f172a; margin:0; }
+        .page-strip p  { font-size:.78rem; color:#94a3b8; margin:2px 0 0; }
+
+        .btn-register {
+            display:inline-flex; align-items:center; gap:8px;
+            background:#1e293b; color:#fff; border:none; border-radius:10px;
+            padding:10px 20px; font-size:.82rem; font-weight:600;
+            font-family:'Sora',sans-serif; transition:.2s; cursor:pointer;
+        }
+        .btn-register:hover { background:#0f172a; color:#fff; transform:translateY(-1px); box-shadow:0 6px 16px rgba(15,23,42,.2); }
+
+        /* ── Filter Bar — matches courses.html sf-bar style ── */
+        .filter-bar {
+            background:#fff; border:1px solid #e9ecef; border-radius:16px;
+            padding:14px 18px; margin-bottom:20px;
+            display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+            box-shadow:0 2px 10px rgba(0,0,0,.02);
+        }
+        /* Search */
+        .search-wrap { position:relative; flex:1; min-width:200px; }
+        .search-wrap i { position:absolute; left:16px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:.9rem; pointer-events:none; }
+        .search-wrap input {
+            width:100%; padding:10px 14px 10px 42px;
+            border:1.5px solid #e2e8f0; border-radius:10px;
+            font-size:.85rem; font-family:'Sora',sans-serif;
+            background:#f8fafc; color:#1e293b; outline:none; transition:.2s;
+        }
+        .search-wrap input:focus { border-color:#0ea5e9; background:#fff; box-shadow:0 0 0 3px rgba(14,165,233,.08); }
+
+        /* Department dropdown — sf-select style from courses.html */
+        .sf-select {
+            padding:10px 36px 10px 14px;
+            border:1.5px solid #e2e8f0; border-radius:10px;
+            font-size:.82rem; font-family:'Sora',sans-serif; font-weight:600;
+            color:#475569; background:#f8fafc; outline:none; cursor:pointer; transition:.2s;
+            appearance:none;
+            background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat:no-repeat; background-position:right 12px center;
+            max-width:220px;
+        }
+        .sf-select:focus { border-color:#0ea5e9; background-color:#fff; box-shadow:0 0 0 3px rgba(14,165,233,.08); }
+
+        /* Gender chips */
+        .filter-chip { font-size:.72rem; font-weight:600; padding:6px 14px; border-radius:20px; border:1px solid #e2e8f0; background:#f8fafc; color:#64748b; cursor:pointer; transition:.15s; white-space:nowrap; }
+        .filter-chip:hover, .filter-chip.active { background:#1e293b; color:#fff; border-color:#1e293b; }
+
+        /* Count */
+        .sf-count { font-size:.75rem; font-weight:700; color:#94a3b8; white-space:nowrap; margin-left:auto; }
+        .sf-count span { color:#0ea5e9; font-size:.85rem; }
+
+        .mini-stats { display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+        .mini-stat { background:#fff; border:1px solid #e9ecef; border-radius:12px; padding:14px 20px; display:flex; align-items:center; gap:12px; flex:1; min-width:140px; }
+        .mini-stat-icon { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:.85rem; flex-shrink:0; }
+        .mini-stat .msn { font-size:1.4rem; font-weight:800; color:#0f172a; font-family:'JetBrains Mono',monospace; line-height:1; }
+        .mini-stat .msl { font-size:.62rem; text-transform:uppercase; letter-spacing:.8px; color:#94a3b8; font-weight:700; margin-top:2px; }
+
+        .student-table-card { background:#fff; border:1px solid #e9ecef; border-radius:16px; overflow:hidden; }
+        .student-table-card table thead tr th { background:#fafafa; font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.9px; color:#94a3b8; padding:14px 20px; border-bottom:2px solid #f1f5f9; }
+        .student-table-card table tbody tr:hover td { background:#fafcff; }
+        .student-table-card table tbody td { padding:14px 20px; border-bottom:1px solid #f8fafc; vertical-align:middle; }
+        .student-table-card table tbody tr:last-child td { border-bottom:none; }
+
+        .stu-avatar { width:40px; height:40px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:.78rem; font-weight:800; color:#fff; flex-shrink:0; margin-right:12px; }
+        .stu-name  { font-size:.85rem; font-weight:700; color:#0f172a; }
+        .stu-id    { font-size:.68rem; color:#94a3b8; font-family:'JetBrains Mono',monospace; margin-top:1px; }
+        .stu-email { font-size:.78rem; color:#64748b; }
+        .stu-date  { font-size:.78rem; color:#475569; font-family:'JetBrains Mono',monospace; }
+        .badge-active { display:inline-flex; align-items:center; gap:5px; font-size:.68rem; font-weight:700; padding:4px 10px; border-radius:20px; background:#f0fdf4; color:#15803d; }
+        .badge-active::before { content:''; width:6px; height:6px; border-radius:50%; background:#22c55e; box-shadow:0 0 0 2px #dcfce7; }
+
+        /* Action buttons */
+        .btn-edit { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:8px; font-size:.72rem; font-weight:700; background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; cursor:pointer; transition:.15s; text-decoration:none; margin-right:4px;}
+        .btn-edit:hover { background:#dbeafe; color:#1e3a8a; }
+        .btn-archive { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:8px; font-size:.72rem; font-weight:700; background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; cursor:pointer; transition:.15s; text-decoration:none; }
+        .btn-archive:hover { background:#ffedd5; color:#9a3412; }
+
+        .empty-state { padding:60px 20px; text-align:center; }
+        .empty-state i { font-size:2.5rem; color:#e2e8f0; margin-bottom:12px; }
+        .empty-state p { color:#94a3b8; font-size:.85rem; margin:0; }
+
+        /* Modal */
+        .modal-content { border:none; border-radius:20px; overflow:hidden; font-family:'Sora',sans-serif; }
+        .modal-top { background:#0f172a; padding:24px 28px; display:flex; justify-content:space-between; align-items:center; }
+        .modal-top h5 { margin:0; font-size:1rem; font-weight:800; color:#fff; display:flex; align-items:center; gap:10px; }
+        .modal-top h5 span { width:32px; height:32px; border-radius:9px; background:rgba(56,189,248,.15); border:1px solid rgba(56,189,248,.25); display:inline-flex; align-items:center; justify-content:center; color:#38bdf8; font-size:.85rem; }
+        .modal-top .btn-close-custom { width:30px; height:30px; border-radius:8px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); color:#94a3b8; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:.8rem; transition:.2s; }
+        .modal-top .btn-close-custom:hover { background:rgba(255,255,255,.15); color:#fff; }
+        .modal-field label { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:#64748b; margin-bottom:6px; display:block; }
+        .modal-field input, .modal-field select { width:100%; padding:10px 14px; background:#f8fafc; border:1px solid #e9ecef; border-radius:9px; font-size:.82rem; font-family:'Sora',sans-serif; color:#1e293b; outline:none; transition:.2s; }
+        .modal-field input:focus, .modal-field select:focus { border-color:#94a3b8; background:#fff; }
+        .btn-submit { width:100%; padding:13px; background:#1e293b; color:#fff; border:none; border-radius:10px; font-size:.85rem; font-weight:700; font-family:'Sora',sans-serif; transition:.2s; cursor:pointer; }
+        .btn-submit:hover { background:#0f172a; transform:translateY(-1px); }
+
+        /* Toast */
+        .toast-bar { position:fixed; top:20px; right:20px; z-index:9999; padding:12px 20px; border-radius:10px; font-size:.8rem; font-weight:600; display:flex; align-items:center; gap:8px; animation:slideIn .3s ease; box-shadow:0 4px 20px rgba(0,0,0,.12); transition:opacity .5s; }
+        .toast-success  { background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; }
+        .toast-archived { background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; }
+        @keyframes slideIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
+        @keyframes fadeUp  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+        .fade-up { animation:fadeUp .4s ease both; }
+        .fd-1{animation-delay:.05s} .fd-2{animation-delay:.1s} .fd-3{animation-delay:.15s}
+    </style>
+</head>
+<body>
+
+<div id="sidebar-placeholder"></div>
+<div id="content">
+    <div id="header-placeholder"></div>
+
+    <main class="p-4 p-md-5">
+        <div class="page-strip fade-up fd-1">
+            <div>
+                <h4><i class="fas fa-user-graduate me-2" style="color:#0ea5e9;"></i>Student Management</h4>
+                <p>Manage and register all enrolled students in the system.</p>
+            </div>
+            <button class="btn-register" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+                <i class="fas fa-plus"></i> Register Student
+            </button>
+        </div>
+
+        <div class="mini-stats fade-up fd-1">
+            <div class="mini-stat">
+                <div class="mini-stat-icon" style="background:#dbeafe;"><i class="fas fa-users" style="color:#1d4ed8;"></i></div>
+                <div><div class="msn" id="statTotal">0</div><div class="msl">Total Students</div></div>
+            </div>
+            <div class="mini-stat">
+                <div class="mini-stat-icon" style="background:#dcfce7;"><i class="fas fa-user" style="color:#15803d;"></i></div>
+                <div><div class="msn" id="statMale">0</div><div class="msl">Male</div></div>
+            </div>
+            <div class="mini-stat">
+                <div class="mini-stat-icon" style="background:#fce7f3;"><i class="fas fa-user" style="color:#be185d;"></i></div>
+                <div><div class="msn" id="statFemale">0</div><div class="msl">Female</div></div>
+            </div>
+            <div class="mini-stat">
+                <div class="mini-stat-icon" style="background:#fef3c7;"><i class="fas fa-user-plus" style="color:#b45309;"></i></div>
+                <div><div class="msn" id="statNew">0</div><div class="msl">New This Month</div></div>
+            </div>
+        </div>
+
+        <div class="filter-bar fade-up fd-2">
+            <div class="search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" id="studentSearch" placeholder="Search by name, ID, or email…">
+            </div>
+
+            <select class="sf-select" id="studentDeptFilter" title="Filter by Department">
+                <option value="">All Departments</option>
+                </select>
+
+            <span class="filter-chip active" onclick="filterChip(this,'all')">All</span>
+            <span class="filter-chip" onclick="filterChip(this,'m')">Male</span>
+            <span class="filter-chip" onclick="filterChip(this,'f')">Female</span>
+
+            <div class="sf-count">Showing <span id="studentCountNum">0</span> students</div>
+        </div>
+
+        <div class="student-table-card shadow-sm fade-up fd-3">
+            <div class="table-responsive">
+                <table class="table mb-0 align-middle" id="studentTable">
+                    <thead>
+                        <tr>
+                            <th class="ps-4">Student</th>
+                            <th>Email</th>
+                            <th>Department</th>
+                            <th>Gender</th>
+                            <th>Enrolled</th>
+                            <th>Status</th>
+                            <th class="text-end pe-4 role-admin">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentBody">
+                        <tr><td colspan="7" class="text-center py-5 text-muted small">Loading Students...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+
+<div class="modal fade" id="addStudentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+        <form id="addStudentForm" class="modal-content">
+            <div class="modal-top">
+                <h5><span><i class="fas fa-user-plus"></i></span> Register New Student</h5>
+                <button type="button" title="Close" class="btn-close-custom" data-bs-dismiss="modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="modal-field">
+                            <label>First Name</label>
+                            <input type="text" name="fname" placeholder="John" title="First Name" required>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="modal-field">
+                            <label>Last Name</label>
+                            <input type="text" name="lname" placeholder="Doe" title="Last Name" required>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="modal-field">
+                            <label>Email Address</label>
+                            <input type="email" name="email" placeholder="johndoe@email.com" title="Email Address" required>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="modal-field">
+                            <label>Date of Birth</label>
+                            <input type="date" name="dob" title="Date of Birth" required>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="modal-field">
+                            <label>Gender</label>
+                            <select name="gender" title="Gender" required>
+                                <option value="">Select…</option>
+                                <option value="M">Male</option>
+                                <option value="F">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="modal-field">
+                            <label>Password</label>
+                            <input type="password" name="password" placeholder="Set initial password" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-check me-2"></i>Finalize Registration
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="editStudentModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+        <form id="editStudentForm" class="modal-content">
+            <div class="modal-top">
+                <h5><span><i class="fas fa-user-edit"></i></span> Edit Student</h5>
+                <button type="button" title="Close" class="btn-close-custom" data-bs-dismiss="modal"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="edit_student_id">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="modal-field">
+                            <label>First Name</label>
+                            <input type="text" title="First Name" id="edit_fname" required>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="modal-field">
+                            <label>Last Name</label>
+                            <input type="text" title="Last Name" id="edit_lname" required>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="modal-field">
+                            <label>Email Address</label>
+                            <input type="email" title="Email Address" id="edit_email" required>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="modal-field">
+                            <label>Date of Birth</label>
+                            <input type="date" title="Date of Birth" id="edit_dob">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="modal-field">
+                            <label>Gender</label>
+                            <select id="edit_gender" title="Gender" required>
+                                <option value="">Select…</option>
+                                <option value="M">Male</option>
+                                <option value="F">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-save me-2"></i>Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="../assets/js/modules/students.js"></script>
+
+</body>
+</html>

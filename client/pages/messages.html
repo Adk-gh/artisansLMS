@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMS | Direct Messages & Groups</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+    <script src="https://meet.jit.si/external_api.js"></script>
+    
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        /* All Custom UI CSS from original file */
+        *{box-sizing:border-box;}
+        body{font-family:'Sora',sans-serif;}
+
+        /* Override body/layout to integrate with shared sidebar+header */
+        body.dm-mode { background:#f0f2f7; overflow: hidden; }
+
+        /* The main wrapper now uses the same flex layout as courses.html */
+        .dm-page-wrapper { display: flex; min-height: 100vh; overflow: hidden; }
+
+        /* Sidebar container matches courses.html */
+        #sidebar-container { width: 260px; flex-shrink: 0; background-color: #1e293b; z-index: 1040; }
+
+        /* Right-side column: header + content */
+        .dm-main-col { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; height: 100vh; }
+
+        /* Header container */
+        #header-container { flex-shrink: 0; }
+
+        /* The DM content area below header */
+        .dm-content { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+
+        .hide-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        
+        /* Contacts Sidebar */
+        .contacts-sidebar{width:320px;flex-shrink:0;background:#fff;border-right:1px solid #e9ecef;display:flex;flex-direction:column;z-index:10;}
+        .contacts-tabs{display:flex;border-bottom:1px solid #e9ecef;flex-shrink:0; overflow-x:auto;}
+        .ctab{flex:1;padding:13px 4px;border:none;background:transparent;font-size:.75rem;font-weight:700;color:#94a3b8;border-bottom:2px solid transparent;transition:.2s;cursor:pointer;font-family:'Sora',sans-serif; white-space:nowrap;}
+        .ctab.active{color:#0ea5e9;border-bottom-color:#0ea5e9;}
+        
+        .contacts-search{padding:12px 14px;border-bottom:1px solid #f1f5f9;flex-shrink:0; display:flex; gap:6px;}
+        .contacts-search-inner{display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e9ecef;border-radius:10px;padding:8px 12px; flex:1; min-width: 0;}
+        .contacts-search-inner i{color:#94a3b8;font-size:.78rem;flex-shrink:0;}
+        .contacts-search-inner input{border:none;background:transparent;outline:none;font-size:.8rem;font-family:'Sora',sans-serif;color:#1e293b;width:100%;}
+        .contacts-search-inner input::placeholder{color:#94a3b8;}
+        
+        .btn-create-group { width: 36px; height: 36px; border-radius: 10px; background: #0ea5e9; color: #fff; border: none; display: none; align-items: center; justify-content: center; flex-shrink: 0; transition: .2s; }
+        .btn-create-group:hover { background: #0284c7; }
+        .btn-join-group { width: 36px; height: 36px; border-radius: 10px; background: #f59e0b; color: #fff; border: none; display: none; align-items: center; justify-content: center; flex-shrink: 0; transition: .2s; }
+        .btn-join-group:hover { background: #d97706; }
+
+        .contacts-list{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#e2e8f0 transparent;}
+        .contact-item{display:flex;align-items:center;gap:11px;padding:11px 14px;cursor:pointer;border-bottom:1px solid #f8fafc;transition:background .15s;position:relative;}
+        .contact-item:hover{background:#f8fafc;}
+        .contact-item.selected{background:#f0f9ff;border-left:3px solid #0ea5e9;}
+        .contact-item.selected .ci-name{color:#0369a1;}
+        .ci-avatar{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.82rem;color:#fff;flex-shrink:0;}
+        .ci-name{font-size:.82rem;font-weight:700;color:#1e293b;}
+        .ci-role{font-size:.68rem;color:#94a3b8;margin-top:1px;}
+        .ci-id{font-size:.62rem;color:#b0bec5;font-family:'JetBrains Mono',monospace;}
+        .req-badge{margin-left:auto;flex-shrink:0;font-size:.6rem;font-weight:700;padding:3px 8px;border-radius:10px;}
+
+        /* Chat Area */
+        .chat-area{flex:1;display:flex;flex-direction:column;background:#f8fafc;min-width:0;position:relative;}
+        .empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#94a3b8;text-align:center;padding:40px;}
+        .empty-state-icon{width:72px;height:72px;border-radius:20px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:1.8rem;color:#cbd5e1;margin-bottom:20px;}
+        .empty-state h5{font-size:.95rem;font-weight:800;color:#334155;margin-bottom:6px;}
+        .empty-state p{font-size:.78rem;margin:0;}
+
+        .profile-view{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;text-align:center;padding:40px;position:relative;}
+        .profile-avatar-lg{width:80px;height:80px;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;color:#fff;margin-bottom:16px;box-shadow:0 8px 24px rgba(0,0,0,.12);}
+        .profile-name{font-size:1.1rem;font-weight:800;color:#0f172a;margin-bottom:4px;}
+        .profile-role{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#94a3b8;margin-bottom:28px;}
+
+        /* Header */
+        .chat-header{background:#fff;padding:14px 20px;border-bottom:1px solid #e9ecef;display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:5;}
+        .chat-header-avatar{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;color:#fff;flex-shrink:0;}
+        .chat-header-name{font-size:.9rem;font-weight:700;color:#0f172a;}
+        .chat-header-status{font-size:.68rem;color:#22c55e;font-weight:700;display:flex;align-items:center;gap:4px;margin-top:2px;}
+        .chat-header-status::before{content:'';width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 2px #dcfce7;}
+        
+        .call-btn{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;border:1px solid #e9ecef;background:#f8fafc;color:#475569;cursor:pointer;transition:.2s;font-size:.82rem;flex-shrink:0;}
+        .call-btn.audio:hover{background:#22c55e;border-color:#22c55e;color:#fff;}
+        .call-btn.video:hover{background:#0ea5e9;border-color:#0ea5e9;color:#fff;}
+        .call-btn.info:hover{background:#0f172a;border-color:#0f172a;color:#fff;}
+
+        /* Notification Dot */
+        .info-notif-dot { position: absolute; top: -3px; right: -3px; width: 12px; height: 12px; border-radius: 50%; background: #ef4444; border: 2px solid #fff; display: none; }
+
+        /* Messages */
+        .messages-container{flex:1;overflow-y:auto;padding:20px 24px;scrollbar-width:thin;scrollbar-color:#e2e8f0 transparent;}
+        .msg-row{margin-bottom:14px;}
+        .msg-meta{font-size:.62rem;color:#94a3b8;margin-bottom:4px;}
+        .msg-bubble{display:inline-block;padding:10px 14px;border-radius:14px;max-width:75%;font-size:.85rem;line-height:1.5;word-break:break-word;}
+        .bubble-me{background:#0ea5e9;color:#fff;border-bottom-right-radius:4px;}
+        .bubble-them{background:#fff;color:#334155;border:1px solid #e9ecef;border-bottom-left-radius:4px;}
+
+        /* Input */
+        .chat-input-area{background:#fff;border-top:1px solid #e9ecef;padding:14px 20px;flex-shrink:0;}
+        .chat-input-wrap{display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e9ecef;border-radius:30px;padding:6px 12px;}
+        .chat-input-wrap input{flex:1;border:none;background:transparent;outline:none;font-size:.85rem;font-family:'Sora',sans-serif;color:#1e293b;min-width:0;}
+        .chat-input-wrap input::placeholder{color:#94a3b8;}
+        .icon-btn{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:none;background:transparent;color:#94a3b8;cursor:pointer;font-size:.85rem;transition:.2s;flex-shrink:0;}
+        .icon-btn:hover{color:#475569;background:#f1f5f9;}
+        .send-btn{width:34px;height:34px;border-radius:50%;background:#0ea5e9;border:none;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.8rem;transition:.2s;flex-shrink:0;}
+        .send-btn:hover{background:#0284c7;}
+        emoji-picker{position:absolute;bottom:80px;right:20px;z-index:1050;display:none;}
+
+        /* Buttons */
+        .action-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 24px;border-radius:30px;font-size:.82rem;font-weight:700;font-family:'Sora',sans-serif;border:none;cursor:pointer;transition:.2s;}
+        .action-btn-primary{background:#0ea5e9;color:#fff;}
+        .action-btn-primary:hover{background:#0284c7;}
+        .action-btn-ghost{background:transparent;color:#94a3b8;border:1px solid #e9ecef;}
+        .action-btn-danger{background:transparent;color:#ef4444;border:1px solid #fecaca;}
+        .action-btn-danger:hover{background:#fef2f2;}
+        .action-btn-success{background:#22c55e;color:#fff;}
+        .action-btn-success:hover{background:#16a34a;}
+        .action-btn-decline{background:#ef4444;color:#fff;}
+        .action-btn-decline:hover{background:#dc2626;}
+
+        /* Scrollbars */
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        /* Jitsi overlay */
+        .call-overlay{position:fixed;inset:0;background:rgba(10,14,23,.96);--backdrop-filter:blur(12px);z-index:9999;display:none;flex-direction:column;}
+        .call-overlay.active{display:flex;}
+        .call-overlay-header{position:absolute;top:20px;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:0 24px;z-index:1;}
+        .call-overlay-header h6{color:#fff;font-weight:700;margin:0;}
+        .call-end-btn{background:#ef4444;border:none;color:#fff;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;transition:.2s;}
+        .call-end-btn:hover{background:#dc2626;}
+
+        /* Incoming call modal */
+        .incoming-backdrop{position:fixed;inset:0;background:rgba(10,14,23,.65);--backdrop-filter:blur(8px);z-index:10000;display:none;align-items:center;justify-content:center;}
+        .incoming-backdrop.active{display:flex!important;}
+        .incoming-card{background:#fff;border-radius:24px;width:340px;max-width:90vw;padding:36px 28px 28px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.3);position:relative;overflow:hidden;animation:slideUp .35s cubic-bezier(.34,1.56,.64,1) both;}
+        .incoming-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#0ea5e9,#22c55e);}
+        .incoming-card.audio::before{background:linear-gradient(90deg,#22c55e,#0ea5e9);}
+        @keyframes slideUp{from{opacity:0;transform:translateY(40px) scale(.95);}to{opacity:1;transform:translateY(0) scale(1);}}
+
+        .ring-wrap{position:relative;width:88px;height:88px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;}
+        .ring-wrap::before,.ring-wrap::after{content:'';position:absolute;inset:0;border-radius:50%;border:2px solid #0ea5e9;opacity:0;animation:ringPulse 2s ease-out infinite;}
+        .ring-wrap::after{animation-delay:.7s;}
+        .incoming-card.audio .ring-wrap::before,.incoming-card.audio .ring-wrap::after{border-color:#22c55e;}
+        @keyframes ringPulse{0%{transform:scale(.8);opacity:.6;}100%{transform:scale(1.7);opacity:0;}}
+
+        .caller-avatar{width:88px;height:88px;border-radius:24px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;font-weight:800;color:#fff;position:relative;z-index:1;box-shadow:0 8px 24px rgba(0,0,0,.15);}
+        .call-type-badge{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:4px 12px;border-radius:20px;display:inline-flex;align-items:center;gap:5px;margin-bottom:16px;}
+        .call-type-badge.video{background:#e0f2fe;color:#0369a1;}
+        .call-type-badge.audio{background:#dcfce7;color:#15803d;}
+        .caller-name{font-size:1.2rem;font-weight:800;color:#0f172a;margin-bottom:4px;}
+        .caller-sub{font-size:.75rem;color:#94a3b8;margin-bottom:28px;}
+        .call-btns{display:flex;gap:24px;justify-content:center;}
+        .call-btns .cb-wrap{text-align:center;}
+        .decline-btn,.accept-btn{width:62px;height:62px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;border:none;cursor:pointer;transition:.2s;}
+        .decline-btn{background:#fef2f2;color:#ef4444;box-shadow:0 4px 12px rgba(239,68,68,.2);}
+        .decline-btn:hover{background:#ef4444;color:#fff;transform:scale(1.06);}
+        .accept-btn{background:#f0fdf4;color:#22c55e;box-shadow:0 4px 12px rgba(34,197,94,.2);animation:acceptPulse 1.2s ease-in-out infinite;}
+        .accept-btn:hover{background:#22c55e;color:#fff;transform:scale(1.06);animation:none;}
+        @keyframes acceptPulse{0%,100%{box-shadow:0 4px 12px rgba(34,197,94,.2);}50%{box-shadow:0 4px 22px rgba(34,197,94,.5);}}
+        .cb-label{font-size:.62rem;font-weight:700;color:#94a3b8;margin-top:8px;text-transform:uppercase;letter-spacing:.5px;}
+
+        /* Mobile overrides */
+        @media(max-width:768px){
+            #sidebar-container { display: none; }
+            .contacts-sidebar{position:absolute;width:100%;height:100%;transition:transform .3s;}
+            .contacts-sidebar.hidden{transform:translateX(-100%);}
+            .btn-back{display:flex!important;}
+            
+            .chat-header { padding: 10px 12px; gap: 8px; }
+            .chat-header-avatar { width: 34px; height: 34px; font-size: .75rem; }
+            .chat-header-name { font-size: .85rem; }
+            .chat-header-status { font-size: .6rem; }
+            
+            .call-btn { width: 32px; height: 32px; font-size: .75rem; }
+            .btn-back { padding: 6px; width: 32px; height: 32px; margin-right: 0 !important; justify-content: center; }
+        }
+        .btn-back{display:none;}
+    </style>
+</head>
+<body class="dm-mode">
+    
+    <div class="dm-page-wrapper">
+
+        <!-- Shared Sidebar (same as courses.html) -->
+        <div id="sidebar-container"></div>
+
+        <!-- Main column: shared header + DM content -->
+        <div class="dm-main-col">
+
+            <!-- Shared Header (same as courses.html) -->
+            <div id="header-container"></div>
+
+            <!-- DM Content: contacts sidebar + chat area -->
+            <div class="dm-content">
+
+                <div class="contacts-sidebar" id="contactsSidebar">
+                    <div class="contacts-tabs hide-scroll">
+                        <button class="ctab active" id="tab-contacts"><i class="fas fa-user-check me-1"></i> Contacts</button>
+                        <button class="ctab" id="tab-groups"><i class="fas fa-users me-1"></i> Groups</button>
+                        <button class="ctab" id="tab-requests"><i class="fas fa-user-clock me-1"></i> Requests</button>
+                    </div>
+                    <div class="contacts-search">
+                        <div class="contacts-search-inner">
+                            <i class="fas fa-search"></i>
+                            <input type="text" id="searchInput" placeholder="Search…">
+                        </div>
+                        <button class="btn-create-group" id="btnCreateGroup" data-bs-toggle="modal" data-bs-target="#createGroupModal" title="Create Group">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                        <button class="btn-join-group" id="btnJoinGroup" data-bs-toggle="modal" data-bs-target="#joinGroupModal" title="Join Group">
+                            <i class="fas fa-sign-in-alt"></i>
+                        </button>
+                    </div>
+                    <div class="contacts-list custom-scroll" id="contactsList"></div>
+                </div>
+
+                <div class="chat-area">
+                    <div class="empty-state" id="stateEmpty">
+                        <div class="empty-state-icon"><i class="fas fa-comments"></i></div>
+                        <h5>Your Messages</h5>
+                        <p>Select a contact or search for someone to start a conversation.</p>
+                    </div>
+
+                    <div class="profile-view d-none" id="stateProfile">
+                        <button class="btn-back position-absolute top-0 start-0 m-3 icon-btn" id="profileBackBtn"
+                                style="width:auto;height:auto;padding:8px 14px;border-radius:8px;background:#f1f5f9;color:#475569;">
+                            <i class="fas fa-arrow-left me-1"></i> Back
+                        </button>
+                        <div class="profile-avatar-lg" id="profileAvatar">?</div>
+                        <div class="profile-name" id="profileName">Name</div>
+                        <div class="profile-role" id="profileRole">Role</div>
+                        <div id="profileActionArea" class="d-flex flex-wrap gap-2 justify-content-center"></div>
+                    </div>
+
+                    <div class="d-none" id="stateChat" style="flex:1;min-height:0;display:none!important;flex-direction:column;">
+                        <div class="chat-header shadow-sm">
+                            <button class="btn-back icon-btn me-1" id="chatBackBtn"><i class="fas fa-arrow-left"></i></button>
+                            <div class="chat-header-avatar" id="chatAvatar">?</div>
+                            <div style="flex:1; min-width:0;">
+                                <div class="chat-header-name text-truncate" id="chatName">Name</div>
+                                <div class="chat-header-status text-truncate" id="chatStatus">Connected</div>
+                            </div>
+                            <div id="chatActionBtns" class="d-flex gap-1 gap-sm-2 align-items-center flex-shrink-0">
+                                <button class="call-btn audio" id="btnAudioCall" title="Audio Call"><i class="fas fa-phone"></i></button>
+                                <button class="call-btn video" id="btnVideoCall" title="Video Call"><i class="fas fa-video"></i></button>
+                                
+                                <button class="btn btn-sm btn-light py-1 px-2 shadow-sm" id="btnCopyGroupCode" style="display:none; font-size:0.75rem; border-radius: 8px; font-weight: 600;">
+                                    <i class="fas fa-copy text-primary"></i> <span class="d-none d-sm-inline ms-1">Code</span>
+                                </button>
+                                <div style="position:relative; display:none;" id="groupInfoBtnWrap">
+                                    <button class="call-btn info" id="btnGroupInfo" data-bs-toggle="modal" data-bs-target="#groupDetailsModal" title="Manage Group">
+                                        <i class="fas fa-info-circle"></i>
+                                    </button>
+                                    <span class="info-notif-dot" id="infoNotifDot"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="messages-container custom-scroll" id="chatMessages"></div>
+                        <div class="chat-input-area position-relative">
+                            <input type="file" id="fileUploadInput" class="d-none">
+                            <emoji-picker class="light"></emoji-picker>
+                            <div class="chat-input-wrap">
+                                <button class="icon-btn" id="attachBtn" title="Attach File"><i class="fas fa-paperclip"></i></button>
+                                <button class="icon-btn" id="emojiBtn"><i class="far fa-smile"></i></button>
+                                <input type="text" id="msgInput" placeholder="Type a message…">
+                                <button class="send-btn" id="sendBtn"><i class="fas fa-paper-plane"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- /.dm-content -->
+        </div><!-- /.dm-main-col -->
+    </div><!-- /.dm-page-wrapper -->
+
+    <!-- Modals -->
+    <div class="modal fade" id="createGroupModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+            <div class="modal-content border-0" style="border-radius:20px;">
+                <div class="modal-header border-0 pb-0">
+                    <h6 class="modal-title fw-bold">Create Group Chat</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="newGroupName" class="form-control bg-light border-0 py-2 px-3" placeholder="Group Name (e.g., Study Group)">
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-primary w-100 rounded-3 fw-bold" id="confirmCreateGroup">Create Group</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="joinGroupModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+            <div class="modal-content border-0" style="border-radius:20px;">
+                <div class="modal-header border-0 pb-0">
+                    <h6 class="modal-title fw-bold">Join Group Chat</h6>
+                    <button type="button" title="Close" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="joinGroupCode" class="form-control bg-light border-0 py-2 px-3" placeholder="Enter Group Code">
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-warning text-white w-100 rounded-3 fw-bold" id="confirmJoinGroup">Request to Join</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="groupDetailsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:420px;">
+            <div class="modal-content border-0" style="border-radius:24px; background:#f8fafc; overflow:hidden;">
+                <div class="modal-header border-0 pb-0 position-relative" style="z-index: 10;">
+                    <button type="button" class="btn-close position-absolute top-0 end-0 m-3 bg-white shadow-sm" title="Close" style="border-radius:50%; padding:.5rem;" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body px-4 pb-4 pt-0">
+                    <div class="text-center mb-4 mt-n3">
+                        <div id="modalGroupAvatar" style="width:80px; height:80px; border-radius:24px; background:linear-gradient(135deg, #8b5cf6, #3b82f6); color:#fff; display:flex; align-items:center; justify-content:center; font-size:2.2rem; font-weight:800; margin:0 auto 16px; box-shadow:0 10px 25px rgba(139,92,246,.3);">GC</div>
+                        <h4 id="modalGroupName" class="fw-bold text-dark mb-1" style="font-size:1.25rem;">Group Name</h4>
+                        <div class="d-inline-flex align-items-center gap-2 bg-primary-subtle text-primary rounded-pill px-3 py-1 mt-1" id="modalGroupCode" style="cursor:pointer; font-size:.75rem; font-weight:700;" title="Click to copy code">
+                            <span>#CODE</span> <i class="fas fa-copy opacity-75"></i>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-3 mb-4">
+                        <div class="flex-fill bg-white border border-light-subtle rounded-4 p-3 text-center shadow-sm">
+                            <div class="fs-4 fw-bold text-dark" id="modalMemberCount">0</div>
+                            <div style="font-size:0.65rem; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:.5px;">Members</div>
+                        </div>
+                        <div class="flex-fill bg-white border border-light-subtle rounded-4 p-3 text-center shadow-sm" id="modalReqStatBox" style="display:none;">
+                            <div class="fs-4 fw-bold text-dark" id="modalReqCount">0</div>
+                            <div style="font-size:0.65rem; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:.5px;">Requests</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="fas fa-crown text-warning" style="font-size:.8rem;"></i>
+                            <h6 style="font-size:.7rem; font-weight:800; text-transform:uppercase; color:#94a3b8; letter-spacing:1px; margin:0;">Admin</h6>
+                        </div>
+                        <div class="d-flex align-items-center gap-3 bg-white p-3 border border-light-subtle rounded-4 shadow-sm">
+                            <div id="modalAdminAvatar" style="width:40px; height:40px; border-radius:12px; background:#f59e0b; color:#fff; display:flex; align-items:center; justify-content:center; font-size:.9rem; font-weight:800;">A</div>
+                            <div>
+                                <div id="modalAdminName" style="font-size:.85rem; font-weight:700; color:#1e293b;">Admin Name</div>
+                                <div style="font-size:.7rem; color:#94a3b8; font-weight:500;">Group Creator</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="modalRequestsSection" class="mb-4" style="display:none;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fas fa-user-plus text-warning" style="font-size:.8rem;"></i>
+                                <h6 style="font-size:.7rem; font-weight:800; text-transform:uppercase; color:#94a3b8; letter-spacing:1px; margin:0;">Join Requests</h6>
+                            </div>
+                            <span class="badge bg-warning text-dark rounded-pill" id="modalReqBadge">0</span>
+                        </div>
+                        <div id="modalRequestsList" class="d-flex flex-column gap-2"></div>
+                        <div id="modalRequestsEmpty" class="text-center text-muted small py-3 bg-white border border-light-subtle rounded-4 shadow-sm" style="display:none;">No pending requests.</div>
+                    </div>
+
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fas fa-users text-info" style="font-size:.8rem;"></i>
+                                <h6 style="font-size:.7rem; font-weight:800; text-transform:uppercase; color:#94a3b8; letter-spacing:1px; margin:0;">Members</h6>
+                            </div>
+                        </div>
+                        <div class="position-relative mb-3">
+                            <i class="fas fa-search position-absolute text-muted" style="left:12px; top:50%; transform:translateY(-50%); font-size:.8rem;"></i>
+                            <input type="text" id="modalMemberSearch" class="form-control border-0 shadow-sm" placeholder="Search members..." style="background:#fff; border-radius:12px; padding:10px 10px 10px 34px; font-size:.85rem;" oninput="window.filterModalMembers(this.value)">
+                        </div>
+                        <div id="modalMembersList" class="d-flex flex-column gap-2 custom-scroll" style="max-height: 200px; overflow-y: auto;"></div>
+                    </div>
+                    
+                    <div id="modalDangerSection" class="mt-4 pt-4 border-top" style="display:none; border-color:#e2e8f0;">
+                        <button class="btn btn-danger w-100 rounded-pill fw-bold py-2 shadow-sm" onclick="window.deleteCurrentGroup()">
+                            <i class="fas fa-trash-alt me-2"></i>Delete Group
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call Overlay -->
+    <div class="call-overlay" id="callOverlay">
+        <div class="call-overlay-header">
+            <h6 id="callOverlayTitle">Call</h6>
+            <button class="call-end-btn" id="btnEndCall"><i class="fas fa-phone-slash"></i></button>
+        </div>
+        <div id="jitsiContainer" style="width:100%;height:100%;padding-top:64px;"></div>
+    </div>
+
+    <!-- Incoming Call -->
+    <div class="incoming-backdrop" id="incomingBackdrop">
+        <div class="incoming-card" id="incomingCard">
+            <span class="call-type-badge video" id="incomingBadge"><i class="fas fa-video"></i> Video Call</span>
+            <div class="ring-wrap">
+                <div class="caller-avatar" id="incomingAvatar">?</div>
+            </div>
+            <div class="caller-name" id="incomingName">Caller</div>
+            <div class="caller-sub" id="incomingRole">Role</div>
+            <div class="call-btns">
+                <div class="cb-wrap">
+                    <button class="decline-btn" id="btnDecline"><i class="fas fa-phone-slash"></i></button>
+                    <div class="cb-label">Decline</div>
+                </div>
+                <div class="cb-wrap">
+                    <button class="accept-btn" id="btnAccept"><i class="fas fa-phone"></i></button>
+                    <div class="cb-label">Accept</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script type="module" src="../assets/js/modules/messages.js"></script>
+</body>
+</html>

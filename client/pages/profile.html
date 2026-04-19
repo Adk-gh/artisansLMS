@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMS | My Profile</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ── Absolute Essentials Not Covered by Bootstrap ── */
+        body { font-family: 'Sora', sans-serif; background-color: #f8fafc; }
+        
+        /* Sidebar Offset */
+        @media (min-width: 768px) { #content { margin-left: 260px !important; transition: margin-left .28s; } }
+
+        /* ── Analytics Matching Theme ── */
+        .player-card { 
+            background: #0f172a; 
+            color: white; 
+            border-radius: 20px; 
+            overflow: hidden; 
+            border: none;
+            position: relative;
+        }
+        .player-card::after { 
+            content: ''; 
+            position: absolute; 
+            top: 0; right: 0; 
+            width: 400px; height: 100%; 
+            background: url('https://www.transparenttextures.com/patterns/cubes.png'); 
+            opacity: .08; 
+            pointer-events: none;
+        }
+
+        /* Glassmorphism Badge */
+        .glass-badge {
+            --backdrop-filter: blur(4px);
+            letter-spacing: 0.5px;
+        }
+
+        /* Hover Lift Animation for Cards */
+        .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important; }
+    </style>
+</head>
+<body>
+    <div class="d-flex min-vh-100">
+        
+        <div id="sidebar-container"></div>
+        
+        <div id="content" class="flex-grow-1 w-100">
+            <div id="header-container"></div>
+
+            <main class="container-fluid p-3 p-md-4 p-lg-5">
+                <div class="row g-4">
+
+                    <div class="col-12 col-lg-4">
+
+                        <div class="card player-card shadow-lg mb-4">
+                            <div class="card-body p-4 p-md-5 position-relative z-1">
+                                <div class="d-flex align-items-center gap-4">
+                                    <img src="https://ui-avatars.com/api/?name=User&background=0ea5e9&color=fff&size=128" 
+                                         class="rounded-circle border border-4 border-light border-opacity-25 shadow-sm flex-shrink-0" 
+                                         id="heroAvatar" alt="Avatar" width="90" height="90">
+                                    <div>
+                                        <h5 class="fw-bold mb-1 text-white" id="heroFullName">Loading...</h5>
+                                        <span class="badge bg-white bg-opacity-10 border border-white border-opacity-25 text-white rounded-pill px-3 py-1 mt-1 text-uppercase glass-badge" 
+                                              id="heroRoleBadge">...</span>
+                                        <div class="mt-2 text-white-50 small fw-semibold" id="heroEmail"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3" id="statsContainer">
+                            <div class="text-center w-100 text-muted small py-4">
+                                <div class="spinner-border spinner-border-sm mb-2 text-primary"></div><br>Loading stats...
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="col-12 col-lg-8">
+
+                        <div class="card border-0 rounded-4 shadow-sm mb-4 bg-white hover-lift">
+                            <div class="card-header bg-light border-bottom p-4 d-flex align-items-center gap-2">
+                                <i class="fas fa-user-edit text-primary fs-5"></i>
+                                <h6 class="fw-bold m-0 text-dark">Edit Profile</h6>
+                            </div>
+                            <div class="card-body p-4">
+                                <form id="updateProfileForm">
+                                    <div class="row g-3">
+                                        <div class="col-sm-6">
+                                            <label class="form-label small fw-bold text-muted text-uppercase">First Name</label>
+                                            <input type="text" title="First Name" id="prof_fname" class="form-control bg-light border-light-subtle rounded-3 py-2" required>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label class="form-label small fw-bold text-muted text-uppercase">Last Name</label>
+                                            <input type="text" title="Last Name" id="prof_lname" class="form-control bg-light border-light-subtle rounded-3 py-2" required>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label small fw-bold text-muted text-uppercase">Email Address</label>
+                                            <input type="email" title="Email Address" id="prof_email" class="form-control bg-light border-light-subtle rounded-3 py-2">
+                                        </div>
+                                        <div class="col-12 pt-2">
+                                            <button type="submit" class="btn btn-primary fw-bold px-5 rounded-pill shadow-sm py-2">
+                                                <i class="fas fa-save me-2"></i>Save Changes
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="card border-0 rounded-4 shadow-sm bg-white hover-lift">
+                            <div class="card-header bg-light border-bottom p-4 d-flex align-items-center gap-2">
+                                <i class="fas fa-lock text-warning fs-5"></i>
+                                <h6 class="fw-bold m-0 text-dark">Change Password</h6>
+                            </div>
+                            <div class="card-body p-4">
+                                <form id="changePasswordForm">
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label class="form-label small fw-bold text-muted text-uppercase">Current Password</label>
+                                            <div class="position-relative">
+                                                <input type="password" id="cur_pw" class="form-control bg-light border-light-subtle rounded-3 py-2 pe-5" required placeholder="Enter your current password">
+                                                <button type="button" title="Toggle password visibility" class="btn btn-link position-absolute end-0 top-50 translate-middle-y text-muted pe-3 border-0 text-decoration-none" onclick="togglePw('cur_pw', this)">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label class="form-label small fw-bold text-muted text-uppercase">New Password</label>
+                                            <div class="position-relative">
+                                                <input type="password" id="new_pw" class="form-control bg-light border-light-subtle rounded-3 py-2 pe-5" required placeholder="New password">
+                                                <button type="button" title="Toggle password visibility" class="btn btn-link position-absolute end-0 top-50 translate-middle-y text-muted pe-3 border-0 text-decoration-none" onclick="togglePw('new_pw', this)">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label class="form-label small fw-bold text-muted text-uppercase">Confirm New Password</label>
+                                            <div class="position-relative">
+                                                <input type="password" id="cfm_pw" class="form-control bg-light border-light-subtle rounded-3 py-2 pe-5" required placeholder="Confirm new password">
+                                                <button type="button" title="Toggle password visibility" class="btn btn-link position-absolute end-0 top-50 translate-middle-y text-muted pe-3 border-0 text-decoration-none" onclick="togglePw('cfm_pw', this)">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-12 pt-2">
+                                            <button type="submit" class="btn btn-warning fw-bold px-5 rounded-pill shadow-sm py-2 text-dark">
+                                                <i class="fas fa-key me-2"></i>Update Password
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $("#sidebar-container").load("../components/sidebar.html");
+            $("#header-container").load("../components/header.html", function(res, status) {
+                if (status !== 'error' && typeof initHeader === 'function') {
+                    initHeader();
+                }
+            });
+        });
+
+        // Inline toggle script for password visibility
+        function togglePw(id, btn) {
+            const input = document.getElementById(id);
+            const icon  = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+    </script>
+    <script src="/artisansLMS/client/assets/js/app.js"></script>
+    <script src="../assets/js/modules/profile.js"></script>
+</body>
+</html>

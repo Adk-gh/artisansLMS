@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMS | Course Materials</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/artisansLMS/client/assets/css/style.css">
+    <style>
+        /* ── Absolute Essentials Not Covered by Bootstrap ── */
+        body { font-family: 'Sora', sans-serif; background-color: #f8fafc; }
+        
+        /* Sidebar Offset */
+        @media (min-width: 768px) { #content { margin-left: 260px !important; transition: margin-left .28s; } }
+
+        /* Hover Lift Animation for Cards */
+        .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important; }
+
+        /* Search Box Overrides */
+        .search-wrap { position: relative; max-width: 400px; width: 100%; }
+        .search-wrap i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+        .search-wrap input { padding-left: 44px; border-radius: 12px; }
+
+        /* Upload & File Interactive Elements */
+        .file-link { cursor: pointer; transition: color 0.2s ease; word-break: break-all; }
+        .file-link:hover { color: #0ea5e9 !important; }
+        
+        .drop-zone { border: 2px dashed #cbd5e1; border-radius: 12px; transition: all 0.2s ease; cursor: pointer; }
+        .drop-zone:hover, .drop-zone.dragover { border-color: #0ea5e9; background-color: #f0f9ff !important; }
+        
+        #fileViewerFrame { width: 100%; height: 75vh; min-height: 500px; border: none; }
+    </style>
+</head>
+<body>
+
+    <div class="d-flex min-vh-100">
+        
+        <div id="sidebar-container"></div>
+
+        <div id="content" class="flex-grow-1 w-100">
+            
+            <div id="header-container"></div>
+
+            <main class="container-fluid p-3 p-md-4 p-lg-5">
+
+                <div id="alertsContainer"></div>
+
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                    <div>
+                        <h4 class="fw-bold m-0 text-dark">Course Materials</h4>
+                        <p class="text-muted small mb-0">Upload and organize resources for your assigned classes.</p>
+                    </div>
+                </div>
+
+                <div class="mb-4 mb-md-5">
+                    <div class="search-wrap">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="courseSearch" class="form-control border-light-subtle shadow-sm bg-white py-2"
+                               placeholder="Search courses..." oninput="filterCourses()">
+                    </div>
+                </div>
+
+                <div class="row g-4" id="courseGrid">
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <div class="text-muted small fw-bold mt-2">Loading your courses...</div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <div class="modal fade" id="viewFileModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg rounded-4 bg-dark">
+                <div class="modal-header border-0 py-3">
+                    <h6 class="modal-title fw-bold text-white" id="viewFileName">File Preview</h6>
+                    <button type="button" title="Close" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0 bg-white rounded-bottom-4 position-relative">
+                    <iframe title="File Viewer" id="fileViewerFrame" src=""></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            $("#sidebar-container").load("../components/sidebar.html");
+            $("#header-container").load("../components/header.html", function(res, status) {
+                if (status !== 'error' && typeof initHeader === 'function') {
+                    initHeader();
+                }
+            });
+        });
+    </script>
+    
+    <script src="/artisansLMS/client/assets/js/app.js"></script>
+    <script src="../assets/js/modules/instructor_courses.js"></script>
+</body>
+</html>
