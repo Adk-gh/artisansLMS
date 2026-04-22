@@ -119,17 +119,14 @@ $(document).ready(function() {
         if (status !== 'error') initHeader();
     });
 
-    const API_URL       = '../../backend/endpoints/enrollments.php';
-    let enrollModalObj  = null;
-    let approveModalObj = null;
-    let rejectModalObj  = null;
+    const API_URL      = '../../backend/endpoints/enrollments.php';
+    let enrollModalObj = null;
+    let rejectModalObj = null;
 
-    const enrollEl  = document.getElementById('enrollModal');
-    const approveEl = document.getElementById('approveModal');
-    const rejectEl  = document.getElementById('rejectModal');
-    if (enrollEl)  enrollModalObj  = new bootstrap.Modal(enrollEl);
-    if (approveEl) approveModalObj = new bootstrap.Modal(approveEl);
-    if (rejectEl)  rejectModalObj  = new bootstrap.Modal(rejectEl);
+    const enrollEl = document.getElementById('enrollModal');
+    const rejectEl = document.getElementById('rejectModal');
+    if (enrollEl) enrollModalObj = new bootstrap.Modal(enrollEl);
+    if (rejectEl) rejectModalObj = new bootstrap.Modal(rejectEl);
 
     // ── Initial load ─────────────────────────────────────────────────────────
     fetchEnrollments();
@@ -138,19 +135,16 @@ $(document).ready(function() {
     // ── Event listeners ──────────────────────────────────────────────────────
     $('#enrollSearch, #enrollClassFilter, #enrollStatusFilter').on('input change', filterEnrollment);
     $('#pendingSearch').on('input', filterPending);
-    
-    // NEW: Modal Filters
     $('#modalClassSearch').on('input', filterModalClasses);
     $('#modalClassDept').on('change', filterModalClasses);
-
     $('#enrollForm').on('submit', handleEnrollmentSubmit);
 
-    // NEW: Student Select Change Logic
+    // Student select change
     $('#studentSelect').on('change', function() {
         const sid = $(this).val();
         const $helperText = $('#enrollmentHelperText');
-        const $filterRow = $('#modalClassFilters');
-        const $wrappers = $('.class-check-wrapper');
+        const $filterRow  = $('#modalClassFilters');
+        const $wrappers   = $('.class-check-wrapper');
         const $checkboxes = $('.class-checkbox');
 
         $('#modalClassSearch').val('');
@@ -167,31 +161,9 @@ $(document).ready(function() {
 
         $filterRow.attr('style', 'display: flex !important');
         $helperText.addClass('d-none');
-        $checkboxes.prop('checked', false); 
-        
+        $checkboxes.prop('checked', false);
         buildCheckboxList(sid);
         filterModalClasses();
-    });
-
-    // Approve confirm
-    $('#confirmApproveBtn').on('click', function() {
-        const eid = $('#approve_enrollment_id').val();
-        if (!eid) return;
-        $.ajax({
-            url: `${API_URL}?action=approve`,
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ enrollment_id: parseInt(eid) }),
-            dataType: 'json',
-            success: function(json) {
-                showToast(json.message, json.status === 'success' ? 'success' : 'error');
-                if (json.status === 'success') {
-                    if (approveModalObj) approveModalObj.hide();
-                    fetchEnrollments();
-                    fetchFormData();
-                }
-            }
-        });
     });
 
     // Reject confirm
@@ -228,10 +200,7 @@ $(document).ready(function() {
                         student.classes.forEach(cls => {
                             if (cls.status === 'Pending Finance') {
                                 if (!pendingByStudent[student.student_id]) {
-                                    pendingByStudent[student.student_id] = {
-                                        student,
-                                        classes: []
-                                    };
+                                    pendingByStudent[student.student_id] = { student, classes: [] };
                                 }
                                 pendingByStudent[student.student_id].classes.push(cls);
                             }
@@ -269,7 +238,7 @@ $(document).ready(function() {
                     _enrolledData = json.enrollments;
                     _allClasses   = json.classes;
                     populateStudentSelect(json.students);
-                    populateClassCheckboxes(); // Builds hidden checkboxes and dept filter
+                    populateClassCheckboxes();
                 }
             }
         });
@@ -299,7 +268,7 @@ $(document).ready(function() {
                     showToast(json.message, 'success');
                     if (enrollModalObj) enrollModalObj.hide();
                     $('#enrollForm')[0].reset();
-                    $('#studentSelect').trigger('change'); // reset form UI state
+                    $('#studentSelect').trigger('change');
                     fetchEnrollments();
                     fetchFormData();
                     switchTab('pending');
@@ -329,15 +298,6 @@ $(document).ready(function() {
         });
     };
 
-    window.openApproveModal = function(eid, studentName, pendingCount) {
-        $('#approve_enrollment_id').val(eid);
-        $('#approveStudentInfo').text(studentName);
-        $('#approveCourseInfo').text(
-            `${pendingCount} pending enrollment${pendingCount > 1 ? 's' : ''} will be approved and dated today.`
-        );
-        if (approveModalObj) approveModalObj.show();
-    };
-
     window.openRejectModal = function(eid, studentName, courseCode, semester, year) {
         $('#reject_enrollment_id').val(eid);
         $('#rejectStudentInfo').text(studentName);
@@ -355,20 +315,18 @@ $(document).ready(function() {
         $('#studentSelect').html(html);
     }
 
-    // Pre-builds all class checkboxes (hidden) and populates the Dept dropdown
     function populateClassCheckboxes() {
         const $list = $('#checkboxList');
         let cHtml = '';
-        let depts = {};
+        let depts  = {};
 
         _allClasses.forEach(c => {
-            const deptId = c.department_id || '';
-            const deptName = c.dept_name || 'Unassigned';
-            
+            const deptId   = c.department_id || '';
+            const deptName = c.dept_name     || 'Unassigned';
             if (deptId) depts[deptId] = deptName;
 
             cHtml += `
-                <label class="class-check-item class-check-wrapper d-none" 
+                <label class="class-check-item class-check-wrapper d-none"
                        data-class-id="${c.class_id}"
                        data-name="${(c.name + ' ' + c.course_code + ' ' + deptName).toLowerCase()}"
                        data-dept="${deptId}">
@@ -379,7 +337,7 @@ $(document).ready(function() {
                     </div>
                 </label>`;
         });
-        
+
         $list.html(cHtml);
 
         let dHtml = '<option value="">All Depts</option>';
@@ -387,19 +345,17 @@ $(document).ready(function() {
             dHtml += `<option value="${id}">${depts[id]}</option>`;
         }
         $('#modalClassDept').html(dHtml);
-        
+
         $list.off('change').on('change', '.class-checkbox', function() {
-            const checked = $list.find('.class-checkbox:checked').length;
-            const $counter = $('#selectedCount');
+            const checked   = $list.find('.class-checkbox:checked').length;
+            const $counter  = $('#selectedCount');
             if (checked > 0) $counter.show().find('span').text(checked);
             else             $counter.hide();
         });
     }
 
-    // We no longer build DOM here, we just use this to trigger the count/state reset
     function buildCheckboxList(sid) {
-        const $counter = $('#selectedCount');
-        $counter.hide();
+        $('#selectedCount').hide();
     }
 
     function renderTable(groupedData, archivesData) {
@@ -434,12 +390,20 @@ $(document).ready(function() {
                 const safeStudentName = (student.name || '').replace(/'/g, "\\'");
                 const safeCourseCode  = (cls.course_code || '').replace(/'/g, "\\'");
 
-                const actionBtns = cls.status === 'Approved'
-                    ? `<button type="button" class="btn-drop"
-                           onclick="handleDrop(${cls.enrollment_id},'${safeStudentName}','${safeCourseCode}')">
-                           <i class="fas fa-archive"></i> Drop
-                       </button>`
-                    : '';
+                // Only Approved enrollments can be dropped.
+                // Pending Finance enrollments are rejected here by admin; approval is Finance's job.
+                let actionBtns = '';
+                if (cls.status === 'Approved') {
+                    actionBtns = `<button type="button" class="btn-drop"
+                        onclick="handleDrop(${cls.enrollment_id},'${safeStudentName}','${safeCourseCode}')">
+                        <i class="fas fa-archive"></i> Drop
+                    </button>`;
+                } else if (cls.status === 'Pending Finance') {
+                    actionBtns = `<button type="button" class="btn-reject"
+                        onclick="openRejectModal(${cls.enrollment_id},'${safeStudentName}','${safeCourseCode}','${cls.semester}','${cls.year}')">
+                        <i class="fas fa-times"></i> Reject
+                    </button>`;
+                }
 
                 classesHtml += `
                 <tr>
@@ -556,8 +520,7 @@ $(document).ready(function() {
 
         _pendingData.forEach(({ student, classes }) => {
             const safeStudentName = student.name.replace(/'/g, "\\'");
-            const firstEid = classes[0].enrollment_id;
-            const pendingCount = classes.length;
+            const pendingCount    = classes.length;
 
             const submittedDate = classes
                 .map(c => c.enroll_date ? new Date(c.enroll_date) : null)
@@ -568,15 +531,15 @@ $(document).ready(function() {
                 : '—';
 
             let courseListHtml = classes.map(cls => `
-                <div class="d-flex align-items-center gap-2 flex-wrap py-1" style="border-bottom:1px solid #fde68a;">
+                <div class="d-flex align-items-center gap-2 flex-wrap py-2" style="border-bottom:1px solid #fde68a;">
                     <span class="badge bg-info-subtle text-info border border-info-subtle" style="font-size:.68rem;">${cls.course_code}</span>
                     <span class="small fw-medium text-dark">${cls.course_name}</span>
                     <span class="text-muted small">— ${cls.semester} ${cls.year}</span>
                     <span class="text-muted small ms-auto">Prof. ${cls.prof}</span>
                     <button class="btn-reject ms-1"
                         onclick="openRejectModal(${cls.enrollment_id},'${safeStudentName}','${cls.course_code.replace(/'/g,"\\'")}','${cls.semester}','${cls.year}')"
-                        title="Reject this course only">
-                        <i class="fas fa-times"></i>
+                        title="Reject this course">
+                        <i class="fas fa-times"></i> Reject
                     </button>
                 </div>
             `).join('');
@@ -603,10 +566,11 @@ $(document).ready(function() {
                                 <i class="fas fa-clock" style="font-size:.6rem;"></i>
                                 ${pendingCount} Pending
                             </span>
-                            <button class="btn-approve"
-                                onclick="openApproveModal(${firstEid},'${safeStudentName}',${pendingCount})">
-                                <i class="fas fa-check-circle me-1"></i> Approve All
-                            </button>
+                            <!-- Approval is handled by the Finance system via the Tuition API -->
+                            <span class="finance-notice">
+                                <i class="fas fa-university" style="font-size:.6rem;"></i>
+                                Awaiting Finance
+                            </span>
                         </div>
                     </div>
                     <div class="px-4 py-2">

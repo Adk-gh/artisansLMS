@@ -148,38 +148,10 @@ switch ($action) {
         }
         break;
 
-    case 'approve':
-    $input = json_decode(file_get_contents('php://input'), true);
-    $eid   = (int)($input['enrollment_id'] ?? 0);
-
-    if (!$eid) {
-        json_response(["status" => "error", "message" => "Invalid enrollment ID."], 400);
-    }
-
-    // Get the student_id from the clicked enrollment
-    $row = $conn->query("SELECT student_id FROM enrollments WHERE enrollment_id = $eid")->fetch_assoc();
-
-    if (!$row) {
-        json_response(["status" => "error", "message" => "Enrollment not found."], 404);
-    }
-
-    $student_id = (int)$row['student_id'];
-
-    // Approve ALL pending enrollments for that student
-    $stmt = $conn->prepare(
-        "UPDATE enrollments 
-         SET status = 'Approved', enroll_date = CURDATE()
-         WHERE student_id = ? AND status = 'Pending Finance'"
-    );
-    $stmt->bind_param("i", $student_id);
-    $stmt->execute();
-
-    if ($stmt->affected_rows > 0) {
-        json_response(["status" => "success", "message" => "All pending enrollments for this student have been approved."]);
-    } else {
-        json_response(["status" => "error", "message" => "No pending enrollments found for this student."], 404);
-    }
-    break;
+    // NOTE: 'approve' has been removed from this endpoint.
+    // Approval is now handled exclusively by the Finance department
+    // via POST /backend/api/export_tuition.php?action=approve
+    // with a valid X-API-Key header.
 
     case 'reject':
         $input = json_decode(file_get_contents('php://input'), true);

@@ -39,7 +39,7 @@ $conn = getConnection();                       // returns mysqli
 
 // ── Scheduling System config ──────────────────────────────────────────────────
 define('SCHEDULING_API_URL', 'http://your-scheduling-system.local/api/room_requests.php');
-define('LMS_SECRET_TOKEN',   'CHANGE_ME_STRONG_RANDOM_TOKEN');   // must match Scheduling System
+define('LMS_SECRET_TOKEN',   '7f6c002275c76ced4aed037c73d5f24616ae395725043cba3606d559c23632a3');   // must match Scheduling System
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  ROUTING

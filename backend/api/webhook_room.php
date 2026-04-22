@@ -12,7 +12,7 @@ error_reporting(0);
 ini_set('display_errors', 0);
 header('Content-Type: application/json');
 
-define('WEBHOOK_SECRET',   'CHANGE_ME_STRONG_WEBHOOK_SECRET');
+define('WEBHOOK_SECRET',   '7f6c002275c76ced4aed037c73d5f24616ae395725043cba3606d559c23632a3');
 define('FIREBASE_DB_URL',  'https://artisans-lms-default-rtdb.firebaseio.com');
 define('FIREBASE_API_KEY', 'AIzaSyDQfwNYptf-gWqIQVs0welvz86DwqPI6VQ');
 
