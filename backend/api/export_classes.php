@@ -6,7 +6,7 @@ header('Access-Control-Allow-Origin: *');
 header('Content-Type: application/json; charset=utf-8');
 
 $provided_key = trim($_GET['api_key'] ?? '');
-$stored_key   = '7f6c002275c76ced4aed037c73d5f24616ae395725043cba3606d559c23632a3';
+$stored_key = getenv('CLASSES_API_KEY') ?: 'fallback_local_key';
 
 if ($provided_key !== $stored_key) {
     json_response(['status' => 'error', 'message' => 'Unauthorized.'], 401);

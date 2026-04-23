@@ -21,7 +21,7 @@ ini_set('display_errors', 0);
 require_once __DIR__ . '/../../server/config/db.php';
 require_once __DIR__ . '/../middleware/json_response.php';
 
-define('PERF_API_KEY', '0fvBAvRhGAkES6QVHXYojIVDQq5iPiRl');
+define('PERF_API_KEY', getenv('PERF_API_KEY') ?: 'local_perf_key');
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');

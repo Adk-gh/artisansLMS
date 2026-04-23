@@ -24,9 +24,10 @@ ini_set('display_errors', 0);
 header('Content-Type: application/json; charset=utf-8');
 
 // ── Config ────────────────────────────────────────────────────────────────────
-define('HRIS_WEBHOOK_SECRET', 'CHANGE_ME_STRONG_HRIS_SECRET');     // shared with HRIS team
+
+define('HRIS_WEBHOOK_SECRET', getenv('HRIS_WEBHOOK_SECRET') ?: 'local_hris_secret');   // shared with HRIS team
 define('HRIS_API_URL',        'https://their-hris-system.com/api/faculty'); // HRIS gives you this
-define('HRIS_API_KEY',        'THEIR_API_KEY');                     // HRIS gives you this
+define('HRIS_API_KEY',        getenv('HRIS_API_KEY')         ?: 'local_hris_api_key');          // HRIS gives you this
 
 require_once __DIR__ . '/../../server/config/db.php';
 require_once __DIR__ . '/../middleware/json_response.php';

@@ -28,14 +28,14 @@ ini_set('display_errors', 0);
 require_once __DIR__ . '/../../server/config/db.php';
 require_once __DIR__ . '/../middleware/json_response.php';
 
-define('TUITION_API_KEY', 'fN3kzPqLmW8xRtYcJ2sDhUeVbA7gXo1Q');
+define('TUITION_API_KEY', getenv('TUITION_API_KEY')         ?: 'local_tuition_key');
 
 // ── Webhook config ────────────────────────────────────────────────────────────
 // Set WEBHOOK_URL to your finance system's receiver endpoint.
 // Set WEBHOOK_SECRET to a shared secret for HMAC signature verification.
 // Leave WEBHOOK_URL empty to disable outbound webhooks from this file.
-define('WEBHOOK_URL',    '');   // e.g. 'https://finance.example.com/webhooks/lms'
-define('WEBHOOK_SECRET', '');   // e.g. 'whsec_your_secret_here'
+define('WEBHOOK_URL_FINANCE',    '');   // e.g. 'https://finance.example.com/webhooks/lms'
+define('WEBHOOK_SECRET',  getenv('TUITION_WEBHOOK_SECRET')   ?: 'local_webhook_secret');  
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
@@ -110,7 +110,7 @@ function shape_row(array $row): array {
 
 // ── Helper: fire outbound webhook (non-blocking best-effort) ──────────────────
 function fire_webhook(string $event, array $payload): void {
-    if (!defined('WEBHOOK_URL') || WEBHOOK_URL === '') return;
+    if (!defined('WEBHOOK_URL_FINANCE') || WEBHOOK_URL_FINANCE === '') return;
 
     $body      = json_encode(['event' => $event, 'data' => $payload, 'timestamp' => date('c')]);
     $signature = hash_hmac('sha256', $body, WEBHOOK_SECRET);
@@ -130,7 +130,7 @@ function fire_webhook(string $event, array $payload): void {
     ]);
 
     // Intentionally ignoring return value — fire and forget
-    @file_get_contents(WEBHOOK_URL, false, $ctx);
+    @file_get_contents(WEBHOOK_URL_FINANCE, false, $ctx);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
