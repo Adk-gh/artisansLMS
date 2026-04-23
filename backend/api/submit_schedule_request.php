@@ -117,14 +117,17 @@ if ($method === 'GET') {
                 rr.status,
                 rr.admin_note,
                 rr.created_at,
-                r.name     AS room_name,
-                r.location AS room_location,
-                r.capacity AS room_capacity,
-                c.course_code,
-                c.name     AS class_name
+                r.name       AS room_name,
+                r.location   AS room_location,
+                r.capacity   AS room_capacity,
+                co.course_code,
+                co.name      AS course_name,
+                cl.semester,
+                cl.year
             FROM room_requests rr
-            LEFT JOIN rooms r   ON r.room_id     = rr.room_id
-            LEFT JOIN classes c ON c.class_id    = rr.class_id
+            LEFT JOIN rooms   r  ON r.room_id    = rr.room_id
+            LEFT JOIN classes cl ON cl.class_id  = rr.class_id
+            LEFT JOIN courses co ON co.course_id = cl.course_id
             WHERE rr.instructor_id = $instructorId
             ORDER BY rr.created_at DESC
             LIMIT 50
