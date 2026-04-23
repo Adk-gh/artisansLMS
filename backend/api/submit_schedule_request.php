@@ -17,16 +17,28 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 header('Content-Type: application/json');
 
-// ── Session & auth ────────────────────────────────────────────────────────────
+
+// 1. Get the key the user sent
+$provided_key = $_GET['api_key'] ?? $_SERVER['HTTP_X_API_KEY'] ?? '';
+
+// 2. Use the correct variable name from your Render Dashboard
+$actual_secret = getenv('LMS_SECRET_TOKEN') ?: 'local_scheduling_secret';
+
+// 3. Determine if this is a valid API request
+$is_api_request = ($provided_key === $actual_secret && !empty($provided_key));
+
+// 4. Start session to check for logged-in users
 if (session_status() === PHP_SESSION_NONE) session_start();
 
-if (!isset($_SESSION['user_id'])) {
+// 5. COMBINED AUTH CHECK: Allow if there is a session OR a valid API key
+if (!isset($_SESSION['user_id']) && !$is_api_request) {
     echo json_encode(['status' => 'error', 'message' => 'Unauthorized']);
     exit;
 }
 
-$instructorId = (int)$_SESSION['user_id'];
-$role         = $_SESSION['role'] ?? 'student';
+// 6. Set the Instructor ID (Use a fallback for API tests)
+$instructorId = $is_api_request ? 17 : (int)$_SESSION['user_id']; 
+$role = $is_api_request ? 'teacher' : ($_SESSION['role'] ?? 'student');
 
 if (!in_array($role, ['teacher', 'admin'])) {
     echo json_encode(['status' => 'error', 'message' => 'Forbidden']);
@@ -38,8 +50,9 @@ require_once __DIR__ . '/../../server/config/db.php'; // adjust path if needed
 $conn = getConnection();                       // returns mysqli
 
 // ── Scheduling System config ──────────────────────────────────────────────────
-define('SCHEDULING_API_URL', 'http://your-scheduling-system.local/api/room_requests.php');
-define('LMS_SECRET_TOKEN',   getenv('SCHEDULING_SECRET')  ?: 'local_scheduling_secret');  // must match Scheduling System
+// Pull these directly from your Render Environment Variables
+define('SCHEDULING_API_URL', getenv('SCHEDULING_API_URL') ?: 'http://localhost/api/room_requests.php');
+define('LMS_SECRET_TOKEN',  getenv('LMS_SECRET_TOKEN')  ?: 'local_scheduling_secret');  // must match Scheduling System
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  ROUTING

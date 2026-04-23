@@ -12,7 +12,7 @@ error_reporting(0);
 ini_set('display_errors', 0);
 header('Content-Type: application/json');
 
-define('WEBHOOK_SECRET',   getenv('SCHEDULING_SECRET')   ?: 'local_scheduling_secret');
+define('SCHEDULING_SECRET',   getenv('SCHEDULING_SECRET')   ?: 'local_scheduling_secret');
 define('FIREBASE_DB_URL',  getenv('FIREBASE_DB_URL')     ?: 'https://artisans-lms-default-rtdb.firebaseio.com');
 define('FIREBASE_API_KEY', getenv('FIREBASE_API_KEY')    ?: '');
 
@@ -33,7 +33,7 @@ if (!$data) {
 $receivedSig = $data['signature'] ?? '';
 $check       = $data;
 unset($check['signature']);
-$expectedSig = hash_hmac('sha256', json_encode($check), WEBHOOK_SECRET);
+$expectedSig = hash_hmac('sha256', json_encode($check), SCHEDULING_SECRET);
 
 if (!hash_equals($expectedSig, $receivedSig)) {
     http_response_code(401);

@@ -33,7 +33,7 @@ require_once __DIR__ . '/../middleware/json_response.php';
 
 // ── Shared secret with your Finance system ────────────────────────────────────
 // Must match the secret used by the Finance system to sign outbound requests.
-define('WEBHOOK_SECRET_TUITION', getenv('TUITION_WEBHOOK_SECRET') ?: 'local_webhook_secret');
+define('TUITION_WEBHOOK_SECRET', getenv('TUITION_WEBHOOK_SECRET') ?: 'local_webhook_secret');
 
 // ── Logging ───────────────────────────────────────────────────────────────────
 // Logs are written to a file outside the web root by default.
@@ -69,7 +69,7 @@ if (empty($provided_sig)) {
     json_response(['status' => 'error', 'message' => 'Missing X-Finance-Signature header.'], 401);
 }
 
-$expected_sig = hash_hmac('sha256', $raw_body, WEBHOOK_SECRET_TUITION);
+$expected_sig = hash_hmac('sha256', $raw_body, TUITION_WEBHOOK_SECRET);
 
 if (!hash_equals($expected_sig, $provided_sig)) {
     webhook_log('REJECTED', 'Signature mismatch. Provided: ' . $provided_sig);

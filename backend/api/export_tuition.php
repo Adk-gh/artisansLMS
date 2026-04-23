@@ -35,7 +35,7 @@ define('TUITION_API_KEY', getenv('TUITION_API_KEY')         ?: 'local_tuition_ke
 // Set WEBHOOK_SECRET to a shared secret for HMAC signature verification.
 // Leave WEBHOOK_URL empty to disable outbound webhooks from this file.
 define('WEBHOOK_URL_FINANCE',    '');   // e.g. 'https://finance.example.com/webhooks/lms'
-define('WEBHOOK_SECRET',  getenv('TUITION_WEBHOOK_SECRET')   ?: 'local_webhook_secret');  
+define('TUITION_WEBHOOK_SECRET',  getenv('TUITION_WEBHOOK_SECRET')   ?: 'local_webhook_secret');  
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
@@ -113,7 +113,7 @@ function fire_webhook(string $event, array $payload): void {
     if (!defined('WEBHOOK_URL_FINANCE') || WEBHOOK_URL_FINANCE === '') return;
 
     $body      = json_encode(['event' => $event, 'data' => $payload, 'timestamp' => date('c')]);
-    $signature = hash_hmac('sha256', $body, WEBHOOK_SECRET);
+    $signature = hash_hmac('sha256', $body, TUITION_WEBHOOK_SECRET );
 
     $ctx = stream_context_create([
         'http' => [
