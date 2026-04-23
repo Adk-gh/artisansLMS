@@ -9,38 +9,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
-        body { font-family: 'Sora', sans-serif; }
-
-        /* ── Nested Table ── */
-        .expanded-row-bg { background-color: #f8fafc; }
-        .collapse-toggle { cursor: pointer; transition: 0.2s; }
-        .collapse-toggle[aria-expanded="true"] .fa-chevron-down { transform: rotate(180deg); }
-        .nested-table th { background: #f1f5f9; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; }
-        .avatar-sm { width: 30px; height: 30px; object-fit: cover; }
-
-        /* ── Action Buttons ── */
-        .btn-archive-sm { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 7px; font-size: .72rem; font-weight: 700; background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; cursor: pointer; transition: .15s; text-decoration: none; }
-        .btn-archive-sm:hover { background: #ffedd5; color: #9a3412; }
-
-        /* ── Toast ── */
-        .toast-bar { position: fixed; top: 20px; right: 20px; z-index: 9999; padding: 12px 20px; border-radius: 10px; font-size: .8rem; font-weight: 600; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 20px rgba(0,0,0,.12); animation: slideIn .3s ease; transition: opacity .5s; }
-        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
-
-        /* ── Search & Filter Bar ── */
-        .sf-bar { background: #fff; border: 1px solid #e9ecef; border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .sf-search-wrap { position: relative; flex: 1; min-width: 200px; }
-        .sf-search-wrap i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: .8rem; pointer-events: none; }
-        .sf-input { width: 100%; padding: 9px 12px 9px 34px; border: 1.5px solid #e9ecef; border-radius: 10px; font-size: .82rem; font-family: 'Sora', sans-serif; color: #1e293b; background: #f8fafc; outline: none; transition: .2s; }
-        .sf-input:focus { border-color: #0ea5e9; background: #fff; box-shadow: 0 0 0 3px rgba(14,165,233,.08); }
-        .sf-select { padding: 9px 32px 9px 12px; border: 1.5px solid #e9ecef; border-radius: 10px; font-size: .8rem; font-family: 'Sora', sans-serif; font-weight: 600; color: #475569; background: #f8fafc; outline: none; cursor: pointer; transition: .2s; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
-        .sf-select:focus { border-color: #0ea5e9; background-color: #fff; box-shadow: 0 0 0 3px rgba(14,165,233,.08); }
-        .sf-count { font-size: .72rem; font-weight: 700; color: #94a3b8; white-space: nowrap; margin-left: auto; }
-        .sf-count span { color: #0ea5e9; }
-
-        /* ── Filter hidden ── */
+        /* JS-toggled display hooks — cannot be replaced by Bootstrap utilities */
         .class-row-wrap.hidden { display: none; }
-        .no-results-row { display: none; }
-        .no-results-row.show { display: table-row; }
+        .no-results-row        { display: none; }
+        .no-results-row.show   { display: table-row; }
+
+        /* Chevron flip on collapse open */
+        .collapse-toggle[aria-expanded="true"] .fa-chevron-down { transform: rotate(180deg); }
     </style>
 </head>
 <body>
@@ -57,33 +32,41 @@
                 <h4 class="fw-bold m-0 text-dark">Class Management</h4>
                 <p class="text-muted small mb-0">Create and manage class sections by course.</p>
             </div>
-            <button class="btn btn-primary px-4 shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addClassModal">
-                <i class="fas fa-plus me-2"></i>Create New Class
+            <button class="btn btn-dark d-inline-flex align-items-center gap-2 px-4 py-2 fw-semibold rounded-3 shadow-sm"
+                    data-bs-toggle="modal" data-bs-target="#addClassModal">
+                <i class="fas fa-plus"></i>Create New Class
             </button>
         </div>
 
-        <!-- Search & Filter Bar (dept is now a dropdown here, no tab bar) -->
-        <div class="sf-bar mb-4">
-            <div class="sf-search-wrap">
-                <i class="fas fa-search"></i>
-                <input type="text" class="sf-input" id="classSearch" placeholder="Search course name or code…">
+        <!-- Search & Filter Bar -->
+        <div class="bg-white border rounded-4 p-3 mb-4 d-flex align-items-center gap-2 flex-wrap">
+            <div class="position-relative flex-grow-1" style="min-width:200px;">
+                <i class="fas fa-search position-absolute top-50 translate-middle-y ms-3 text-secondary"
+                   style="font-size:.8rem;pointer-events:none;"></i>
+                <input type="text" class="form-control form-control-sm bg-light border-0 ps-4 rounded-3"
+                       id="classSearch" placeholder="Search course name or code…">
             </div>
-            <select class="sf-select" title="Filter by Department" id="classDeptFilter">
+            <select class="form-select form-select-sm bg-light border-0 rounded-3 fw-semibold text-secondary w-auto"
+                    id="classDeptFilter" title="Filter by Department">
                 <option value="">All Departments</option>
             </select>
-            <select class="sf-select" title="Filter by Term" id="classTermFilter">
+            <select class="form-select form-select-sm bg-light border-0 rounded-3 fw-semibold text-secondary w-auto"
+                    id="classTermFilter" title="Filter by Term">
                 <option value="">All Terms</option>
             </select>
-            <select class="sf-select" title="Filter by Capacity" id="classCapFilter">
+            <select class="form-select form-select-sm bg-light border-0 rounded-3 fw-semibold text-secondary w-auto"
+                    id="classCapFilter" title="Filter by Capacity">
                 <option value="">All Capacity</option>
                 <option value="open">Has Open Slots</option>
                 <option value="full">Full</option>
             </select>
-            <div class="sf-count" id="classCount">Showing <span id="classCountNum">0</span> sections</div>
+            <div class="ms-auto small fw-bold text-secondary text-nowrap" id="classCount">
+                Showing <span id="classCountNum" class="text-info">0</span> sections
+            </div>
         </div>
 
         <!-- Main Table -->
-        <div class="table-card shadow-sm border-0 bg-white rounded-4 overflow-hidden">
+        <div class="shadow-sm border-0 bg-white rounded-4 overflow-hidden">
             <div class="table-responsive">
                 <table class="table align-middle mb-0 table-hover">
                     <thead class="bg-light text-muted small">
@@ -96,7 +79,9 @@
                         </tr>
                     </thead>
                     <tbody id="classBody">
-                        <tr><td colspan="5" class="text-center py-5 text-muted small">Loading Class Data...</td></tr>
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted small">Loading Class Data...</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -110,7 +95,9 @@
     <div class="modal-dialog modal-dialog-centered">
         <form id="addClassForm" class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-dark text-white border-0 py-3 px-4">
-                <h5 class="modal-title fw-bold"><i class="fas fa-calendar-plus me-2 text-info"></i>Schedule New Class</h5>
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-calendar-plus me-2 text-info"></i>Schedule New Class
+                </h5>
                 <button type="button" title="Close" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
@@ -146,7 +133,9 @@
                 </div>
             </div>
             <div class="modal-footer border-0 p-4 pt-0">
-                <button type="submit" class="btn btn-dark w-100 py-3 shadow fw-bold rounded-3">Open Class Section</button>
+                <button type="submit" class="btn btn-dark w-100 py-3 shadow fw-bold rounded-3">
+                    Open Class Section
+                </button>
             </div>
         </form>
     </div>
@@ -157,7 +146,9 @@
     <div class="modal-dialog modal-dialog-centered">
         <form id="editClassForm" class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-primary text-white border-0 py-3 px-4">
-                <h5 class="modal-title fw-bold"><i class="fas fa-edit me-2"></i>Edit Class Details</h5>
+                <h5 class="modal-title fw-bold">
+                    <i class="fas fa-edit me-2"></i>Edit Class Details
+                </h5>
                 <button type="button" title="Close" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
@@ -194,7 +185,9 @@
                 </div>
             </div>
             <div class="modal-footer border-0 p-4 pt-0">
-                <button type="submit" class="btn btn-primary w-100 py-3 shadow fw-bold rounded-3">Save Changes</button>
+                <button type="submit" class="btn btn-primary w-100 py-3 shadow fw-bold rounded-3">
+                    Save Changes
+                </button>
             </div>
         </form>
     </div>

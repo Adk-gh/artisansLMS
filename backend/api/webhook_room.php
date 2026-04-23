@@ -11,17 +11,21 @@
  *   "lms_class_id":   10,
  *   "status":         "approved" | "rejected",
  *   "admin_note":     "See you there",
- *   "room": {                          ← only on approval
+ *   "room": {                           ← only on approval
  *     "room_id":  2,
  *     "name":     "Lecture Hall 1",
  *     "location": "Main Building 2nd Floor",
  *     "capacity": 150
  *   },
- *   "confirmed_date":  "2026-04-24",   ← only on approval
- *   "confirmed_start": "12:57:00",     ← only on approval
- *   "confirmed_end":   "13:57:00",     ← only on approval
- *   "signature": "<hmac-sha256>"       ← always
+ *   "confirmed_date":  "2026-04-24",    ← only on approval
+ *   "confirmed_start": "12:57:00",      ← only on approval
+ *   "confirmed_end":   "13:57:00",      ← only on approval
  * }
+ *
+ * Signature (accepts any of these — pick one with your Scheduling System):
+ *   Header:  X-Scheduling-Signature: <hmac-sha256 of raw body>   ← preferred
+ *   Header:  X-LMS-Signature:        <hmac-sha256 of raw body>   ← alias
+ *   Body:    { "signature": "<hmac-sha256>" }                    ← fallback
  *
  * Flow:
  *  1. Verify HMAC signature
@@ -34,15 +38,15 @@ ini_set('display_errors', 0);
 header('Content-Type: application/json');
 
 // ── Config ─────────────────────────────────────────────────────────────────────
-define('SCHEDULING_SECRET', getenv('LMS_SECRET_TOKEN')   ?: 'local_scheduling_secret');
-define('FIREBASE_DB_URL',   getenv('FIREBASE_DB_URL')    ?: 'https://artisans-lms-default-rtdb.firebaseio.com');
-define('FIREBASE_API_KEY',  getenv('FIREBASE_API_KEY')   ?: '');
+define('SCHEDULING_SECRET', getenv('LMS_SECRET_TOKEN') ?: 'local_scheduling_secret');
+define('FIREBASE_DB_URL',   getenv('FIREBASE_DB_URL')  ?: 'https://artisans-lms-default-rtdb.firebaseio.com');
+define('FIREBASE_API_KEY',  getenv('FIREBASE_API_KEY') ?: '');
 
 // ── DB ─────────────────────────────────────────────────────────────────────────
 require_once __DIR__ . '/../config/db.php';
 $conn = getConnection();
 
-// ── Read + decode payload ──────────────────────────────────────────────────────
+// ── Read raw body ──────────────────────────────────────────────────────────────
 $raw  = file_get_contents('php://input');
 $data = json_decode($raw, true);
 
@@ -53,16 +57,37 @@ if (!$data || !is_array($data)) {
 }
 
 // ── Verify HMAC-SHA256 signature ───────────────────────────────────────────────
-// submit_schedule_request.php signs the payload (without the signature field)
-// before forwarding to the Scheduling System.  The Scheduling System must
-// preserve the same signing approach when it calls back here.
-$receivedSig = $data['signature'] ?? '';
-$checkData   = $data;
-unset($checkData['signature']);
+// Preferred: Scheduling System sends HMAC of raw body as a header.
+// This avoids JSON key-order issues entirely.
+//
+//   Header  X-Scheduling-Signature   (preferred)
+//   Header  X-LMS-Signature          (alias)
+//   JSON body field "signature"      (fallback)
+$receivedSig = trim(
+    $_SERVER['HTTP_X_SCHEDULING_SIGNATURE']
+    ?? $_SERVER['HTTP_X_LMS_SIGNATURE']
+    ?? ''
+);
 
-// IMPORTANT: json_encode key order must match what was signed.
-// The Scheduling System should sign the payload with the SAME key order.
-$expectedSig = hash_hmac('sha256', json_encode($checkData), SCHEDULING_SECRET);
+$bodySignature = $data['signature'] ?? '';
+
+if (empty($receivedSig) && !empty($bodySignature)) {
+    // Fallback: signature is inside the JSON body
+    // Remove it before re-encoding so we match how it was originally signed
+    $checkData   = $data;
+    unset($checkData['signature']);
+    $expectedSig = hash_hmac('sha256', json_encode($checkData), SCHEDULING_SECRET);
+    $receivedSig = $bodySignature;
+} else {
+    // Preferred: sign the raw body bytes — key order independent
+    $expectedSig = hash_hmac('sha256', $raw, SCHEDULING_SECRET);
+}
+
+if (empty($receivedSig)) {
+    http_response_code(401);
+    echo json_encode(['status' => 'error', 'message' => 'Missing signature. Send X-Scheduling-Signature header or include "signature" in body.']);
+    exit;
+}
 
 if (!hash_equals($expectedSig, $receivedSig)) {
     http_response_code(401);
@@ -73,9 +98,9 @@ if (!hash_equals($expectedSig, $receivedSig)) {
 // ── Extract + sanitise fields ──────────────────────────────────────────────────
 $lmsRequestId = (int)($data['lms_request_id'] ?? 0);
 $classId      = (int)($data['lms_class_id']   ?? 0);
-$status       = $data['status']     ?? '';      // 'approved' | 'rejected'
+$status       = $data['status']          ?? '';   // 'approved' | 'rejected'
 $adminNote    = $conn->real_escape_string($data['admin_note'] ?? '');
-$room         = $data['room']       ?? null;    // null on rejection
+$room         = $data['room']            ?? null; // null on rejection
 $confDate     = $data['confirmed_date']  ?? '';
 $confStart    = $data['confirmed_start'] ?? '';
 $confEnd      = $data['confirmed_end']   ?? '';
@@ -88,7 +113,7 @@ if (!in_array($status, ['approved', 'rejected'], true) || !$lmsRequestId || !$cl
 
 // ── 1. Update room_requests status ────────────────────────────────────────────
 $safeStatus = $conn->real_escape_string($status);
-$updated = $conn->query("
+$updated    = $conn->query("
     UPDATE room_requests
     SET    status     = '$safeStatus',
            admin_note = '$adminNote'
@@ -96,7 +121,7 @@ $updated = $conn->query("
 ");
 
 if (!$updated || $conn->affected_rows === 0) {
-    // Request not found — still respond 200 so the Scheduling System doesn't retry forever
+    // Not found — still 200 so the Scheduling System doesn't retry forever
     echo json_encode(['status' => 'warning', 'message' => "Request ID $lmsRequestId not found in room_requests."]);
     exit;
 }
@@ -121,8 +146,6 @@ if ($status === 'approved' && $room) {
     $roomName = $room['name']     ?? 'TBA';
     $location = $room['location'] ?? '';
     $capacity = $room['capacity'] ?? '';
-
-    // Human-readable date/time strings
     $dateStr  = $confDate  ? date('F j, Y', strtotime($confDate))  : 'TBA';
     $startStr = $confStart ? date('g:i A',  strtotime($confStart)) : 'TBA';
     $endStr   = $confEnd   ? date('g:i A',  strtotime($confEnd))   : 'TBA';
@@ -145,7 +168,7 @@ if ($status === 'approved' && $room) {
         'admin_note' => $data['admin_note'] ?? '',
     ];
 } else {
-    $noteText   = trim($data['admin_note'] ?? '');
+    $noteText    = trim($data['admin_note'] ?? '');
     $firebaseMsg = [
         'is_system'  => true,
         'type'       => 'room_rejected',
@@ -156,7 +179,6 @@ if ($status === 'approved' && $room) {
 }
 
 // ── 4. POST message to Firebase Realtime Database ────────────────────────────
-// Using the REST API push endpoint (.json with POST = auto-generated key)
 $firebaseUrl = rtrim(FIREBASE_DB_URL, '/') . "/lms_chats/{$classId}.json";
 if (!empty(FIREBASE_API_KEY)) {
     $firebaseUrl .= '?key=' . FIREBASE_API_KEY;
@@ -176,10 +198,10 @@ curl_close($ch);
 
 // ── Respond to Scheduling System ──────────────────────────────────────────────
 echo json_encode([
-    'status'           => 'success',
-    'message'          => 'Webhook processed.',
-    'request_id'       => $lmsRequestId,
-    'new_status'       => $status,
-    'firebase_pushed'  => empty($fbError),
-    'firebase_error'   => $fbError ?: null,
+    'status'          => 'success',
+    'message'         => 'Webhook processed.',
+    'request_id'      => $lmsRequestId,
+    'new_status'      => $status,
+    'firebase_pushed' => empty($fbError),
+    'firebase_error'  => $fbError ?: null,
 ]);

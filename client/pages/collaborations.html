@@ -52,6 +52,16 @@
 
         /* Text Truncation Helper */
         .min-w-0 { min-width: 0; }
+
+        /* ── Request Modal Tabs ── */
+        .rr-tab-btn { background: transparent; color: #64748b; transition: background .15s, color .15s; }
+        .rr-tab-btn:hover { background: #f1f5f9; color: #0f172a; }
+        .rr-tab-btn.active { background: #fff; color: #0d6efd; box-shadow: 0 -2px 0 #0d6efd inset; }
+        /* Resource dropdown item */
+        .rr-res-item { transition: background .1s; cursor: pointer; }
+        .rr-res-item:hover { background: #f0f7ff; }
+        /* Basket item */
+        .rr-basket-item { background: #fff; border: 1px solid #e2e8f0; border-radius: .5rem; padding: .5rem .75rem; }
     </style>
 </head>
 <body>
@@ -120,7 +130,7 @@
                     <h6 class="mb-0 fw-bold text-dark text-truncate px-2" id="chatCourseCode"></h6>
                     <div class="d-flex align-items-center gap-2">
                         
-                        <button class="btn btn-sm btn-primary fw-bold d-flex align-items-center gap-2 d-none" id="roomRequestBtn" title="Request Room">
+                        <button class="btn btn-sm btn-primary fw-bold d-flex align-items-center gap-2 d-none" id="roomRequestBtn" title="Request Room & Resources">
                             <i class="fas fa-calendar-plus"></i>
                             <span class="d-none d-sm-inline">Request Room</span>
                         </button>
@@ -185,8 +195,13 @@
                         <div id="jitsiContainer" class="flex-grow-1 rounded-4 overflow-hidden shadow-lg border border-secondary"></div>
                     </div>
 
-                </div></div></div></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
+<!-- ── Room Info Offcanvas ───────────────────────────────────────────────────── -->
 <div class="offcanvas offcanvas-end border-0 shadow-lg" tabindex="-1" id="roomInfoOffcanvas">
     <div class="offcanvas-header bg-light border-bottom p-4">
         <h5 class="offcanvas-title fw-bold text-dark">
@@ -249,66 +264,158 @@
     </div>
 </div>
 
+<!-- ── Room + Resource Request Modal ────────────────────────────────────────── -->
 <div class="modal fade" id="roomRequestModal" tabindex="-1">
     <div class="modal-dialog modal-md modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header bg-light border-bottom p-4 rounded-top-4">
-                <h5 class="modal-title fw-bold text-dark">
-                    <i class="fas fa-calendar-alt text-primary me-2"></i>Schedule Room Request
-                </h5>
-                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+
+            <!-- Header -->
+            <div class="modal-header border-bottom px-4 pt-4 pb-0 bg-white">
+                <div class="w-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="modal-title fw-bold text-dark mb-0">
+                            <i class="fas fa-calendar-alt text-primary me-2"></i>Schedule Request
+                        </h5>
+                        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                    </div>
+                    <!-- Tabs -->
+                    <div class="d-flex gap-1" id="rrTabBar">
+                        <button class="rr-tab-btn active px-4 py-2 fw-bold small border-0 rounded-top-3" id="tabRoomBtn" data-tab="room">
+                            <i class="fas fa-building me-2"></i>Room
+                        </button>
+                        <button class="rr-tab-btn px-4 py-2 fw-bold small border-0 rounded-top-3" id="tabResourceBtn" data-tab="resource">
+                            <i class="fas fa-box-open me-2"></i>Resource
+                        </button>
+                    </div>
+                </div>
             </div>
+
             <div class="modal-body p-4">
-                
-                <div id="roomRequestAlert" class="alert d-none"></div>
 
-                <div class="mb-3">
-                    <label class="form-label small fw-bold text-muted text-uppercase">Select Room</label>
-                    <select id="rrRoom" class="form-select border-0 bg-light shadow-none"></select>
-                    <div id="rrRoomHint" class="mt-2 small text-muted d-none bg-primary bg-opacity-10 p-2 rounded-3 border border-primary-subtle">
-                        <i class="fas fa-info-circle text-primary me-1"></i><span id="rrRoomHintText"></span>
-                    </div>
-                </div>
+                <div id="roomRequestAlert" class="alert d-none mb-3"></div>
 
-                <div class="row g-3 mb-3">
-                    <div class="col-12 col-md-6">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Date</label>
-                        <input type="date" id="rrDate" class="form-control border-0 bg-light shadow-none">
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Start</label>
-                        <input type="time" id="rrStart" class="form-control border-0 bg-light shadow-none">
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <label class="form-label small fw-bold text-muted text-uppercase">End</label>
-                        <input type="time" id="rrEnd" class="form-control border-0 bg-light shadow-none">
-                    </div>
-                </div>
+                <!-- ══ ROOM TAB ══════════════════════════════════════════════ -->
+                <div id="rrTabRoom">
 
-                <div class="mb-4">
-                    <label class="form-label small fw-bold text-muted text-uppercase">Purpose (Optional)</label>
-                    <textarea id="rrPurpose" class="form-control border-0 bg-light shadow-none" rows="2" placeholder="Briefly describe the activity..."></textarea>
-                </div>
+                    <!-- Room picker -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Select Room</label>
+                        <select id="rrRoom" class="form-select border-0 bg-light shadow-none"></select>
+                        <div id="rrRoomHint" class="mt-2 small text-muted d-none bg-primary bg-opacity-10 p-2 rounded-3 border border-primary-subtle">
+                            <i class="fas fa-info-circle text-primary me-1"></i><span id="rrRoomHintText"></span>
+                        </div>
+                    </div>
 
-                <button id="rrSubmitBtn" class="btn btn-primary w-100 fw-bold py-2 rounded-3 shadow-sm">
-                    <i class="fas fa-paper-plane me-2"></i>Submit to Scheduling Office
-                </button>
+                    <!-- Date / Time -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Date</label>
+                            <input type="date" id="rrDate" class="form-control border-0 bg-light shadow-none">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Start</label>
+                            <input type="time" id="rrStart" class="form-control border-0 bg-light shadow-none">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase">End</label>
+                            <input type="time" id="rrEnd" class="form-control border-0 bg-light shadow-none">
+                        </div>
+                    </div>
+
+                    <!-- Purpose -->
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Purpose (Optional)</label>
+                        <textarea id="rrPurpose" class="form-control border-0 bg-light shadow-none" rows="2" placeholder="Briefly describe the activity..."></textarea>
+                    </div>
+
+                    <button id="rrSubmitBtn" class="btn btn-primary w-100 fw-bold py-2 rounded-3 shadow-sm">
+                        <i class="fas fa-paper-plane me-2"></i>Submit to Scheduling Office
+                    </button>
+
+                </div><!-- /rrTabRoom -->
+
+                <!-- ══ RESOURCE TAB ══════════════════════════════════════════ -->
+                <div id="rrTabResource" class="d-none">
+
+                    <!-- Searchable resource dropdown -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Search Resource</label>
+                        <div class="position-relative">
+                            <span class="position-absolute top-50 translate-middle-y ps-3" style="pointer-events:none;">
+                                <i class="fas fa-search text-muted" style="font-size:.8rem;"></i>
+                            </span>
+                            <input type="text" id="rrResSearch"
+                                   class="form-control border-0 bg-light shadow-none ps-5"
+                                   placeholder="Type to search resources…"
+                                   autocomplete="off">
+                        </div>
+                        <!-- Dropdown list -->
+                        <div id="rrResDropdown"
+                             class="border rounded-3 bg-white shadow-sm mt-1 d-none custom-scrollbar"
+                             style="max-height:200px;overflow-y:auto;">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Selected resources basket -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted text-uppercase d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-cart-shopping me-1"></i> Selected Resources</span>
+                            <span id="rrResCount" class="badge bg-primary rounded-pill">0</span>
+                        </label>
+                        <div id="rrResBasket"
+                             class="border rounded-3 bg-light p-2 d-flex flex-column gap-2"
+                             style="min-height:64px;">
+                            <div id="rrResBasketEmpty" class="text-center text-muted small py-2 fst-italic">
+                                No resources selected yet.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date / Time (resource tab own copies) -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Date Needed</label>
+                            <input type="date" id="rrResDate" class="form-control border-0 bg-light shadow-none">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase">From</label>
+                            <input type="time" id="rrResStart" class="form-control border-0 bg-light shadow-none">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label class="form-label small fw-bold text-muted text-uppercase">Until</label>
+                            <input type="time" id="rrResEnd" class="form-control border-0 bg-light shadow-none">
+                        </div>
+                    </div>
+
+                    <!-- Purpose -->
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Purpose (Optional)</label>
+                        <textarea id="rrResPurpose" class="form-control border-0 bg-light shadow-none" rows="2" placeholder="Briefly describe the activity..."></textarea>
+                    </div>
+
+                    <button id="rrResSubmitBtn" class="btn btn-primary w-100 fw-bold py-2 rounded-3 shadow-sm">
+                        <i class="fas fa-paper-plane me-2"></i>Submit Resource Request
+                    </button>
+
+                </div><!-- /rrTabResource -->
 
                 <hr class="my-4 text-muted opacity-25">
 
+                <!-- Shared History -->
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-history text-muted me-2"></i>Recent Requests</h6>
                     <button id="rrRefreshBtn" class="btn btn-sm btn-light border text-secondary" title="Refresh History">
                         <i class="fas fa-sync-alt"></i>
                     </button>
                 </div>
-                
                 <div id="rrHistoryList" class="d-flex flex-column gap-3"></div>
 
             </div>
         </div>
     </div>
 </div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/artisansLMS/client/assets/js/app.js"></script>

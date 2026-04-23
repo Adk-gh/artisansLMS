@@ -1,28 +1,9 @@
 // enrollment.js
 
-let currentTab    = 'all';
-let _pendingData  = [];
 let _enrolledData = {};
 let _allClasses   = [];
 
-// ── Tab switch ───────────────────────────────────────────────────────────────
-window.switchTab = function(tab) {
-    currentTab = tab;
-    $('#tabAll, #tabPending').removeClass('active');
-    $(`#tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`).addClass('active');
-
-    if (tab === 'pending') {
-        $('#allSection').hide();
-        $('#pendingSection').show();
-        renderPendingList();
-    } else {
-        $('#pendingSection').hide();
-        $('#allSection').show();
-        filterEnrollment();
-    }
-};
-
-// ── Filter (all tab) ─────────────────────────────────────────────────────────
+// ── Filter (all enrollments) ─────────────────────────────────────────────────
 function filterEnrollment() {
     const q       = $('#enrollSearch').val().toLowerCase().trim();
     const cf      = $('#enrollClassFilter').val();
@@ -53,18 +34,6 @@ function filterEnrollment() {
     else               $('#enrollNoResults').removeClass('show');
 }
 window.filterEnrollment = filterEnrollment;
-
-// ── Pending search ───────────────────────────────────────────────────────────
-function filterPending() {
-    const q   = $('#pendingSearch').val().toLowerCase().trim();
-    let   vis = 0;
-    $('.pending-student-card').each(function() {
-        const show = !q || $(this).text().toLowerCase().includes(q);
-        $(this).toggleClass('d-none', !show);
-        if (show) vis++;
-    });
-    $('#pendingCountNum').text(vis);
-}
 
 // ── Modal Class Filter ───────────────────────────────────────────────────────
 function filterModalClasses() {
@@ -121,12 +90,9 @@ $(document).ready(function() {
 
     const API_URL      = '../../backend/endpoints/enrollments.php';
     let enrollModalObj = null;
-    let rejectModalObj = null;
 
     const enrollEl = document.getElementById('enrollModal');
-    const rejectEl = document.getElementById('rejectModal');
     if (enrollEl) enrollModalObj = new bootstrap.Modal(enrollEl);
-    if (rejectEl) rejectModalObj = new bootstrap.Modal(rejectEl);
 
     // ── Initial load ─────────────────────────────────────────────────────────
     fetchEnrollments();
@@ -134,7 +100,6 @@ $(document).ready(function() {
 
     // ── Event listeners ──────────────────────────────────────────────────────
     $('#enrollSearch, #enrollClassFilter, #enrollStatusFilter').on('input change', filterEnrollment);
-    $('#pendingSearch').on('input', filterPending);
     $('#modalClassSearch').on('input', filterModalClasses);
     $('#modalClassDept').on('change', filterModalClasses);
     $('#enrollForm').on('submit', handleEnrollmentSubmit);
@@ -166,25 +131,7 @@ $(document).ready(function() {
         filterModalClasses();
     });
 
-    // Reject confirm
-    $('#confirmRejectBtn').on('click', function() {
-        const eid = $('#reject_enrollment_id').val();
-        if (!eid) return;
-        $.ajax({
-            url: `${API_URL}?action=reject`,
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ enrollment_id: parseInt(eid) }),
-            dataType: 'json',
-            success: function(json) {
-                showToast(json.message, json.status === 'success' ? 'success' : 'error');
-                if (json.status === 'success') {
-                    if (rejectModalObj) rejectModalObj.hide();
-                    fetchEnrollments();
-                }
-            }
-        });
-    });
+
 
     // ── API ───────────────────────────────────────────────────────────────────
 
@@ -195,28 +142,7 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(json) {
                 if (json.status === 'success') {
-                    const pendingByStudent = {};
-                    json.data.forEach(student => {
-                        student.classes.forEach(cls => {
-                            if (cls.status === 'Pending Finance') {
-                                if (!pendingByStudent[student.student_id]) {
-                                    pendingByStudent[student.student_id] = { student, classes: [] };
-                                }
-                                pendingByStudent[student.student_id].classes.push(cls);
-                            }
-                        });
-                    });
-                    _pendingData = Object.values(pendingByStudent);
-
-                    const pendingStudentCount = _pendingData.length;
-                    if (pendingStudentCount > 0) {
-                        $('#pendingBadge').text(pendingStudentCount).show();
-                    } else {
-                        $('#pendingBadge').hide();
-                    }
-
                     renderTable(json.data, json.archives);
-                    if (currentTab === 'pending') renderPendingList();
                 } else {
                     showToast(json.message || 'Failed to load enrollments.', 'error');
                 }
@@ -271,7 +197,6 @@ $(document).ready(function() {
                     $('#studentSelect').trigger('change');
                     fetchEnrollments();
                     fetchFormData();
-                    switchTab('pending');
                 } else {
                     showToast(json.message, 'error');
                 }
@@ -298,12 +223,7 @@ $(document).ready(function() {
         });
     };
 
-    window.openRejectModal = function(eid, studentName, courseCode, semester, year) {
-        $('#reject_enrollment_id').val(eid);
-        $('#rejectStudentInfo').text(studentName);
-        $('#rejectCourseInfo').text(`${courseCode} — ${semester} ${year}`);
-        if (rejectModalObj) rejectModalObj.show();
-    };
+
 
     // ── DOM rendering ─────────────────────────────────────────────────────────
 
@@ -391,7 +311,7 @@ $(document).ready(function() {
                 const safeCourseCode  = (cls.course_code || '').replace(/'/g, "\\'");
 
                 // Only Approved enrollments can be dropped.
-                // Pending Finance enrollments are rejected here by admin; approval is Finance's job.
+                // Pending Finance and Rejected rows have no admin action — Finance owns approve/reject.
                 let actionBtns = '';
                 if (cls.status === 'Approved') {
                     actionBtns = `<button type="button" class="btn-drop"
@@ -399,10 +319,9 @@ $(document).ready(function() {
                         <i class="fas fa-archive"></i> Drop
                     </button>`;
                 } else if (cls.status === 'Pending Finance') {
-                    actionBtns = `<button type="button" class="btn-reject"
-                        onclick="openRejectModal(${cls.enrollment_id},'${safeStudentName}','${safeCourseCode}','${cls.semester}','${cls.year}')">
-                        <i class="fas fa-times"></i> Reject
-                    </button>`;
+                    actionBtns = `<span class="finance-notice" style="font-size:.65rem;">
+                        <i class="fas fa-university"></i> Awaiting Finance
+                    </span>`;
                 }
 
                 classesHtml += `
@@ -500,86 +419,6 @@ $(document).ready(function() {
 
         filterEnrollment();
     }
-
-    // ── Pending finance panel — grouped by student ───────────────────────────
-    window.renderPendingList = function() {
-        const $list = $('#pendingList');
-        $list.empty();
-        $('#pendingCountNum').text(_pendingData.length);
-
-        if (_pendingData.length === 0) {
-            $list.html(`
-                <div class="text-center py-5">
-                    <i class="fas fa-check-circle d-block fs-2 text-success opacity-50 mb-3"></i>
-                    <div class="fw-bold text-muted">No pending enrollments</div>
-                    <div class="text-muted small">All enrollments have been processed.</div>
-                </div>
-            `);
-            return;
-        }
-
-        _pendingData.forEach(({ student, classes }) => {
-            const safeStudentName = student.name.replace(/'/g, "\\'");
-            const pendingCount    = classes.length;
-
-            const submittedDate = classes
-                .map(c => c.enroll_date ? new Date(c.enroll_date) : null)
-                .filter(Boolean)
-                .sort((a, b) => a - b)[0];
-            const submittedStr = submittedDate
-                ? submittedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                : '—';
-
-            let courseListHtml = classes.map(cls => `
-                <div class="d-flex align-items-center gap-2 flex-wrap py-2" style="border-bottom:1px solid #fde68a;">
-                    <span class="badge bg-info-subtle text-info border border-info-subtle" style="font-size:.68rem;">${cls.course_code}</span>
-                    <span class="small fw-medium text-dark">${cls.course_name}</span>
-                    <span class="text-muted small">— ${cls.semester} ${cls.year}</span>
-                    <span class="text-muted small ms-auto">Prof. ${cls.prof}</span>
-                    <button class="btn-reject ms-1"
-                        onclick="openRejectModal(${cls.enrollment_id},'${safeStudentName}','${cls.course_code.replace(/'/g,"\\'")}','${cls.semester}','${cls.year}')"
-                        title="Reject this course">
-                        <i class="fas fa-times"></i> Reject
-                    </button>
-                </div>
-            `).join('');
-
-            $list.append(`
-                <div class="pending-student-card mb-3" style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:16px;overflow:hidden;">
-                    <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap px-4 py-3"
-                         style="background:#fef3c7;border-bottom:1.5px solid #fde68a;">
-                        <div class="d-flex align-items-center gap-3 flex-wrap">
-                            <div style="width:38px;height:38px;border-radius:50%;background:#fde68a;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.85rem;color:#92400e;flex-shrink:0;">
-                                ${student.name.split(',')[0].trim().charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                                <div class="fw-bold text-dark" style="font-size:.9rem;">${student.name}</div>
-                                <div class="text-muted small" style="font-family:'JetBrains Mono',monospace;">
-                                    ID: ${student.student_id}
-                                    <span class="ms-2 text-muted">·</span>
-                                    <i class="fas fa-calendar ms-2 me-1 opacity-50"></i>Submitted: ${submittedStr}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="status-badge status-pending">
-                                <i class="fas fa-clock" style="font-size:.6rem;"></i>
-                                ${pendingCount} Pending
-                            </span>
-                            <!-- Approval is handled by the Finance system via the Tuition API -->
-                            <span class="finance-notice">
-                                <i class="fas fa-university" style="font-size:.6rem;"></i>
-                                Awaiting Finance
-                            </span>
-                        </div>
-                    </div>
-                    <div class="px-4 py-2">
-                        ${courseListHtml}
-                    </div>
-                </div>
-            `);
-        });
-    };
 
     function buildArchiveHtml(sid, archivesData) {
         if (!archivesData || !archivesData[sid] || archivesData[sid].length === 0) return '';

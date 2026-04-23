@@ -20,20 +20,8 @@
         /* ── Finance notice badge ── */
         .finance-notice { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; font-size: .68rem; font-weight: 700; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
 
-        /* ── Tab bar ── */
-        .enroll-tab-bar { display: flex; gap: 4px; background: #f1f5f9; border-radius: 12px; padding: 4px; }
-        .enroll-tab { padding: 7px 20px; border-radius: 9px; border: none; background: transparent; font-size: .78rem; font-weight: 700; font-family: 'Sora', sans-serif; color: #64748b; cursor: pointer; transition: .2s; position: relative; }
-        .enroll-tab:hover { background: #e2e8f0; color: #334155; }
-        .enroll-tab.active { background: #fff; color: #1e293b; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
-        .tab-badge { position: absolute; top: 3px; right: 5px; background: #ef4444; color: #fff; font-size: .55rem; font-weight: 800; padding: 1px 5px; border-radius: 10px; min-width: 16px; text-align: center; line-height: 1.6; }
-
-        /* ── Pending cards ── */
-        .pending-card { background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 14px; padding: 16px 20px; margin-bottom: 10px; transition: .2s; }
-        .pending-card:hover { border-color: #fbbf24; box-shadow: 0 2px 10px rgba(251,191,36,.15); }
-
         /* ── Action buttons ── */
-        .btn-reject  { display: inline-flex; align-items: center; gap: 5px; padding: 5px 14px; border-radius: 8px; font-size: .73rem; font-weight: 700; background: #fee2e2; color: #be123c; border: 1px solid #fca5a5; cursor: pointer; transition: .15s; }
-        .btn-reject:hover  { background: #fecaca; }
+
         .btn-drop { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 7px; font-size: .72rem; font-weight: 700; background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; cursor: pointer; transition: .15s; }
         .btn-drop:hover { background: #ffedd5; }
         .btn-enroll { display: inline-flex; align-items: center; gap: 8px; background: #1e293b; color: #fff; border: none; border-radius: 10px; padding: 10px 20px; font-size: .82rem; font-weight: 600; font-family: 'Sora', sans-serif; transition: .2s; cursor: pointer; }
@@ -88,80 +76,43 @@
             </button>
         </div>
 
-        <!-- Finance Notice Banner -->
-        <div class="alert d-flex align-items-center gap-3 mb-4 border-0 rounded-4 py-3 px-4" style="background:#eff6ff;border-left:4px solid #3b82f6!important;">
-            <i class="fas fa-university text-primary fs-5"></i>
-            <div>
-                <div class="fw-bold text-primary small">Finance Department Controls Approvals</div>
-                <div class="text-muted small">Enrollment approval and billing is handled by the Finance system via the Tuition API. Admins may only submit or reject enrollments.</div>
+        <!-- Search / Filter Bar -->
+        <div class="sf-bar mb-4">
+            <div class="sf-search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" class="sf-input" id="enrollSearch" placeholder="Search student name or ID…">
+            </div>
+            <select class="sf-select" id="enrollClassFilter">
+                <option value="">All Counts</option>
+                <option value="1">1 Class</option>
+                <option value="2">2 Classes</option>
+                <option value="3">3+ Classes</option>
+            </select>
+            <select class="sf-select" id="enrollStatusFilter">
+                <option value="">All Statuses</option>
+                <option value="Approved">Approved</option>
+                <option value="Pending Finance">Pending Finance</option>
+                <option value="Rejected">Rejected</option>
+            </select>
+            <div class="small fw-bold text-muted ms-auto">
+                Showing <span id="enrollCountNum" class="text-info fw-bold">0</span> students
             </div>
         </div>
 
-        <div class="mb-4">
-            <div class="enroll-tab-bar d-inline-flex">
-                <button class="enroll-tab active" id="tabAll" onclick="switchTab('all')">
-                    <i class="fas fa-users me-1"></i> All Enrollments
-                </button>
-                <button class="enroll-tab" id="tabPending" onclick="switchTab('pending')">
-                    <i class="fas fa-clock me-1"></i> Pending Finance
-                    <span class="tab-badge" id="pendingBadge" style="display:none;"></span>
-                </button>
-            </div>
-        </div>
-
-        <div id="allSection">
-            <div class="sf-bar mb-4">
-                <div class="sf-search-wrap">
-                    <i class="fas fa-search"></i>
-                    <input type="text" class="sf-input" id="enrollSearch" placeholder="Search student name or ID…">
-                </div>
-                <select class="sf-select" id="enrollClassFilter">
-                    <option value="">All Counts</option>
-                    <option value="1">1 Class</option>
-                    <option value="2">2 Classes</option>
-                    <option value="3">3+ Classes</option>
-                </select>
-                <select class="sf-select" id="enrollStatusFilter">
-                    <option value="">All Statuses</option>
-                    <option value="Approved">Approved</option>
-                    <option value="Pending Finance">Pending Finance</option>
-                    <option value="Rejected">Rejected</option>
-                </select>
-                <div class="small fw-bold text-muted ms-auto">
-                    Showing <span id="enrollCountNum" class="text-info fw-bold">0</span> students
-                </div>
-            </div>
-
-            <div class="table-card shadow-sm border-0 bg-white rounded-4 overflow-hidden">
-                <div class="table-responsive">
-                    <table class="table align-middle mb-0 table-hover">
-                        <thead class="bg-light text-muted small">
-                            <tr>
-                                <th class="ps-4">Student</th>
-                                <th>Enrolled Classes</th>
-                                <th class="text-end pe-4">Details</th>
-                            </tr>
-                        </thead>
-                        <tbody id="enrollBody">
-                            <tr><td colspan="3" class="text-center py-5 text-muted small">Loading Enrollments…</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="pendingSection" style="display:none;">
-            <div class="sf-bar mb-4">
-                <div class="sf-search-wrap">
-                    <i class="fas fa-search"></i>
-                    <input type="text" class="sf-input" id="pendingSearch" placeholder="Search pending enrollments…">
-                </div>
-                <div class="small fw-bold text-muted ms-auto">
-                    <span id="pendingCountNum" class="text-warning fw-bold">0</span> pending
-                </div>
-            </div>
-            <div id="pendingList">
-                <div class="text-center py-5 text-muted small">Loading…</div>
+        <div class="table-card shadow-sm border-0 bg-white rounded-4 overflow-hidden">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0 table-hover">
+                    <thead class="bg-light text-muted small">
+                        <tr>
+                            <th class="ps-4">Student</th>
+                            <th>Enrolled Classes</th>
+                            <th class="text-end pe-4">Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="enrollBody">
+                        <tr><td colspan="3" class="text-center py-5 text-muted small">Loading Enrollments…</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -218,33 +169,7 @@
     </div>
 </div>
 
-<!-- ── Reject Modal ── -->
-<div class="modal fade" id="rejectModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-header border-0 py-3 px-4" style="background:#fff1f2;">
-                <h6 class="modal-title fw-bold text-danger"><i class="fas fa-times-circle me-2"></i>Reject Enrollment</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <input type="hidden" id="reject_enrollment_id">
-                <div class="p-3 rounded-3 mb-1" style="background:#fff1f2;border:1px solid #fca5a5;">
-                    <div id="rejectStudentInfo" class="fw-bold text-dark small"></div>
-                    <div id="rejectCourseInfo"  class="text-muted small mt-1"></div>
-                </div>
-                <div class="alert py-2 px-3 small fw-bold border-0 rounded-3 mt-3 mb-0" style="background:#fef9c3;color:#854d0e;">
-                    <i class="fas fa-info-circle me-2"></i>The student can be re-enrolled after rejection.
-                </div>
-            </div>
-            <div class="modal-footer border-0 p-4 pt-0 gap-2">
-                <button type="button" class="btn btn-light border flex-fill fw-bold" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger flex-fill fw-bold" id="confirmRejectBtn">
-                    <i class="fas fa-times me-2"></i>Reject
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
