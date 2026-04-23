@@ -102,14 +102,8 @@ if ($method === 'GET') {
         exit;
     }
 
-    // GET teacher's own requests for a class — from room_requests, not rooms
+    // GET all of this teacher's requests across all classes
     if ($action === 'get_my_requests') {
-        $classId = (int)($_GET['class_id'] ?? 0);
-        if (!$classId) {
-            echo json_encode(['status' => 'error', 'message' => 'class_id is required.']);
-            exit;
-        }
-
         $res = $conn->query("
             SELECT
                 rr.request_id,
@@ -125,13 +119,15 @@ if ($method === 'GET') {
                 rr.created_at,
                 r.name     AS room_name,
                 r.location AS room_location,
-                r.capacity AS room_capacity
+                r.capacity AS room_capacity,
+                c.course_code,
+                c.name     AS class_name
             FROM room_requests rr
-            LEFT JOIN rooms r ON r.room_id = rr.room_id
-            WHERE rr.class_id      = $classId
-              AND rr.instructor_id = $instructorId
+            LEFT JOIN rooms r   ON r.room_id     = rr.room_id
+            LEFT JOIN classes c ON c.class_id    = rr.class_id
+            WHERE rr.instructor_id = $instructorId
             ORDER BY rr.created_at DESC
-            LIMIT 20
+            LIMIT 50
         ");
 
         if (!$res) {
