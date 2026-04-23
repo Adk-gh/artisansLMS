@@ -83,7 +83,7 @@ $BASE_SELECT = "
         co.course_id,
         co.course_code,
         co.name                                       AS course_name,
-        co.units,
+        co.credits AS units,
 
         d.department_id,
         d.name                                        AS department_name,
