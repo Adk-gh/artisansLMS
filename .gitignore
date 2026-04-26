@@ -1,0 +1,49 @@
+# =======================
+# ENVIRONMENT FILES
+# =======================
+.env
+
+# =======================
+# PHP DEPENDENCIES
+# =======================
+vendor/
+
+# =======================
+# NODE.JS DEPENDENCIES
+# =======================
+node_modules/
+
+# =======================
+# COMPOSER LOCK (optional - usually recommended to keep for reproducibility)
+# =======================
+# composer.lock
+
+# =======================
+# IDE / EDITOR FILES
+# =======================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# =======================
+# OS FILES
+# =======================
+.DS_Store
+Thumbs.db
+
+# =======================
+# LOGS
+# =======================
+*.log
+logs/
+
+# =======================
+# TEMP / CACHE FILES
+# =======================
+tmp/
+cache/
+
+client/assets/uploads/*
+!client/assets/uploads/.gitkeep

@@ -37,10 +37,12 @@ $(document).ready(function() {
     function toggleEnr(idx) {
         const $body = $('#enr-body-' + idx);
         const $chev = $('#enr-chev-' + idx);
+        const $card = $('#enr-card-' + idx);
         if ($body.length) {
             const isOpen = $body.is(':visible');
-            $body.toggle();
-            $chev.toggleClass('open', !isOpen);
+            $body.slideToggle(180);
+            $chev.toggleClass('fa-chevron-down', isOpen).toggleClass('fa-chevron-up', !isOpen);
+            $card.toggleClass('border-primary', !isOpen);
         }
     }
 
@@ -53,11 +55,9 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(json) {
                 if (json.status === 'success') {
-                    // Update Counts
                     Object.keys(json.counts).forEach(key => {
                         $(`.arch-tab[data-tab="${key}"] .tab-count`).text(json.counts[key]);
                     });
-                    
                     renderTable(tab, json.records);
                 } else {
                     showToast(json.message || "Failed to load records.", "error");
@@ -133,12 +133,8 @@ $(document).ready(function() {
             }
 
             const show = textOk && dateOk;
-            if (show) {
-                $row.show();
-                visible++;
-            } else {
-                $row.hide();
-            }
+            if (show) { $row.show(); visible++; }
+            else { $row.hide(); }
         });
 
         $('#archResultCount').text(visible + ' record' + (visible !== 1 ? 's' : ''));
@@ -262,6 +258,8 @@ $(document).ready(function() {
             });
             html += `</tbody></table></div></div>`;
         }
+
+        // ── ENROLLMENTS — redesigned ──────────────────────────────────────────
         else if (tab === 'enrollments') {
             const grouped = {};
             records.forEach(r => {
@@ -269,17 +267,31 @@ $(document).ready(function() {
                 const sid = d.student_id || 'unknown';
                 if (!grouped[sid]) {
                     const fname = d.student_name || '?';
-                    const initials = (fname.charAt(0) + (fname.split(' ').pop().charAt(0) || '')).toUpperCase();
-                    grouped[sid] = { name: fname, initials: initials, records: [] };
+                    const parts = fname.trim().split(' ');
+                    const initials = (parts[0].charAt(0) + (parts[parts.length - 1].charAt(0) || '')).toUpperCase();
+                    // Pick a consistent accent color per student
+                    const colors = [
+                        { bg: '#dbeafe', color: '#1d4ed8' },
+                        { bg: '#dcfce7', color: '#15803d' },
+                        { bg: '#f3e8ff', color: '#7c3aed' },
+                        { bg: '#fef3c7', color: '#b45309' },
+                        { bg: '#fce7f3', color: '#be185d' },
+                        { bg: '#e0f2fe', color: '#0369a1' },
+                    ];
+                    const accent = colors[parseInt(sid) % colors.length];
+                    grouped[sid] = { name: fname, initials, records: [], accent };
                 }
                 grouped[sid].records.push(r);
             });
+
+            html += `<div class="p-3 p-md-4 d-flex flex-column gap-3">`;
 
             let gi = 0;
             for (let sid in grouped) {
                 gi++;
                 const sg = grouped[sid];
                 const dropCount = sg.records.length;
+
                 let allSearch = sg.name.toLowerCase();
                 sg.records.forEach(sr => {
                     const sd = sr.data;
@@ -287,45 +299,117 @@ $(document).ready(function() {
                 });
                 const latestDate = sg.records[0].archived_at;
 
+                // Build the inner course rows
+                let courseRows = '';
+                sg.records.forEach((r, idx) => {
+                    const d = r.data;
+                    const enrDate = d.enroll_date
+                        ? new Date(d.enroll_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                        : '—';
+                    const isLast = idx === sg.records.length - 1;
+
+                    courseRows += `
+                    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2 gap-md-3 px-3 py-3 ${!isLast ? 'border-bottom' : ''}">
+                        <!-- Course badge + name -->
+                        <div class="d-flex align-items-center gap-2" style="min-width:200px;">
+                            <div class="d-flex align-items-center justify-content-center rounded-2 px-2 py-1 fw-bold"
+                                 style="background:${sg.accent.bg};color:${sg.accent.color};font-size:.7rem;white-space:nowrap;">
+                                ${d.course_code || '—'}
+                            </div>
+                            <div style="font-size:.78rem;color:#334155;font-weight:500;">${d.course_name || '—'}</div>
+                        </div>
+
+                        <!-- Term -->
+                        <div class="d-flex align-items-center gap-1" style="min-width:130px;">
+                            <i class="fas fa-calendar-alt text-muted" style="font-size:.65rem;"></i>
+                            <span class="text-muted" style="font-size:.72rem;">${d.semester || ''} ${d.year || ''}</span>
+                        </div>
+
+                        <!-- Enroll date -->
+                        <div class="d-flex align-items-center gap-1" style="min-width:130px;">
+                            <i class="fas fa-user-plus text-muted" style="font-size:.65rem;"></i>
+                            <span class="text-muted" style="font-size:.72rem;">Enrolled ${enrDate}</span>
+                        </div>
+
+                        <!-- Archived by -->
+                        <div class="d-flex align-items-center gap-1">
+                            <i class="fas fa-user-shield text-muted" style="font-size:.65rem;"></i>
+                            <span class="text-muted" style="font-size:.72rem;">${r.archiver_name}</span>
+                        </div>
+
+                        <!-- Dropped at -->
+                        <div class="d-flex align-items-center gap-1 me-md-auto">
+                            <i class="fas fa-clock text-muted" style="font-size:.65rem;"></i>
+                            <span class="text-muted" style="font-size:.72rem;">${formatDate(r.archived_at)}</span>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex gap-2 ms-md-auto flex-shrink-0">
+                            <button class="btn btn-sm d-flex align-items-center gap-1 fw-semibold"
+                                    style="background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;font-size:.72rem;border-radius:8px;"
+                                    onclick="restoreRecord(${r.archive_id})">
+                                <i class="fas fa-undo"></i> Restore
+                            </button>
+                            <button class="btn btn-sm d-flex align-items-center gap-1 fw-semibold"
+                                    style="background:#fff1f2;color:#be123c;border:1px solid #fecdd3;font-size:.72rem;border-radius:8px;"
+                                    onclick="purgeRecord(${r.archive_id})">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>`;
+                });
+
                 html += `
-                <div class="enr-student-row arch-row" data-search="${allSearch}" data-date="${latestDate}" id="enr-group-${gi}">
-                    <div class="enr-student-header" onclick="toggleEnr(${gi})">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="enr-student-avatar">${sg.initials}</div>
-                            <div>
-                                <div class="fw-bold" style="font-size:.85rem;color:#0f172a;">${sg.name}</div>
-                                <div style="font-size:.65rem;color:#94a3b8;font-family:'JetBrains Mono',monospace;">STU-${String(sid).padStart(4,'0')}</div>
+                <div class="border rounded-3 overflow-hidden arch-row bg-white"
+                     id="enr-card-${gi}"
+                     data-search="${allSearch}"
+                     data-date="${latestDate}"
+                     style="transition: border-color 0.2s;">
+
+                    <!-- Student Header Row -->
+                    <div class="d-flex align-items-center gap-3 px-3 py-3 bg-white"
+                         onclick="toggleEnr(${gi})"
+                         style="cursor:pointer;border-bottom:1px solid #f1f5f9;">
+
+                        <!-- Avatar -->
+                        <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
+                             style="width:40px;height:40px;background:${sg.accent.bg};color:${sg.accent.color};font-size:.8rem;">
+                            ${sg.initials}
+                        </div>
+
+                        <!-- Name + ID -->
+                        <div class="flex-grow-1">
+                            <div class="fw-bold text-dark" style="font-size:.88rem;">${sg.name}</div>
+                            <div class="text-muted" style="font-size:.68rem;font-family:'JetBrains Mono',monospace;">
+                                STU-${String(sid).padStart(4, '0')}
                             </div>
                         </div>
-                        <div class="d-flex align-items-center gap-3 ms-auto">
-                            <span class="enr-drop-count"><i class="fas fa-archive" style="font-size:.6rem;"></i> ${dropCount} dropped class${dropCount!==1?'es':''}</span>
-                            <i class="fas fa-chevron-down enr-chevron" id="enr-chev-${gi}"></i>
+
+                        <!-- Drop count badge -->
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge rounded-pill px-3 py-2"
+                                  style="background:#fff1f2;color:#be123c;border:1px solid #fecdd3;font-size:.7rem;font-weight:600;">
+                                <i class="fas fa-minus-circle me-1" style="font-size:.6rem;"></i>
+                                ${dropCount} dropped class${dropCount !== 1 ? 'es' : ''}
+                            </span>
+                            <span class="badge rounded-pill px-2 py-1"
+                                  style="background:#f8fafc;color:#64748b;border:1px solid #e2e8f0;font-size:.68rem;">
+                                <i class="fas fa-clock me-1" style="font-size:.6rem;"></i>
+                                ${formatDate(latestDate)}
+                            </span>
+                            <i class="fas fa-chevron-down text-muted ms-1" id="enr-chev-${gi}" style="font-size:.75rem;transition:transform .2s;"></i>
                         </div>
                     </div>
-                    <div class="enr-classes-table" id="enr-body-${gi}" style="display:none;">
-                        <div class="table-responsive hide-scroll"><table class="table mb-0 text-nowrap">
-                            <thead><tr><th class="ps-4">Course</th><th>Term</th><th>Enroll Date</th><th>Dropped By</th><th>Dropped At</th><th class="text-end pe-4">Actions</th></tr></thead><tbody>`;
-                
-                sg.records.forEach(r => {
-                    const d = r.data;
-                    const enrDate = d.enroll_date ? new Date(d.enroll_date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—';
-                    html += `<tr>
-                        <td class="ps-4">
-                            <span class="ctag">${d.course_code||'—'}</span>
-                            <div style="font-size:.72rem;color:#475569;margin-top:2px;">${d.course_name||'—'}</div>
-                        </td>
-                        <td style="font-size:.72rem;color:#64748b;font-family:'JetBrains Mono',monospace;">${d.semester||''} ${d.year||''}</td>
-                        <td style="font-size:.75rem;color:#64748b;">${enrDate}</td>
-                        <td><span class="archiver-pill"><i class="fas fa-user-shield"></i>${r.archiver_name}</span></td>
-                        <td class="arch-meta">${formatDate(r.archived_at)}</td>
-                        <td class="text-end pe-4">
-                            <button class="action-btn btn-restore me-1" onclick="restoreRecord(${r.archive_id})"><i class="fas fa-undo"></i> <span class="d-none d-md-inline">Restore</span></button>
-                            <button class="action-btn btn-purge" onclick="purgeRecord(${r.archive_id})"><i class="fas fa-trash"></i> <span class="d-none d-md-inline">Delete</span></button>
-                        </td>
-                    </tr>`;
-                });
-                html += `</tbody></table></div></div></div>`;
+
+                    <!-- Expandable Course List -->
+                    <div id="enr-body-${gi}" style="display:none;background:#fafbfc;">
+                        ${courseRows}
+                    </div>
+
+                </div>`;
             }
+
+            html += `</div>`;
         }
 
         $container.html(html);

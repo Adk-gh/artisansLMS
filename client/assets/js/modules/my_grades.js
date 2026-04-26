@@ -79,42 +79,176 @@ $(document).ready(function() {
         }).join('');
     }
 
+    // ── Helpers ──
+    function getScoreColor(score) {
+        if (score === null || score === undefined) return { bg: '#f1f5f9', text: '#94a3b8', border: '#e2e8f0' };
+        if (score >= 90) return { bg: '#dcfce7', text: '#15803d', border: '#86efac' };
+        if (score >= 75) return { bg: '#dbeafe', text: '#1d4ed8', border: '#93c5fd' };
+        if (score >= 60) return { bg: '#fef9c3', text: '#a16207', border: '#fde047' };
+        return { bg: '#fee2e2', text: '#b91c1c', border: '#fca5a5' };
+    }
+
+    function getScoreLabel(score) {
+        if (score === null || score === undefined) return 'Pending';
+        if (score >= 90) return 'Excellent';
+        if (score >= 75) return 'Good';
+        if (score >= 60) return 'Average';
+        return 'Needs Work';
+    }
+
+    function calcAvg(items, key) {
+        const graded = items.filter(i => i[key] !== null && i[key] !== undefined);
+        if (!graded.length) return null;
+        const sum = graded.reduce((acc, i) => acc + parseFloat(i[key]), 0);
+        return Math.round(sum / graded.length);
+    }
+
+    function buildScoreBar(score) {
+        if (score === null) return '';
+        const col = getScoreColor(score);
+        const width = Math.max(4, score);
+        return `
+            <div style="height:4px;background:#e2e8f0;border-radius:99px;overflow:hidden;margin-top:6px;">
+                <div style="height:100%;width:${width}%;background:${col.border};border-radius:99px;transition:width .4s ease;"></div>
+            </div>
+        `;
+    }
+
+    function buildScoreBadge(score, display) {
+        const col = getScoreColor(score);
+        return `<span style="
+            display:inline-flex;align-items:center;justify-content:center;
+            min-width:52px;padding:4px 10px;border-radius:99px;font-size:0.75rem;font-weight:700;
+            background:${col.bg};color:${col.text};border:1.5px solid ${col.border};
+            letter-spacing:0.3px;white-space:nowrap;
+        ">${display}</span>`;
+    }
+
+    function buildSectionItems(items, scoreKey, labelKey) {
+        if (!items.length) {
+            return `<div style="padding:16px 0;color:#94a3b8;font-size:0.8rem;text-align:center;">
+                        <i class="fas fa-inbox me-2"></i>Nothing here yet.
+                    </div>`;
+        }
+
+        return items.map((item, idx) => {
+            const score   = item[scoreKey] !== undefined ? item[scoreKey] : null;
+            const display = score !== null ? score + (labelKey === 'pct' ? '%' : '') : '—';
+            const isLast  = idx === items.length - 1;
+
+            return `
+                <div style="
+                    display:flex;align-items:center;justify-content:space-between;gap:12px;
+                    padding:12px 0;
+                    ${!isLast ? 'border-bottom:1px solid #f1f5f9;' : ''}
+                ">
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:0.85rem;font-weight:600;color:#1e293b;
+                                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            ${item.title}
+                        </div>
+                        <div style="font-size:0.7rem;color:${score !== null ? '#64748b' : '#94a3b8'};margin-top:2px;">
+                            ${score !== null ? getScoreLabel(score) : 'Not yet graded'}
+                        </div>
+                        ${buildScoreBar(score)}
+                    </div>
+                    ${buildScoreBadge(score, display)}
+                </div>
+            `;
+        }).join('');
+    }
+
     // ── Global Modal Handler ──
     window.viewDetails = function(c) {
-        $('#modalTitle').text(c.info.course_name);
-        const body = document.getElementById('modalBody');
-        
-        let html = `<div class="mb-4">
-            <h6 class="fw-bold mb-3"><i class="fas fa-file-alt text-info me-2"></i> Assignments</h6>`;
-        
-        if (c.assignments.length === 0) {
-            html += `<p class="text-muted small">No assignments yet.</p>`;
-        } else {
-            html += c.assignments.map(a => `
-                <div class="grade-item">
-                    <div>
-                        <div class="fw-bold small text-dark">${a.title}</div>
-                        <div class="text-muted" style="font-size:0.7rem">${a.grade ? 'Graded' : 'Pending'}</div>
+
+        const assignAvg = calcAvg(c.assignments, 'grade');
+        const quizAvg   = calcAvg(c.quizzes, 'pct');
+        const combined  = c.averages.combined;
+        const combCol   = getScoreColor(combined);
+
+        // ── Modal Header override ──
+        const headerEl = document.getElementById('modalTitle');
+        headerEl.innerHTML = `
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <span style="
+                    background:#0f172a;color:#fff;
+                    font-size:0.7rem;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;
+                    padding:3px 10px;border-radius:99px;
+                ">${c.info.course_code}</span>
+                <span style="font-size:1rem;font-weight:700;color:#0f172a;">${c.info.course_name}</span>
+            </div>
+            <div style="font-size:0.75rem;color:#64748b;font-weight:400;margin-top:2px;">
+                <i class="fas fa-chalkboard-teacher me-1"></i> Prof. ${c.info.last_name}
+            </div>
+        `;
+
+        // ── Score Summary Strip ──
+        const summaryCards = [
+            { label: 'Combined Avg', value: combined !== null ? combined + '%' : '—', score: combined },
+            { label: 'Assignments', value: assignAvg !== null ? assignAvg + '%' : '—', score: assignAvg },
+            { label: 'Quizzes',     value: quizAvg   !== null ? quizAvg   + '%' : '—', score: quizAvg   },
+        ].map(card => {
+            const col = getScoreColor(card.score);
+            return `
+                <div style="
+                    flex:1;min-width:80px;text-align:center;padding:14px 10px;
+                    background:${col.bg};border-radius:12px;border:1.5px solid ${col.border};
+                ">
+                    <div style="font-size:1.35rem;font-weight:800;color:${col.text};">${card.value}</div>
+                    <div style="font-size:0.65rem;font-weight:700;color:${col.text};opacity:0.75;
+                                text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;">
+                        ${card.label}
                     </div>
-                    <span class="badge ${a.grade ? 'bg-primary' : 'bg-light text-muted border'}">${a.grade ?? '—'}</span>
                 </div>
-            `).join('');
+            `;
+        }).join('');
+
+        // ── Section Builder ──
+        function section(icon, color, title, count, content) {
+            return `
+                <div style="margin-bottom:24px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div style="
+                                width:28px;height:28px;border-radius:8px;background:${color}20;
+                                display:flex;align-items:center;justify-content:center;font-size:14px;
+                            "><i class="${icon}" style="color:${color};font-size:13px;"></i></div>
+                            <span style="font-size:0.9rem;font-weight:700;color:#0f172a;">${title}</span>
+                        </div>
+                        <span style="
+                            font-size:0.7rem;font-weight:600;color:#64748b;
+                            background:#f1f5f9;padding:2px 10px;border-radius:99px;
+                        ">${count} item${count !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div style="background:#fff;border:1px solid #f1f5f9;border-radius:12px;padding:0 16px;">
+                        ${content}
+                    </div>
+                </div>
+            `;
         }
 
-        html += `</div><div><h6 class="fw-bold mb-3"><i class="fas fa-brain text-primary me-2"></i> Quizzes</h6>`;
-        
-        if (c.quizzes.length === 0) {
-            html += `<p class="text-muted small">No quizzes yet.</p>`;
-        } else {
-            html += c.quizzes.map(q => `
-                <div class="grade-item">
-                    <div class="fw-bold small text-dark">${q.title}</div>
-                    <span class="badge ${q.pct ? 'bg-success' : 'bg-light text-muted border'}">${q.pct ? q.pct+'%' : '—'}</span>
-                </div>
-            `).join('');
-        }
+        const assignSection = section(
+            'fas fa-file-alt', '#0ea5e9', 'Assignments',
+            c.assignments.length,
+            buildSectionItems(c.assignments, 'grade', 'grade')
+        );
 
-        body.innerHTML = html + `</div>`;
+        const quizSection = section(
+            'fas fa-brain', '#8b5cf6', 'Quizzes',
+            c.quizzes.length,
+            buildSectionItems(c.quizzes, 'pct', 'pct')
+        );
+
+        // ── Assemble Modal Body ──
+        document.getElementById('modalBody').innerHTML = `
+            <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+                ${summaryCards}
+            </div>
+            <hr style="border-color:#f1f5f9;margin-bottom:20px;">
+            ${assignSection}
+            ${quizSection}
+        `;
+
         new bootstrap.Modal(document.getElementById('detailsModal')).show();
     };
 

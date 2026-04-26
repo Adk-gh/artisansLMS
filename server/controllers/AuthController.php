@@ -1,6 +1,7 @@
 <?php
-require_once __DIR__ . '/../../backend/middleware/json_response.php';
+//require_once __DIR__ . '/../../backend/middleware/json_response.php';
 require_once __DIR__ . '/../models/User.php';
+
 
 class AuthController {
 
@@ -63,7 +64,9 @@ class AuthController {
 
     private function resolveRedirect(string $role): string {
         return match($role) {
+            'teacher'   => '../../client/pages/instructor_dashboard.html',
             'student'    => '../../client/pages/collaborations.html',
+            'admin'      => '../../client/pages/dashboard.html',
             default      => '../../client/pages/dashboard.html'
         };
     }

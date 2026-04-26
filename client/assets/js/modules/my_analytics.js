@@ -6,8 +6,8 @@ $(document).ready(function() {
     });
 
     // ── 2. Helpers ──────────────────────────────────────────────────────
-    const fmt     = n => Number(n).toLocaleString();
-    const pct     = n => `${n}%`;
+    const fmt      = n => Number(n).toLocaleString();
+    const pct      = n => `${n}%`;
     const setText  = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     const setWidth = (id, val) => { const el = document.getElementById(id); if (el) el.style.width = `${Math.min(val, 100)}%`; };
 
@@ -30,7 +30,7 @@ $(document).ready(function() {
                     </div>
                     <h6 class="fw-bold text-dark mb-1">${badge.title}</h6>
                     <p class="text-muted m-0" style="font-size:.73rem;">${badge.desc}</p>
-                    <div class="mt-3">${statusBadge}</div>
+                    <div class="mt-auto w-100 pt-3">${statusBadge}</div>
                 </div>
             </div>`;
     }

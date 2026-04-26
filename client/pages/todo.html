@@ -142,10 +142,10 @@
                     <i class="fas fa-layer-group me-2 text-info"></i>Class Tasks &amp; Quizzes
                 </h5>
                 <div class="d-flex gap-2" id="teacherActions">
-                    <button id="btnCreateTask" class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm fw-bold d-none"
-                            data-bs-toggle="modal" data-bs-target="#createModal">
-                        <i class="fas fa-plus me-1"></i> Create Task
-                    </button>
+                    <a id="btnCreateTask" href="/artisansLMS/client/pages/instructor_assignments.html"
+   class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm fw-bold d-none">
+    <i class="fas fa-plus me-1"></i> Create Task
+</a>
                     <button id="btnCreateQuiz" class="btn btn-purple btn-sm rounded-pill px-4 shadow-sm fw-bold d-none"
                             data-bs-toggle="modal" data-bs-target="#createQuizModal">
                         <i class="fas fa-plus me-1"></i> Create Quiz
@@ -315,7 +315,7 @@
                 </div>
                 <button type="button" title="Close" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-4 bg-white" id="gradeTaskBody"></div>
+            <div class="modal-body p-4 bg-white" id="gradeTaskBody" style="min-height: 920px;"></div>
         </div>
     </div>
 </div>

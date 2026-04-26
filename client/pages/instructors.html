@@ -117,25 +117,21 @@
 
     <main class="p-4 p-md-5">
 
-        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-            <div>
-                <h4 class="fw-bold m-0 text-dark">Master Instructors</h4>
-                <p class="text-muted small mb-0">Manage faculty accounts, profiles, and records.</p>
-            </div>
-            <div class="d-flex gap-2 align-items-center flex-wrap">
-                <div class="btn-group view-toggle shadow-sm" role="group">
-                    <button type="button" class="btn active" id="btnGrid" onclick="toggleView('grid')">
-                        <i class="fas fa-th-large me-1"></i><span class="d-none d-sm-inline">Grid</span>
-                    </button>
-                    <button type="button" class="btn" id="btnList" onclick="toggleView('list')">
-                        <i class="fas fa-list me-1"></i><span class="d-none d-sm-inline">List</span>
-                    </button>
-                </div>
-                <button class="btn-instructor px-3 px-md-4 shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addInstructorModal">
-                    <i class="fas fa-user-plus me-1 me-md-2"></i><span class="d-none d-sm-inline">Add </span>Instructor
-                </button>
-            </div>
+        <div class="d-flex flex-wrap justify-content-end align-items-center mb-4 gap-3">
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+        <div class="btn-group view-toggle shadow-sm" role="group">
+            <button type="button" class="btn active" id="btnGrid" onclick="toggleView('grid')">
+                <i class="fas fa-th-large me-1"></i><span class="d-none d-sm-inline">Grid</span>
+            </button>
+            <button type="button" class="btn" id="btnList" onclick="toggleView('list')">
+                <i class="fas fa-list me-1"></i><span class="d-none d-sm-inline">List</span>
+            </button>
         </div>
+        <button class="btn-instructor px-3 px-md-4 shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addInstructorModal">
+            <i class="fas fa-user-plus me-1 me-md-2"></i><span class="d-none d-sm-inline">Add </span>Instructor
+        </button>
+    </div>
+</div>
 
         <div class="sf-bar">
             <div class="sf-search-wrap">

@@ -32,18 +32,18 @@ switch ($action) {
 
         // ── Students List (Fetch Department ALWAYS) ──
         $sql = "SELECT s.*, 
-                GROUP_CONCAT(DISTINCT d.name SEPARATOR ', ') AS dept_name
-                FROM students s
-                LEFT JOIN enrollments e ON s.student_id = e.student_id 
-                LEFT JOIN classes c     ON e.class_id = c.class_id
-                LEFT JOIN courses co    ON c.course_id = co.course_id
-                LEFT JOIN departments d ON co.department_id = d.department_id";
+        MIN(d.name) AS dept_name
+        FROM students s
+        LEFT JOIN enrollments e  ON s.student_id = e.student_id AND e.status = 'Approved'
+        LEFT JOIN classes c      ON e.class_id = c.class_id
+        LEFT JOIN courses co     ON c.course_id = co.course_id
+        LEFT JOIN departments d  ON co.department_id = d.department_id";
 
-        if ($dept_filter !== null) {
-            $sql .= " WHERE d.department_id = $dept_filter";
-        }
+if ($dept_filter !== null) {
+    $sql .= " WHERE d.department_id = $dept_filter";
+}
 
-        $sql .= " GROUP BY s.student_id ORDER BY s.enrollment_date DESC";
+$sql .= " GROUP BY s.student_id ORDER BY s.enrollment_date DESC";
 
         $students = [];
         $res = $conn->query($sql);

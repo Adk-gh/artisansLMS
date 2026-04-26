@@ -254,24 +254,39 @@ $(document).ready(function() {
                  data-email="${emailLower}"
                  data-dept="${deptLower}"
                  data-classes="${row.class_count}">
-                <div class="faculty-card shadow-sm h-100 p-4 bg-white rounded-4">
-                    <div class="d-flex align-items-center mb-3">
+                <div class="faculty-card shadow-sm h-100 p-4 bg-white rounded-4 d-flex flex-column">
+                     <div class="d-flex align-items-center mb-3">
                         <img src="${avatarUrl}&size=80" class="rounded-circle border me-3 shadow-sm flex-shrink-0" width="56" height="56">
                         <div style="min-width:0;">
                             <h6 class="fw-bold mb-0 text-dark text-truncate">${row.first_name} ${row.last_name}</h6>
                             <small class="text-primary fw-bold">${row.pos_title || 'Instructor'}</small>
                         </div>
                     </div>
-                    <div class="bg-light rounded-3 p-3 mb-3">
-                        <div class="row g-2">
-                            <div class="col-6"><div class="info-label">Department</div><small class="fw-medium text-dark">${row.dept_name || 'Unassigned'}</small></div>
-                            <div class="col-6"><div class="info-label">Gender</div><small class="fw-medium text-dark">${genderStr}</small></div>
-                            <div class="col-12 mt-1"><div class="info-label">Email</div><small class="fw-medium text-dark text-truncate d-block">${row.email || '—'}</small></div>
-                            <div class="col-6 mt-1"><div class="info-label">Hired</div><small class="fw-medium text-dark">${hireStr}</small></div>
-                            <div class="col-6 mt-1"><div class="info-label">Classes</div><small class="fw-medium text-dark"><span class="badge ${badgeClass} rounded-pill">${row.class_count} assigned</span></small></div>
-                        </div>
-                    </div>
-                    <div class="d-flex gap-2 flex-wrap">
+<div class="bg-light rounded-3 p-3 mb-3 flex-grow-1">
+    <div class="row g-2">
+        <div class="col-6">
+            <div class="info-label">Department</div>
+            <small class="fw-medium text-dark" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.4rem;">${row.dept_name || 'Unassigned'}</small>
+        </div>
+        <div class="col-6">
+            <div class="info-label">Gender</div>
+            <small class="fw-medium text-dark d-block" style="min-height:2.4rem;">${genderStr}</small>
+        </div>
+        <div class="col-12 mt-1">
+            <div class="info-label">Email</div>
+            <small class="fw-medium text-dark text-truncate d-block" style="min-height:1.4rem;">${row.email || '—'}</small>
+        </div>
+        <div class="col-6 mt-1">
+            <div class="info-label">Hired</div>
+            <small class="fw-medium text-dark d-block" style="min-height:1.4rem;">${hireStr}</small>
+        </div>
+        <div class="col-6 mt-1">
+            <div class="info-label">Classes</div>
+            <small class="fw-medium text-dark d-block" style="min-height:1.4rem;"><span class="badge ${badgeClass} rounded-pill">${row.class_count} assigned</span></small>
+        </div>
+    </div>
+</div>
+<div class="d-flex gap-2 flex-wrap mt-auto">
                         <button class="btn btn-light border btn-sm flex-grow-1 fw-bold edit-instructor-btn" ${editAttrs}>
                             <i class="fas fa-edit me-1 text-primary"></i> Edit Info
                         </button>

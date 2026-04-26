@@ -19,13 +19,13 @@ class DashboardController
     public function getStats()
     {
         $response = [
-            'status' => 'success',
-            'stats' => [],
-            'gender_data' => [],
-            'dept_stats' => [],
-            'top_courses' => [],
+            'status'             => 'success',
+            'stats'              => [],
+            'gender_data'        => [],
+            'dept_stats'         => [],
+            'top_courses'        => [],
             'recent_enrollments' => [],
-            'active_classes' => []
+            'active_classes'     => []   // key kept the same so JS doesn't need to change
         ];
 
         // 1. Quick Stats
@@ -48,9 +48,9 @@ class DashboardController
         $deptRes = $this->db->query("
             SELECT d.name, COUNT(en.student_id) as total
             FROM departments d
-            LEFT JOIN employees e  ON d.department_id = e.department_id
-            LEFT JOIN classes c    ON e.employee_id   = c.instructor_id
-            LEFT JOIN enrollments en ON c.class_id    = en.class_id
+            LEFT JOIN employees e    ON d.department_id = e.department_id
+            LEFT JOIN classes c      ON e.employee_id   = c.instructor_id
+            LEFT JOIN enrollments en ON c.class_id      = en.class_id
             GROUP BY d.department_id
             ORDER BY total DESC LIMIT 6
         ");
@@ -75,17 +75,30 @@ class DashboardController
             }
         }
 
-        // 5. Active classes
+        // 5. Class sessions — returns ALL classes with enrollment counts.
+        //    Live/inactive status is determined exclusively by Firebase on the frontend.
+        //    Ordered by enrollment count so busier classes surface first.
         $classesRes = $this->db->query("
-            SELECT c.class_id, co.name AS course_name, co.course_code,
-                   e.first_name, e.last_name, c.semester, c.year
+            SELECT
+                c.class_id,
+                co.name        AS course_name,
+                co.course_code,
+                e.first_name,
+                e.last_name,
+                c.semester,
+                c.year,
+                COUNT(en.student_id) AS enrolled_count
             FROM classes c
-            JOIN courses co   ON c.course_id    = co.course_id
-            JOIN employees e  ON c.instructor_id = e.employee_id
-            ORDER BY c.class_id DESC LIMIT 6
+            JOIN courses co      ON c.course_id     = co.course_id
+            JOIN employees e     ON c.instructor_id  = e.employee_id
+            LEFT JOIN enrollments en ON c.class_id  = en.class_id
+            GROUP BY c.class_id
+            ORDER BY enrolled_count DESC, c.class_id DESC
+            LIMIT 10
         ");
         if ($classesRes) {
             while ($cls = $classesRes->fetch_assoc()) {
+                $cls['enrolled_count'] = (int)$cls['enrolled_count'];
                 $response['active_classes'][] = $cls;
             }
         }

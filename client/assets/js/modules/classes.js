@@ -273,7 +273,7 @@ $(document).ready(function() {
                     ${deptBadge}
                 </td>
                 <td class="py-3">
-                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle fw-bold me-2" style="font-family:'JetBrains Mono',monospace;">
+                    <span class="badge fw-bold me-2" style="font-family:'JetBrains Mono',monospace;background:#1e293b;color:#fff;font-size:.72rem;padding:5px 10px;border-radius:8px;">
                         #${sec.class_id}
                     </span>
                     <span class="small text-muted fw-medium">${termStr}</span>

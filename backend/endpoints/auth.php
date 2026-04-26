@@ -1,7 +1,7 @@
 <?php
 // CRITICAL: Shield JSON from HTML errors
-error_reporting(0);
-ini_set('display_errors', 0);
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 
 // Force the browser to read the output as JSON
 header('Content-Type: application/json');

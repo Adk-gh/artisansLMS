@@ -1,21 +1,91 @@
 // enrollment.js
 
-let _enrolledData = {};
-let _allClasses   = [];
+let _enrolledData  = {};
+let _allClasses    = [];
+let _allStudents   = [];   // full dataset for pagination
+let _filteredStudents = []; // after filters applied
+let _currentPage   = 1;
+const PAGE_SIZE    = 50;
 
-// ── Filter (all enrollments) ─────────────────────────────────────────────────
-function filterEnrollment() {
-    const q       = $('#enrollSearch').val().toLowerCase().trim();
-    const cf      = $('#enrollClassFilter').val();
-    const statf   = $('#enrollStatusFilter').val();
-    let   visible = 0;
+// ── Pagination ────────────────────────────────────────────────────────────────
+function renderPagination(total) {
+    const totalPages = Math.ceil(total / PAGE_SIZE);
+    const $wrap      = $('#paginationWrap');
+    const $controls  = $('#paginationControls');
+    const $info      = $('#pageInfo');
 
-    $('.student-row-wrap').each(function() {
-        const $wrap   = $(this);
-        const name    = $wrap.attr('data-name')   || '';
-        const sid     = $wrap.attr('data-id')     || '';
-        const count   = parseInt($wrap.attr('data-count')) || 0;
-        const statuses = ($wrap.attr('data-statuses') || '').split(',');
+    if (total === 0) {
+        $wrap.hide();
+        return;
+    }
+
+    $wrap.css('display', 'flex');
+
+    const start = (_currentPage - 1) * PAGE_SIZE + 1;
+    const end   = Math.min(_currentPage * PAGE_SIZE, total);
+    $info.text(`Showing ${start}–${end} of ${total} students`);
+
+    let html = '';
+
+    // Prev button
+    html += `<button class="page-btn" id="prevPage" ${_currentPage === 1 ? 'disabled' : ''}>
+                <i class="fas fa-chevron-left" style="font-size:.7rem;"></i>
+             </button>`;
+
+    // Page number buttons — show max 5 around current
+    const maxBtns  = 5;
+    let   startPg  = Math.max(1, _currentPage - Math.floor(maxBtns / 2));
+    let   endPg    = Math.min(totalPages, startPg + maxBtns - 1);
+    if (endPg - startPg < maxBtns - 1) startPg = Math.max(1, endPg - maxBtns + 1);
+
+    if (startPg > 1) {
+        html += `<button class="page-btn" data-page="1">1</button>`;
+        if (startPg > 2) html += `<span class="page-info px-1">…</span>`;
+    }
+
+    for (let p = startPg; p <= endPg; p++) {
+        html += `<button class="page-btn ${p === _currentPage ? 'active' : ''}" data-page="${p}">${p}</button>`;
+    }
+
+    if (endPg < totalPages) {
+        if (endPg < totalPages - 1) html += `<span class="page-info px-1">…</span>`;
+        html += `<button class="page-btn" data-page="${totalPages}">${totalPages}</button>`;
+    }
+
+    // Next button
+    html += `<button class="page-btn" id="nextPage" ${_currentPage === totalPages ? 'disabled' : ''}>
+                <i class="fas fa-chevron-right" style="font-size:.7rem;"></i>
+             </button>`;
+
+    $controls.html(html);
+
+    // Events
+    $controls.find('[data-page]').on('click', function () {
+        _currentPage = parseInt($(this).data('page'));
+        applyFiltersAndRender();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    $('#prevPage').on('click', function () {
+        if (_currentPage > 1) { _currentPage--; applyFiltersAndRender(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    });
+
+    $('#nextPage').on('click', function () {
+        if (_currentPage < totalPages) { _currentPage++; applyFiltersAndRender(); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    });
+}
+
+// ── Filter + paginate ─────────────────────────────────────────────────────────
+function applyFiltersAndRender() {
+    const q     = $('#enrollSearch').val().toLowerCase().trim();
+    const cf    = $('#enrollClassFilter').val();
+    const statf = $('#enrollStatusFilter').val();
+
+    _filteredStudents = _allStudents.filter(student => {
+        const name     = (student.name || '').toLowerCase();
+        const sid      = String(student.student_id);
+        const count    = student.classes.length;
+        const statuses = [...new Set(student.classes.map(c => c.status))];
 
         const nameOk   = !q     || name.includes(q) || sid.includes(q);
         const statusOk = !statf || statuses.includes(statf);
@@ -24,36 +94,43 @@ function filterEnrollment() {
         else if (cf === '2') cntOk = count === 2;
         else if (cf === '3') cntOk = count >= 3;
 
-        const show = nameOk && cntOk && statusOk;
-        $wrap.toggleClass('hidden', !show);
-        if (show) visible++;
+        return nameOk && cntOk && statusOk;
     });
 
-    $('#enrollCountNum').text(visible);
-    if (visible === 0) $('#enrollNoResults').addClass('show');
-    else               $('#enrollNoResults').removeClass('show');
+    _currentPage = Math.min(_currentPage, Math.ceil(_filteredStudents.length / PAGE_SIZE)) || 1;
+
+    const start   = (_currentPage - 1) * PAGE_SIZE;
+    const pageData = _filteredStudents.slice(start, start + PAGE_SIZE);
+
+    $('#enrollCountNum').text(_filteredStudents.length);
+    renderTablePage(pageData, _filteredStudents.length);
+    renderPagination(_filteredStudents.length);
+}
+
+// Keep the old filterEnrollment name so existing event listeners work
+function filterEnrollment() {
+    _currentPage = 1;
+    applyFiltersAndRender();
 }
 window.filterEnrollment = filterEnrollment;
 
-// ── Modal Class Filter ───────────────────────────────────────────────────────
+// ── Modal Class Filter ────────────────────────────────────────────────────────
 function filterModalClasses() {
     const sid = $('#studentSelect').val();
     if (!sid) return;
 
-    const q = $('#modalClassSearch').val().toLowerCase().trim();
-    const dept = $('#modalClassDept').val();
-    const alreadyEnrolled = _enrolledData[sid] || [];
-    let availableCount = 0;
-    
+    const q       = $('#modalClassSearch').val().toLowerCase().trim();
+    const dept    = $('#modalClassDept').val();
+    const already = _enrolledData[sid] || [];
+    let   count   = 0;
+
     const $helperText = $('#enrollmentHelperText');
 
-    $('.class-check-wrapper').each(function() {
+    $('.class-check-wrapper').each(function () {
         const $wrap = $(this);
-        const cid = $wrap.attr('data-class-id');
-        const nameData = $wrap.attr('data-name') || '';
-        const cDept = $wrap.attr('data-dept') || '';
+        const cid   = $wrap.attr('data-class-id');
 
-        if (alreadyEnrolled.includes(cid)) {
+        if (already.includes(cid)) {
             $wrap.addClass('d-none');
             $wrap.find('input').prop('disabled', true);
             return;
@@ -61,30 +138,28 @@ function filterModalClasses() {
 
         $wrap.find('input').prop('disabled', false);
 
-        const matchesSearch = !q || nameData.includes(q);
-        const matchesDept = !dept || cDept === dept;
+        const nameData = $wrap.attr('data-name') || '';
+        const cDept    = $wrap.attr('data-dept') || '';
+        const matchSearch = !q    || nameData.includes(q);
+        const matchDept   = !dept || cDept === dept;
 
-        if (matchesSearch && matchesDept) {
-            $wrap.removeClass('d-none');
-            availableCount++;
-        } else {
-            $wrap.addClass('d-none');
-        }
+        if (matchSearch && matchDept) { $wrap.removeClass('d-none'); count++; }
+        else                          { $wrap.addClass('d-none'); }
     });
 
-    if (availableCount === 0 && !q && !dept) {
+    if (count === 0 && !q && !dept) {
         $helperText.removeClass('d-none').html("<span class='text-danger fw-bold'>This student is already enrolled in all active classes!</span>");
-    } else if (availableCount === 0) {
+    } else if (count === 0) {
         $helperText.removeClass('d-none').html("<span class='text-muted fst-italic'>No classes match your filter.</span>");
     } else {
         $helperText.addClass('d-none');
     }
 }
 
-$(document).ready(function() {
+$(document).ready(function () {
 
     $('#sidebar-placeholder').load('../components/sidebar.html');
-    $('#header-placeholder').load('../components/header.html', function(res, status) {
+    $('#header-placeholder').load('../components/header.html', function (res, status) {
         if (status !== 'error') initHeader();
     });
 
@@ -94,31 +169,26 @@ $(document).ready(function() {
     const enrollEl = document.getElementById('enrollModal');
     if (enrollEl) enrollModalObj = new bootstrap.Modal(enrollEl);
 
-    // ── Initial load ─────────────────────────────────────────────────────────
     fetchEnrollments();
     fetchFormData();
 
-    // ── Event listeners ──────────────────────────────────────────────────────
     $('#enrollSearch, #enrollClassFilter, #enrollStatusFilter').on('input change', filterEnrollment);
     $('#modalClassSearch').on('input', filterModalClasses);
     $('#modalClassDept').on('change', filterModalClasses);
     $('#enrollForm').on('submit', handleEnrollmentSubmit);
 
-    // Student select change
-    $('#studentSelect').on('change', function() {
-        const sid = $(this).val();
+    $('#studentSelect').on('change', function () {
+        const sid         = $(this).val();
         const $helperText = $('#enrollmentHelperText');
         const $filterRow  = $('#modalClassFilters');
-        const $wrappers   = $('.class-check-wrapper');
-        const $checkboxes = $('.class-checkbox');
 
         $('#modalClassSearch').val('');
         $('#modalClassDept').val('');
 
         if (!sid) {
             $filterRow.attr('style', 'display: none !important');
-            $wrappers.addClass('d-none');
-            $checkboxes.prop('checked', false);
+            $('.class-check-wrapper').addClass('d-none');
+            $('.class-checkbox').prop('checked', false);
             $helperText.removeClass('d-none').text('Select a student to view available classes.');
             $('#selectedCount').hide();
             return;
@@ -126,28 +196,27 @@ $(document).ready(function() {
 
         $filterRow.attr('style', 'display: flex !important');
         $helperText.addClass('d-none');
-        $checkboxes.prop('checked', false);
+        $('.class-checkbox').prop('checked', false);
         buildCheckboxList(sid);
         filterModalClasses();
     });
 
-
-
     // ── API ───────────────────────────────────────────────────────────────────
-
     function fetchEnrollments() {
         $.ajax({
             url: `${API_URL}?action=get_all`,
             method: 'GET',
             dataType: 'json',
-            success: function(json) {
+            success: function (json) {
                 if (json.status === 'success') {
-                    renderTable(json.data, json.archives);
+                    _allStudents = json.data;
+                    _archivesData = json.archives;
+                    applyFiltersAndRender();
                 } else {
                     showToast(json.message || 'Failed to load enrollments.', 'error');
                 }
             },
-            error: function(xhr) {
+            error: function (xhr) {
                 console.error('fetchEnrollments error:', xhr.responseText);
                 showToast('Server error loading enrollments.', 'error');
             }
@@ -159,7 +228,7 @@ $(document).ready(function() {
             url: `${API_URL}?action=get_form_data`,
             method: 'GET',
             dataType: 'json',
-            success: function(json) {
+            success: function (json) {
                 if (json.status === 'success') {
                     _enrolledData = json.enrollments;
                     _allClasses   = json.classes;
@@ -174,7 +243,7 @@ $(document).ready(function() {
         e.preventDefault();
         const studentId = $('#studentSelect').val();
         const classIds  = [];
-        $('#checkboxList input[type=checkbox]:checked').each(function() {
+        $('#checkboxList input[type=checkbox]:checked').each(function () {
             classIds.push($(this).val());
         });
 
@@ -189,7 +258,7 @@ $(document).ready(function() {
             contentType: 'application/json',
             data: JSON.stringify({ student_id: studentId, class_ids: classIds }),
             dataType: 'json',
-            success: function(json) {
+            success: function (json) {
                 if (json.status === 'success') {
                     showToast(json.message, 'success');
                     if (enrollModalObj) enrollModalObj.hide();
@@ -201,14 +270,14 @@ $(document).ready(function() {
                     showToast(json.message, 'error');
                 }
             },
-            error: function(xhr) {
+            error: function (xhr) {
                 console.error('Enroll error:', xhr.responseText);
                 showToast('An error occurred while enrolling.', 'error');
             }
         });
     }
 
-    window.handleDrop = function(enrollmentId, studentName, courseCode) {
+    window.handleDrop = function (enrollmentId, studentName, courseCode) {
         if (!confirm(`Drop ${studentName} from ${courseCode}?\nThis will be saved to Archives.`)) return;
         $.ajax({
             url: `${API_URL}?action=drop`,
@@ -216,17 +285,14 @@ $(document).ready(function() {
             contentType: 'application/json',
             data: JSON.stringify({ enrollment_id: enrollmentId }),
             dataType: 'json',
-            success: function(json) {
+            success: function (json) {
                 showToast(json.message, json.status === 'success' ? 'success' : 'error');
                 if (json.status === 'success') { fetchEnrollments(); fetchFormData(); }
             }
         });
     };
 
-
-
-    // ── DOM rendering ─────────────────────────────────────────────────────────
-
+    // ── DOM Rendering ─────────────────────────────────────────────────────────
     function populateStudentSelect(students) {
         let html = '<option value="">-- Choose Student --</option>';
         students.forEach(s => {
@@ -261,14 +327,12 @@ $(document).ready(function() {
         $list.html(cHtml);
 
         let dHtml = '<option value="">All Depts</option>';
-        for (let id in depts) {
-            dHtml += `<option value="${id}">${depts[id]}</option>`;
-        }
+        for (let id in depts) dHtml += `<option value="${id}">${depts[id]}</option>`;
         $('#modalClassDept').html(dHtml);
 
-        $list.off('change').on('change', '.class-checkbox', function() {
-            const checked   = $list.find('.class-checkbox:checked').length;
-            const $counter  = $('#selectedCount');
+        $list.off('change').on('change', '.class-checkbox', function () {
+            const checked  = $list.find('.class-checkbox:checked').length;
+            const $counter = $('#selectedCount');
             if (checked > 0) $counter.show().find('span').text(checked);
             else             $counter.hide();
         });
@@ -276,195 +340,6 @@ $(document).ready(function() {
 
     function buildCheckboxList(sid) {
         $('#selectedCount').hide();
-    }
-
-    function renderTable(groupedData, archivesData) {
-        const $tbody = $('#enrollBody');
-        $tbody.empty();
-        $('#enrollCountNum').text(groupedData.length);
-
-        if (groupedData.length === 0) {
-            $tbody.html(`<tr><td colspan="3" class="text-center py-5 text-muted small">No enrollments found.</td></tr>`);
-            return;
-        }
-
-        groupedData.forEach(student => {
-            const sid        = student.student_id;
-            const classCount = student.classes.length;
-            const statuses   = [...new Set(student.classes.map(c => c.status))].join(',');
-            const archiveHtml = buildArchiveHtml(sid, archivesData);
-
-            let classesHtml = '';
-            student.classes.forEach(cls => {
-                const dateStr = cls.enroll_date
-                    ? new Date(cls.enroll_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                    : '<span class="text-danger">No Date</span>';
-
-                const statusMap = {
-                    'Pending Finance': `<span class="status-badge status-pending"><i class="fas fa-clock" style="font-size:.6rem;"></i> Pending Finance</span>`,
-                    'Approved':        `<span class="status-badge status-approved"><i class="fas fa-check-circle" style="font-size:.6rem;"></i> Approved</span>`,
-                    'Rejected':        `<span class="status-badge status-rejected"><i class="fas fa-times-circle" style="font-size:.6rem;"></i> Rejected</span>`
-                };
-                const statusBadge = statusMap[cls.status] || '';
-
-                const safeStudentName = (student.name || '').replace(/'/g, "\\'");
-                const safeCourseCode  = (cls.course_code || '').replace(/'/g, "\\'");
-
-                // Only Approved enrollments can be dropped.
-                // Pending Finance and Rejected rows have no admin action — Finance owns approve/reject.
-                let actionBtns = '';
-                if (cls.status === 'Approved') {
-                    actionBtns = `<button type="button" class="btn-drop"
-                        onclick="handleDrop(${cls.enrollment_id},'${safeStudentName}','${safeCourseCode}')">
-                        <i class="fas fa-archive"></i> Drop
-                    </button>`;
-                } else if (cls.status === 'Pending Finance') {
-                    actionBtns = `<span class="finance-notice" style="font-size:.65rem;">
-                        <i class="fas fa-university"></i> Awaiting Finance
-                    </span>`;
-                }
-
-                classesHtml += `
-                <tr>
-                    <td class="ps-3 py-2">
-                        <div class="d-flex align-items-center flex-wrap gap-2">
-                            <span class="badge bg-info-subtle text-info">${cls.course_code}</span>
-                            <span class="small fw-medium text-dark">${cls.course_name}</span>
-                        </div>
-                    </td>
-                    <td class="small text-muted py-2">Prof. ${cls.prof}</td>
-                    <td class="py-2" style="font-family:'JetBrains Mono',monospace;font-size:.68rem;color:#64748b;">
-                        ${cls.semester} ${cls.year}
-                    </td>
-                    <td class="py-2">${statusBadge}</td>
-                    <td class="small text-muted py-2">${dateStr}</td>
-                    <td class="text-end pe-3 py-2">${actionBtns}</td>
-                </tr>`;
-            });
-
-            const hasPending  = student.classes.some(c => c.status === 'Pending Finance');
-            const hasRejected = student.classes.some(c => c.status === 'Rejected');
-            const summaryBadge = hasPending
-                ? `<span class="status-badge status-pending"><i class="fas fa-clock" style="font-size:.6rem;"></i> Has Pending</span>`
-                : hasRejected
-                ? `<span class="status-badge status-rejected"><i class="fas fa-times-circle" style="font-size:.6rem;"></i> Has Rejected</span>`
-                : `<span class="status-badge status-approved"><i class="fas fa-check-circle" style="font-size:.6rem;"></i> All Approved</span>`;
-
-            const rowHtml = `
-            <tbody class="student-row-wrap"
-                data-name="${(student.name || '').toLowerCase()}"
-                data-id="${sid}"
-                data-count="${classCount}"
-                data-statuses="${statuses}">
-                <tr class="collapse-toggle" data-bs-toggle="collapse" data-bs-target="#student-${sid}" aria-expanded="false">
-                    <td class="ps-4 py-3">
-                        <div class="fw-bold text-dark">${student.name}</div>
-                        <small class="text-muted" style="font-family:'JetBrains Mono',monospace;">ID: #${sid}</small>
-                    </td>
-                    <td class="py-3">
-                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-bold me-2">
-                            ${classCount} ${classCount === 1 ? 'Class' : 'Classes'}
-                        </span>
-                        ${summaryBadge}
-                    </td>
-                    <td class="text-end pe-4 py-3">
-                        <button class="btn btn-sm btn-light border shadow-sm rounded-circle" style="width:35px;height:35px;">
-                            <i class="fas fa-chevron-down text-muted"></i>
-                        </button>
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="3" class="p-0 border-0">
-                        <div class="collapse" id="student-${sid}">
-                            <div class="p-3 p-md-4 expanded-row-bg border-bottom">
-                                <h6 class="fw-bold text-dark mb-3">
-                                    <i class="fas fa-layer-group text-primary me-2"></i>Classes for ${student.name}
-                                </h6>
-                                <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
-                                    <div class="table-responsive">
-                                        <table class="table nested-table mb-0 table-sm align-middle">
-                                            <thead>
-                                                <tr>
-                                                    <th class="ps-3 py-2">Course</th>
-                                                    <th class="py-2">Instructor</th>
-                                                    <th class="py-2">Term</th>
-                                                    <th class="py-2">Status</th>
-                                                    <th class="py-2">Enroll Date</th>
-                                                    <th class="text-end pe-3 py-2">Actions</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="bg-white">${classesHtml}</tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                                ${archiveHtml}
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            </tbody>`;
-
-            $tbody.append(rowHtml);
-        });
-
-        $tbody.append(`
-            <tr class="no-results-row" id="enrollNoResults">
-                <td colspan="3" class="text-center py-5">
-                    <i class="fas fa-search d-block fs-3 text-muted opacity-25 mb-2"></i>
-                    <div class="fw-bold text-muted">No students match your search</div>
-                    <div class="text-muted small">Try a different name, count, or status filter</div>
-                </td>
-            </tr>
-        `);
-
-        filterEnrollment();
-    }
-
-    function buildArchiveHtml(sid, archivesData) {
-        if (!archivesData || !archivesData[sid] || archivesData[sid].length === 0) return '';
-
-        let rows = '';
-        archivesData[sid].forEach(dr => {
-            const dateStr = dr.archived_at
-                ? new Date(dr.archived_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true })
-                : 'N/A';
-            rows += `
-            <tr>
-                <td class="ps-3 py-2">
-                    <span class="badge me-1" style="background:#fde68a;color:#92400e;font-family:'JetBrains Mono',monospace;">${dr.course_code}</span>
-                    <span class="small" style="color:#78350f;">${dr.course_name}</span>
-                </td>
-                <td class="small py-2" style="color:#92400e;font-family:'JetBrains Mono',monospace;font-size:.68rem;">${dr.semester} ${dr.year}</td>
-                <td class="py-2">
-                    <span style="font-size:.7rem;font-weight:700;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:4px;">
-                        <i class="fas fa-user-shield" style="font-size:.6rem;"></i> ${dr.archiver}
-                    </span>
-                </td>
-                <td class="small py-2" style="color:#92400e;">${dateStr}</td>
-            </tr>`;
-        });
-
-        return `
-        <div class="mt-3">
-            <h6 class="small fw-bold text-muted text-uppercase mb-2" style="font-size:.65rem;letter-spacing:.8px;">
-                <i class="fas fa-archive me-1" style="color:#f59e0b;"></i> Dropped / Archived Enrollments
-            </h6>
-            <div class="card border-0 rounded-3 overflow-hidden" style="border:1px solid #fde68a!important;">
-                <div class="table-responsive">
-                    <table class="table table-sm mb-0 align-middle">
-                        <thead style="background:#fef3c7;">
-                            <tr>
-                                <th class="ps-3 py-2" style="font-size:.6rem;text-transform:uppercase;color:#92400e;">Course</th>
-                                <th class="py-2"       style="font-size:.6rem;text-transform:uppercase;color:#92400e;">Term</th>
-                                <th class="py-2"       style="font-size:.6rem;text-transform:uppercase;color:#92400e;">Dropped By</th>
-                                <th class="py-2"       style="font-size:.6rem;text-transform:uppercase;color:#92400e;">Dropped At</th>
-                            </tr>
-                        </thead>
-                        <tbody style="background:#fffbeb;">${rows}</tbody>
-                    </table>
-                </div>
-            </div>
-        </div>`;
     }
 
     function showToast(msg, type) {
@@ -483,7 +358,185 @@ $(document).ready(function() {
     }
 });
 
-// ─── Header & Session Logic ───────────────────────────────────────────────────
+// ── Table Renderer (page slice only) ─────────────────────────────────────────
+let _archivesData = {};
+
+function renderTablePage(pageData, totalFiltered) {
+    const $tbody = $('#enrollBody');
+    $tbody.empty();
+
+    if (totalFiltered === 0) {
+        $tbody.html(`<tr><td colspan="3" class="text-center py-5 text-muted small">No enrollments found.</td></tr>`);
+        return;
+    }
+
+    if (pageData.length === 0) {
+        $tbody.html(`<tr><td colspan="3" class="text-center py-5 text-muted small">No students on this page.</td></tr>`);
+        return;
+    }
+
+    pageData.forEach(student => {
+        const sid        = student.student_id;
+        const classCount = student.classes.length;
+        const statuses   = [...new Set(student.classes.map(c => c.status))].join(',');
+        const archiveHtml = buildArchiveHtml(sid, _archivesData);
+
+        let classesHtml = '';
+        student.classes.forEach(cls => {
+            const dateStr = cls.enroll_date
+                ? new Date(cls.enroll_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : '<span class="text-danger">No Date</span>';
+
+            const statusMap = {
+                'Pending Finance': `<span class="status-badge status-pending"><i class="fas fa-clock" style="font-size:.6rem;"></i> Pending Finance</span>`,
+                'Approved':        `<span class="status-badge status-approved"><i class="fas fa-check-circle" style="font-size:.6rem;"></i> Approved</span>`,
+                'Rejected':        `<span class="status-badge status-rejected"><i class="fas fa-times-circle" style="font-size:.6rem;"></i> Rejected</span>`
+            };
+            const statusBadge = statusMap[cls.status] || '';
+
+            const safeStudentName = (student.name || '').replace(/'/g, "\\'");
+            const safeCourseCode  = (cls.course_code || '').replace(/'/g, "\\'");
+
+            let actionBtns = '';
+            if (cls.status === 'Approved') {
+                actionBtns = `<button type="button" class="btn-drop"
+                    onclick="handleDrop(${cls.enrollment_id},'${safeStudentName}','${safeCourseCode}')">
+                    <i class="fas fa-archive"></i> Drop
+                </button>`;
+            } else if (cls.status === 'Pending Finance') {
+                actionBtns = `<span class="finance-notice" style="font-size:.65rem;">
+                    <i class="fas fa-university"></i> Awaiting Finance
+                </span>`;
+            }
+
+            classesHtml += `
+            <tr>
+                <td class="ps-3 py-2">
+                    <div class="d-flex align-items-center flex-wrap gap-2">
+                        <span class="badge bg-info-subtle text-info" style="min-width:70px;text-align:center;">${cls.course_code}</span>
+                        <span class="small fw-medium text-dark">${cls.course_name}</span>
+                    </div>
+                </td>
+                <td class="small text-muted py-2">Prof. ${cls.prof}</td>
+                <td class="py-2" style="font-family:'JetBrains Mono',monospace;font-size:.68rem;color:#64748b;">${cls.semester} ${cls.year}</td>
+                <td class="py-2">${statusBadge}</td>
+                <td class="small text-muted py-2">${dateStr}</td>
+                <td class="text-end pe-3 py-2">${actionBtns}</td>
+            </tr>`;
+        });
+
+        const hasPending  = student.classes.some(c => c.status === 'Pending Finance');
+        const hasRejected = student.classes.some(c => c.status === 'Rejected');
+        const summaryBadge = hasPending
+            ? `<span class="status-badge status-pending"><i class="fas fa-clock" style="font-size:.6rem;"></i> Has Pending</span>`
+            : hasRejected
+            ? `<span class="status-badge status-rejected"><i class="fas fa-times-circle" style="font-size:.6rem;"></i> Has Rejected</span>`
+            : `<span class="status-badge status-approved"><i class="fas fa-check-circle" style="font-size:.6rem;"></i> All Approved</span>`;
+
+        $tbody.append(`
+        <tbody class="student-row-wrap"
+            data-name="${(student.name || '').toLowerCase()}"
+            data-id="${sid}"
+            data-count="${classCount}"
+            data-statuses="${statuses}">
+            <tr class="collapse-toggle" data-bs-toggle="collapse" data-bs-target="#student-${sid}" aria-expanded="false">
+                <td class="ps-4 py-3">
+                    <div class="fw-bold text-dark">${student.name}</div>
+                    <small class="text-muted" style="font-family:'JetBrains Mono',monospace;">ID: #${sid}</small>
+                </td>
+                <td class="py-3">
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-bold me-2" style="min-width:90px;text-align:center;">
+                        ${classCount} ${classCount === 1 ? 'Class' : 'Classes'}
+                    </span>
+                    ${summaryBadge}
+                </td>
+                <td class="text-end pe-4 py-3">
+                    <button class="btn btn-sm btn-light border shadow-sm rounded-circle" style="width:35px;height:35px;">
+                        <i class="fas fa-chevron-down text-muted"></i>
+                    </button>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="3" class="p-0 border-0">
+                    <div class="collapse" id="student-${sid}">
+                        <div class="p-3 p-md-4 expanded-row-bg border-bottom">
+                            <h6 class="fw-bold text-dark mb-3">
+                                <i class="fas fa-layer-group text-primary me-2"></i>Classes for ${student.name}
+                            </h6>
+                            <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+                                <div class="table-responsive">
+                                    <table class="table nested-table mb-0 table-sm align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th class="ps-3 py-2">Course</th>
+                                                <th class="py-2">Instructor</th>
+                                                <th class="py-2">Term</th>
+                                                <th class="py-2">Status</th>
+                                                <th class="py-2">Enroll Date</th>
+                                                <th class="text-end pe-3 py-2">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white">${classesHtml}</tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            ${archiveHtml}
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </tbody>`);
+    });
+}
+
+function buildArchiveHtml(sid, archivesData) {
+    if (!archivesData || !archivesData[sid] || archivesData[sid].length === 0) return '';
+
+    let rows = '';
+    archivesData[sid].forEach(dr => {
+        const dateStr = dr.archived_at
+            ? new Date(dr.archived_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true })
+            : 'N/A';
+        rows += `
+        <tr>
+            <td class="ps-3 py-2">
+                <span class="badge me-1" style="background:#fde68a;color:#92400e;font-family:'JetBrains Mono',monospace;">${dr.course_code}</span>
+                <span class="small" style="color:#78350f;">${dr.course_name}</span>
+            </td>
+            <td class="small py-2" style="color:#92400e;font-family:'JetBrains Mono',monospace;font-size:.68rem;">${dr.semester} ${dr.year}</td>
+            <td class="py-2">
+                <span style="font-size:.7rem;font-weight:700;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:4px;">
+                    <i class="fas fa-user-shield" style="font-size:.6rem;"></i> ${dr.archiver}
+                </span>
+            </td>
+            <td class="small py-2" style="color:#92400e;">${dateStr}</td>
+        </tr>`;
+    });
+
+    return `
+    <div class="mt-3">
+        <h6 class="small fw-bold text-muted text-uppercase mb-2" style="font-size:.65rem;letter-spacing:.8px;">
+            <i class="fas fa-archive me-1" style="color:#f59e0b;"></i> Dropped / Archived Enrollments
+        </h6>
+        <div class="card border-0 rounded-3 overflow-hidden" style="border:1px solid #fde68a!important;">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0 align-middle">
+                    <thead style="background:#fef3c7;">
+                        <tr>
+                            <th class="ps-3 py-2" style="font-size:.6rem;text-transform:uppercase;color:#92400e;">Course</th>
+                            <th class="py-2"       style="font-size:.6rem;text-transform:uppercase;color:#92400e;">Term</th>
+                            <th class="py-2"       style="font-size:.6rem;text-transform:uppercase;color:#92400e;">Dropped By</th>
+                            <th class="py-2"       style="font-size:.6rem;text-transform:uppercase;color:#92400e;">Dropped At</th>
+                        </tr>
+                    </thead>
+                    <tbody style="background:#fffbeb;">${rows}</tbody>
+                </table>
+            </div>
+        </div>
+    </div>`;
+}
+
+// ─── Header ───────────────────────────────────────────────────────────────────
 const AUTH_API = '/artisansLMS/backend/index.php';
 
 function initHeader() {
@@ -523,32 +576,30 @@ function initHeader() {
         contentType: 'application/json',
         dataType: 'json',
         data: JSON.stringify({ route: 'auth', action: 'checkSession' }),
-        success: function(res) {
+        success: function (res) {
             if (res.status === 'success' && res.logged_in) {
                 const u     = res.user;
                 const smAvt = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=e2e8f0&color=475569`;
                 const lgAvt = smAvt + '&size=128';
-
                 $('#headerUserName').text(u.name);
                 $('#headerUserRole').text(u.role || 'Admin');
                 $('#headerAvatar').attr({ src: smAvt, alt: u.name });
                 $('#dropdownUserName').text(u.name);
                 $('#dropdownUserRole').text(u.role || 'Admin');
                 $('#dropdownAvatar').attr({ src: lgAvt, alt: u.name });
-                $('#heroName').html(u.name + ' <span class="fs-3">👋</span>');
             } else {
                 window.location.href = '/artisansLMS/client/pages/login.html';
             }
         },
-        error: function() { window.location.href = '/artisansLMS/client/pages/login.html'; }
+        error: function () { window.location.href = '/artisansLMS/client/pages/login.html'; }
     });
 
-    $(document).on('click', '#logoutBtn', function(e) {
+    $(document).on('click', '#logoutBtn', function (e) {
         e.preventDefault();
         $.ajax({
             url: AUTH_API, method: 'POST', contentType: 'application/json', dataType: 'json',
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
-            complete: function() { window.location.href = '/artisansLMS/client/pages/login.html'; }
+            complete: function () { window.location.href = '/artisansLMS/client/pages/login.html'; }
         });
     });
 }

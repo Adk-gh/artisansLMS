@@ -11,7 +11,6 @@
     <style>
         body { background-color: #f8fafc; font-family: 'Inter', sans-serif;}
         
-        /* THIS PREVENTS THE SIDEBAR OVERLAP */
         @media (min-width: 768px) { #content { margin-left: 260px !important; transition: margin-left .28s; } }
 
         /* Player card */
@@ -31,7 +30,19 @@
 
         .stat-box { background:white; padding:20px; border-radius:15px; border:1px solid #e2e8f0; border-left:5px solid #0ea5e9; height:100%; }
 
-        .badge-card { text-align:center; padding:20px; border-radius:15px; border:2px solid #e2e8f0; transition:.3s; background:white; height:100%; }
+        /* Badge card — flex column so button always pins to bottom */
+        .badge-card {
+            text-align: center;
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid #e2e8f0;
+            transition: .3s;
+            background: white;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
         .badge-card.locked { filter:grayscale(100%); opacity:.45; border-style:dashed; }
         .badge-card:hover:not(.locked) { transform:translateY(-5px); box-shadow:0 8px 20px rgba(0,0,0,.08); }
         .badge-icon-wrapper { width:68px; height:68px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 12px; font-size:1.7rem; color:white; box-shadow:0 8px 15px rgba(0,0,0,.12); }
@@ -73,6 +84,7 @@
 
                 <div id="analytics-content" style="display: none;">
 
+                    <!-- Player Card -->
                     <div class="player-card p-4 p-md-5 shadow-lg mb-5">
                         <div class="row align-items-center position-relative g-4">
                             <div class="col-md-7 d-flex align-items-center gap-4">
@@ -117,6 +129,7 @@
                         </div>
                     </div>
 
+                    <!-- Stat Boxes -->
                     <div class="row g-4 mb-5">
                         <div class="col-sm-6 col-xl-3">
                             <div class="stat-box shadow-sm">
@@ -160,6 +173,7 @@
                         </div>
                     </div>
 
+                    <!-- Achievements Board -->
                     <h5 class="fw-bold text-dark mb-1">Achievements Board</h5>
                     <p class="text-muted small mb-4" id="badge-summary">Loading badges…</p>
 

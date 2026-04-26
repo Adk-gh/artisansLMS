@@ -336,7 +336,7 @@ $(document).ready(function() {
                 matHtmlList = `<div class="text-muted small fst-italic py-1">No materials yet.</div>`;
             }
 
-            const deptBadge = deptName ? `<span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 mb-2" style="font-size:.65rem;"><i class="fas fa-building me-1"></i>${deptName}</span>` : '';
+            const deptBadge = deptName ? `<span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 mb-2 d-inline-flex align-items-center text-truncate" style="font-size:.65rem;max-width:100%;overflow:hidden;"><i class="fas fa-building me-1 flex-shrink-0"></i><span class="text-truncate" title="${deptName}">${deptName}</span></span>` : '';
 
             // Attributes needed for Multi-Search (Includes department name)
             const attrString = `
@@ -357,8 +357,8 @@ $(document).ready(function() {
                         <small class="fw-bold text-muted">${c.credits} Units</small>
                     </div>
                     ${deptBadge}
-                    <h5 class="fw-bold text-dark mt-1">${c.name}</h5>
-                    <p class="text-muted small mb-3" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${c.description || ''}</p>
+                    <h5 class="fw-bold text-dark mt-1" style="min-height:3rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${c.name}</h5>
+                    <p class="text-muted small mb-3" style="min-height:2.5rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${c.description || 'No description available.'}</p>
                     <div class="bg-light p-3 rounded-3 mb-4 flex-grow-1">
                         <div class="list-group list-group-flush">${matHtmlList}</div>
                     </div>

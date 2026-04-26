@@ -79,21 +79,17 @@
 
     <main class="p-4 p-md-5">
 
-        <div class="module-header d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-            <div>
-                <h4 class="fw-bold m-0 text-dark">Course Management</h4>
-                <p class="text-muted small mb-0">Create, edit, and organize system courses and materials.</p>
-            </div>
-            <div class="d-flex gap-3 align-items-center flex-wrap">
-                <div class="btn-group view-toggle shadow-sm" role="group">
-                    <button type="button" class="btn active" id="btnGrid" onclick="toggleView('grid')"><i class="fas fa-th-large me-1"></i> Grid</button>
-                    <button type="button" class="btn" id="btnList" onclick="toggleView('list')"><i class="fas fa-list me-1"></i> List</button>
-                </div>
-                <button class="btn-course" data-bs-toggle="modal" data-bs-target="#addCourseModal">
-                    <i class="fas fa-plus-circle me-2"></i> Add Course
-                </button>
-            </div>
+        <div class="module-header d-flex flex-wrap justify-content-end align-items-center mb-4 gap-3">
+    <div class="d-flex gap-3 align-items-center flex-wrap">
+        <div class="btn-group view-toggle shadow-sm" role="group">
+            <button type="button" class="btn active" id="btnGrid" onclick="toggleView('grid')"><i class="fas fa-th-large me-1"></i> Grid</button>
+            <button type="button" class="btn" id="btnList" onclick="toggleView('list')"><i class="fas fa-list me-1"></i> List</button>
         </div>
+        <button class="btn-course" data-bs-toggle="modal" data-bs-target="#addCourseModal">
+            <i class="fas fa-plus-circle me-2"></i> Add Course
+        </button>
+    </div>
+</div>
 
         <div class="sf-bar mb-4">
             <div class="sf-search-wrap">

@@ -96,7 +96,7 @@ $(document).ready(function() {
                 const past = t.due_date && new Date(t.due_date) < new Date(new Date().setHours(0,0,0,0));
                 
                 let icon, badgeCls, badgeText;
-                if (t.is_quiz) { icon='fa-brain'; badgeCls='bg-purple-subtle text-purple border border-purple-subtle'; badgeText='Quiz'; }
+                if (t.is_quiz) { icon='fa-brain'; badgeCls='bg-warning-subtle text-warning border border-warning-subtle'; badgeText='Quiz'; }
                 else if (t.category === 'activity') { icon='fa-running'; badgeCls='bg-info-subtle text-info border border-info-subtle'; badgeText='Activity'; }
                 else { icon='fa-file-alt'; badgeCls='bg-primary-subtle text-primary border border-primary-subtle'; badgeText='Assignment'; }
 
@@ -117,7 +117,7 @@ $(document).ready(function() {
                     <td class="small fw-bold font-monospace-sm text-primary">${responses}</td>
                     <td class="text-end pe-4">
                         <button class="btn btn-sm btn-light border text-success fw-bold me-1" onclick="openReassign(${t.assignment_id}, '${t.real_type}', '${escHtml(t.title)}', ${t.class_id})" title="Assign to other classes"><i class="fas fa-share-nodes"></i></button>
-                        <a href="assignment.html?class_id=${t.class_id}" class="btn btn-sm btn-light border text-primary fw-bold me-1" title="View in class"><i class="fas fa-external-link-alt"></i></a>
+                        <a href="todo.html?class_id=${t.class_id}" class="btn btn-sm btn-light border text-primary fw-bold me-1" title="View in class"><i class="fas fa-external-link-alt"></i></a>
                         <button class="btn btn-sm btn-light border text-danger fw-bold" onclick="deleteTask(${t.assignment_id}, '${t.real_type}')" title="Delete"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>`;
@@ -205,7 +205,20 @@ $(document).ready(function() {
     });
 
     let qs = [];
-    window.addQ = function(type) { qs.push({ type: type, text:'', choices:{A:'',B:'',C:'',D:''}, correct: type==='true_false'?'TRUE':'A', points:1 }); renderQs(); };
+   window.adjustCount = function(key, delta) {
+    const input = document.getElementById(key + '-count');
+    const next  = Math.min(50, Math.max(1, (parseInt(input.value) || 1) + delta));
+    input.value = next;
+};
+
+window.addQBulk = function(type, key) {
+    const count = Math.min(50, Math.max(1, parseInt(document.getElementById(key + '-count').value) || 1));
+    for (let i = 0; i < count; i++) {
+        qs.push({ type: type, text: '', choices: { A:'', B:'', C:'', D:'' }, correct: type === 'true_false' ? 'TRUE' : 'A', points: 1 });
+    }
+    document.getElementById(key + '-count').value = 1; // reset after adding
+    renderQs();
+};
     window.removeQ = function(i) { qs.splice(i, 1); renderQs(); };
     window.setQText = function(i,v) { qs[i].text=v; };
     window.setChoice = function(i,k,v) { qs[i].choices[k]=v; };

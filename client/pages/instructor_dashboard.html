@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMS | Instructor Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/artisansLMS/client/assets/css/style.css">
+    <style>
+        body { font-family: 'Sora', sans-serif; background-color: #f8fafc; }
+        @media (min-width: 768px) { #content { margin-left: 260px !important; transition: margin-left .28s; } }
+
+        /* ── Hero ── */
+        .hero-card {
+            background: #0f172a;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+        .hero-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url('https://www.transparenttextures.com/patterns/cubes.png');
+            opacity: .05;
+            pointer-events: none;
+        }
+        .hero-accent {
+            position: absolute;
+            top: -60px; right: -60px;
+            width: 280px; height: 280px;
+            background: radial-gradient(circle, rgba(56,189,248,.15) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* ── Stat cards ── */
+        .stat-card {
+            background: #fff;
+            border-radius: 16px;
+            border: 1px solid #e9f0f8;
+            padding: 1.25rem 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform .2s, box-shadow .2s;
+        }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+        .stat-card .stat-icon {
+            width: 44px; height: 44px;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem;
+        }
+        .stat-card .stat-num {
+            font-size: 1.9rem; font-weight: 800;
+            line-height: 1; color: #0f172a;
+        }
+        .stat-card .stat-label {
+            font-size: .72rem; font-weight: 600;
+            text-transform: uppercase; letter-spacing: .06em;
+            color: #94a3b8; margin-top: 3px;
+        }
+        .stat-card .stat-bg-icon {
+            position: absolute; right: 12px; bottom: 8px;
+            font-size: 3.5rem; opacity: .06;
+        }
+
+        /* ── Section headers ── */
+        .section-label {
+            font-size: .65rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .1em;
+            color: #94a3b8; margin-bottom: .75rem;
+        }
+
+        /* ── Class cards ── */
+        .class-card {
+            background: #fff;
+            border-radius: 14px;
+            border: 1px solid #e9f0f8;
+            padding: 1.1rem 1.25rem;
+            transition: transform .18s, box-shadow .18s;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+            color: inherit;
+        }
+        .class-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,.08);
+            color: inherit;
+            text-decoration: none;
+        }
+        .class-card .course-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .7rem; font-weight: 500;
+            background: #eff6ff; color: #2563eb;
+            border-radius: 6px; padding: 2px 8px;
+            display: inline-block;
+        }
+        .class-card .course-name {
+            font-size: .9rem; font-weight: 700;
+            color: #0f172a; margin: 6px 0 4px;
+            line-height: 1.3;
+        }
+        .class-card .class-meta {
+            font-size: .72rem; color: #94a3b8; font-weight: 500;
+        }
+        .class-card .class-pills {
+            display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px;
+        }
+        .class-pill {
+            font-size: .68rem; font-weight: 600;
+            border-radius: 20px; padding: 2px 9px;
+        }
+
+        /* ── Pending submissions list ── */
+        .sub-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 0; border-bottom: 1px solid #f1f5f9;
+        }
+        .sub-item:last-child { border-bottom: none; }
+        .sub-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: #dbeafe; color: #1d4ed8;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: .75rem; flex-shrink: 0;
+        }
+        .sub-name { font-size: .82rem; font-weight: 600; color: #0f172a; }
+        .sub-meta { font-size: .7rem; color: #94a3b8; margin-top: 1px; }
+
+        /* ── Upcoming due dates ── */
+        .due-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 9px 0; border-bottom: 1px solid #f1f5f9;
+        }
+        .due-item:last-child { border-bottom: none; }
+        .due-dot {
+            width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+        }
+        .due-title { font-size: .82rem; font-weight: 600; color: #0f172a; }
+        .due-meta  { font-size: .7rem; color: #94a3b8; }
+        .due-date  {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: .68rem; font-weight: 500;
+            color: #64748b; margin-left: auto; flex-shrink: 0;
+        }
+
+        /* ── Quiz results table ── */
+        .quiz-row td { font-size: .8rem; padding: .6rem .75rem; vertical-align: middle; }
+        .quiz-row:hover td { background: #f8fafc; }
+
+        /* ── Activity feed ── */
+        .act-item {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 9px 0; border-bottom: 1px solid #f1f5f9;
+        }
+        .act-item:last-child { border-bottom: none; }
+        .act-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #38bdf8; margin-top: 5px; flex-shrink: 0;
+        }
+
+        /* ── Fade-in animation ── */
+        .fade-up {
+            opacity: 0; transform: translateY(18px);
+            animation: fadeUp .5s forwards;
+        }
+        @keyframes fadeUp { to { opacity: 1; transform: none; } }
+        .fd-1 { animation-delay: .05s; }
+        .fd-2 { animation-delay: .12s; }
+        .fd-3 { animation-delay: .2s;  }
+        .fd-4 { animation-delay: .28s; }
+        .fd-5 { animation-delay: .36s; }
+
+        .empty-state {
+            text-align: center; padding: 2rem 1rem;
+            color: #94a3b8; font-size: .82rem; font-weight: 500;
+        }
+        .empty-state i { font-size: 1.8rem; opacity: .35; display: block; margin-bottom: .5rem; }
+    </style>
+</head>
+<body>
+<div class="d-flex min-vh-100">
+    <div id="sidebar-container"></div>
+
+    <div id="content" class="flex-grow-1 w-100">
+        <div id="header-container"></div>
+
+        <main class="container-fluid p-3 p-md-4 p-lg-5">
+
+            <!-- ── Hero ── -->
+            <div class="hero-card shadow-lg mb-4 mb-md-5 fade-up fd-1">
+                <div class="hero-accent"></div>
+                <div class="card-body p-4 p-md-5 position-relative" style="z-index:1;">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                        <div>
+                            <div class="text-uppercase small fw-bold text-info mb-1" id="greetingText">Good morning</div>
+                            <h1 class="display-6 fw-bold mb-2 text-white" id="heroName">
+                                Loading... <span class="fs-3">👋</span>
+                            </h1>
+                            <p class="mb-0 fs-6" style="color:rgba(255,255,255,.55);">
+                                Here's an overview of your classes and student activity.
+                            </p>
+                        </div>
+                        <div class="badge border text-white rounded-pill px-3 py-2 d-flex align-items-center gap-2 mt-2 mt-sm-0"
+                             style="background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.15)!important;">
+                            <i class="fas fa-calendar-alt text-info"></i>
+                            <span id="dateText" class="fw-semibold" style="font-size:.82rem;">—</span>
+                        </div>
+                    </div>
+
+                    <!-- stat pills -->
+                    <div class="d-flex flex-wrap gap-3 mt-4 mt-md-5" id="heroPills">
+                        <div class="d-flex align-items-center gap-3 rounded-3 p-2 pe-4"
+                             style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);">
+                            <div class="rounded-3 p-3 lh-1 fs-5 text-white" style="background:#38bdf8;">
+                                <i class="fas fa-chalkboard"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold fs-5 lh-1 text-white" id="statClasses">—</div>
+                                <div class="text-white-50 fw-semibold text-uppercase mt-1" style="font-size:.65rem;">Classes</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-3 rounded-3 p-2 pe-4"
+                             style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);">
+                            <div class="rounded-3 p-3 lh-1 fs-5 text-white" style="background:#22c55e;">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold fs-5 lh-1 text-white" id="statStudents">—</div>
+                                <div class="text-white-50 fw-semibold text-uppercase mt-1" style="font-size:.65rem;">Students</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-3 rounded-3 p-2 pe-4"
+                             style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);">
+                            <div class="rounded-3 p-3 lh-1 fs-5 text-white" style="background:#f59e0b;">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold fs-5 lh-1 text-white" id="statPending">—</div>
+                                <div class="text-white-50 fw-semibold text-uppercase mt-1" style="font-size:.65rem;">Pending Grades</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-3 rounded-3 p-2 pe-4"
+                             style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);">
+                            <div class="rounded-3 p-3 lh-1 fs-5 text-white" style="background:#8b5cf6;">
+                                <i class="fas fa-brain"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold fs-5 lh-1 text-white" id="statQuizzes">—</div>
+                                <div class="text-white-50 fw-semibold text-uppercase mt-1" style="font-size:.65rem;">Quizzes</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── My Classes ── -->
+            <div class="fade-up fd-2">
+                <div class="section-label">My Classes</div>
+                <div class="row g-3 mb-4 mb-md-5" id="classGrid">
+                    <div class="col-12 text-center py-4">
+                        <div class="spinner-border spinner-border-sm text-primary"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Row: Pending + Upcoming ── -->
+            <div class="row g-3 g-md-4 mb-4 mb-md-5 fade-up fd-3">
+
+                <!-- Pending Submissions -->
+                <div class="col-lg-6">
+                    <div class="section-label">Pending Submissions to Grade</div>
+                    <div class="bg-white rounded-4 border p-3 p-md-4 shadow-sm h-100" style="border-color:#e9f0f8!important;">
+                        <div id="pendingList">
+                            <div class="text-center py-4">
+                                <div class="spinner-border spinner-border-sm text-primary"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Upcoming Due Dates -->
+                <div class="col-lg-6">
+                    <div class="section-label">Upcoming Due Dates <span class="text-primary">(next 7 days)</span></div>
+                    <div class="bg-white rounded-4 border p-3 p-md-4 shadow-sm h-100" style="border-color:#e9f0f8!important;">
+                        <div id="upcomingList">
+                            <div class="text-center py-4">
+                                <div class="spinner-border spinner-border-sm text-primary"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Row: Quiz Results + Activity ── -->
+            <div class="row g-3 g-md-4 fade-up fd-4">
+
+                <!-- Quiz Results -->
+                <div class="col-lg-7">
+                    <div class="section-label">Recent Quiz Results</div>
+                    <div class="bg-white rounded-4 border shadow-sm overflow-hidden" style="border-color:#e9f0f8!important;">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4 text-muted fw-bold small text-uppercase py-3">Quiz</th>
+                                    <th class="text-muted fw-bold small text-uppercase">Class</th>
+                                    <th class="text-muted fw-bold small text-uppercase">Attempts</th>
+                                    <th class="text-muted fw-bold small text-uppercase">Avg Score</th>
+                                    <th class="text-muted fw-bold small text-uppercase pe-4">Pass Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody id="quizResultsBody">
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted small">
+                                        <div class="spinner-border spinner-border-sm text-primary"></div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Activity Feed -->
+                <div class="col-lg-5">
+                    <div class="section-label">Recent Student Activity</div>
+                    <div class="bg-white rounded-4 border p-3 p-md-4 shadow-sm" style="border-color:#e9f0f8!important;">
+                        <div id="activityFeed">
+                            <div class="text-center py-4">
+                                <div class="spinner-border spinner-border-sm text-primary"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('#sidebar-container').load('../components/sidebar.html');
+        $('#header-container').load('../components/header.html', function (res, status) {
+            if (status !== 'error' && typeof initHeader === 'function') initHeader();
+        });
+    });
+</script>
+<script src="/artisansLMS/client/assets/js/app.js"></script>
+<script src="/artisansLMS/client/assets/js/modules/instructor_dashboard.js"></script>
+</body>
+</html>

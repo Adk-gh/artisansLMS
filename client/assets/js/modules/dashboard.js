@@ -237,12 +237,31 @@ function renderRecentActivity(enrollments) {
     }).join(''));
 }
 
+// ─── Active Classes + Firebase Live Status ────────────────────────────────────
+
+// Badge HTML helpers
+function liveBadge() {
+    return `<span class="badge bg-success bg-opacity-10 text-success border border-success-subtle rounded-pill d-inline-flex align-items-center gap-1">
+                <span class="spinner-grow text-success" style="width:6px;height:6px;" role="status"></span> Live
+            </span>`;
+}
+
+function inactiveBadge() {
+    return `<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle rounded-pill d-inline-flex align-items-center gap-1">
+                <span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;"></span> Inactive
+            </span>`;
+}
+
 function renderActiveClasses(classes) {
     const container = $('#classSessionsBody');
+
     if (!classes || classes.length === 0) {
-        container.html('<tr><td colspan="5" class="text-center py-4 text-muted small">No active classes.</td></tr>');
+        container.html('<tr><td colspan="6" class="text-center py-4 text-muted small">No classes found.</td></tr>');
         return;
     }
+
+    // Render all rows as Inactive by default —
+    // Firebase will update each badge to Live only when is_live === true
     container.html(classes.map(c => `
         <tr>
             <td>
@@ -256,10 +275,58 @@ function renderActiveClasses(classes) {
             </td>
             <td><span class="badge bg-light text-secondary border font-monospace">${c.semester} ${c.year}</span></td>
             <td>
-                <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle rounded-pill d-inline-flex align-items-center gap-1">
-                    <span class="spinner-grow text-success" style="width:6px;height:6px;" role="status"></span> Active
+                <span class="fw-bold text-dark small font-monospace">${c.enrolled_count ?? 0}</span>
+                <span class="text-muted" style="font-size:.7rem;"> students</span>
+            </td>
+            <td class="text-end pe-4">
+                <span class="class-status-badge" data-class-id="${c.class_id}">
+                    ${inactiveBadge()}
                 </span>
             </td>
         </tr>`
     ).join(''));
+
+    // Subscribe to Firebase for each class — badge updates in real-time
+    watchLiveStatuses(classes.map(c => c.class_id));
+}
+
+// ─── Firebase live status watcher ────────────────────────────────────────────
+
+function watchLiveStatuses(classIds) {
+    // Dynamically import Firebase so dashboard.js stays non-module
+    // (same CDN used in collaborations.js)
+    Promise.all([
+        import('https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js'),
+        import('https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js')
+    ]).then(([{ initializeApp, getApps }, { getDatabase, ref, onValue }]) => {
+
+        // Re-use existing Firebase app if already initialized (avoids duplicate app error)
+        const app = getApps().length
+            ? getApps()[0]
+            : initializeApp({
+                apiKey:            "AIzaSyDQfwNYptf-gWqIQVs0welvz86DwqPI6VQ",
+                authDomain:        "artisans-lms.firebaseapp.com",
+                projectId:         "artisans-lms",
+                storageBucket:     "artisans-lms.firebasestorage.app",
+                messagingSenderId: "897938751816",
+                appId:             "1:897938751816:web:9cbdeb9ae93020dfff737d"
+            });
+
+        const db = getDatabase(app);
+
+        classIds.forEach(classId => {
+            const statusRef = ref(db, `lms_classes/${classId}/status`);
+
+            onValue(statusRef, snap => {
+                const isLive = snap.val()?.is_live === true;
+                const badge  = document.querySelector(`.class-status-badge[data-class-id="${classId}"]`);
+                if (badge) {
+                    badge.innerHTML = isLive ? liveBadge() : inactiveBadge();
+                }
+            });
+        });
+
+    }).catch(err => {
+        console.warn('Firebase live status watcher failed to load:', err);
+    });
 }

@@ -9,6 +9,7 @@ const PAGE_TITLES = {
     'my_grades.html':              { title: 'My Grades',              subtitle: 'Track your academic performance and feedback.' },
     'my_analytics.html':           { title: 'Achievement Board',      subtitle: 'View your milestones, badges, and learning statistics.' },
     'instructor_dashboard.html':   { title: 'Instructor Dashboard',   subtitle: 'Manage your assigned courses and student spaces.' },
+    'instructor_courses.html':     { title: 'My Courses',             subtitle: 'Manage your course materials, assignments, and students.' },
     'courses.html':                { title: 'Course Materials',       subtitle: 'Upload and organize files, lectures, and resources.' },
     'instructor_assignments.html': { title: 'Task Manager',           subtitle: 'Create and manage assignments for your assigned classes.' },
     'students.html':               { title: 'Manage Students',        subtitle: 'Manage student profiles, accounts, and records.' },

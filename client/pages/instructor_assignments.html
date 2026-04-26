@@ -56,15 +56,11 @@
                 
                 <div id="alertsContainer"></div>
 
-                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
-                    <div>
-                        <h4 class="fw-bold text-dark mb-1">Global Task Manager</h4>
-                        <p class="text-muted small mb-0">Create and manage tasks across all your classes.</p>
-                    </div>
-                    <button class="btn btn-dark fw-bold rounded-pill px-4 py-2 shadow-sm d-flex align-items-center gap-2 hover-lift" data-bs-toggle="modal" data-bs-target="#createModal" title="Create New Task">
-                        <i class="fas fa-plus text-info"></i> Create New Task
-                    </button>
-                </div>
+                <div class="d-flex justify-content-end align-items-start flex-wrap gap-3 mb-4">
+    <button class="btn btn-dark fw-bold rounded-pill px-4 py-2 shadow-sm d-flex align-items-center gap-2 hover-lift" data-bs-toggle="modal" data-bs-target="#createModal" title="Create New Task">
+        <i class="fas fa-plus text-info"></i> Create New Task
+    </button>
+</div>
 
                 <div class="card border-0 shadow-sm rounded-4 mb-4 d-none d-md-flex bg-white">
                     <div class="card-body p-4">
@@ -205,12 +201,55 @@
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h6 class="fw-bold m-0">Questions <span class="badge bg-primary rounded-pill ms-1" id="qcnt">0</span></h6>
                             <div class="d-flex gap-2">
-                                <button type="button" class="btn btn-sm btn-outline-primary bg-white fw-bold rounded-pill shadow-sm" onclick="addQ('multiple_choice')" title="Add Multiple Choice Question">
-                                    <i class="fas fa-plus me-1"></i>Multiple Choice
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-success bg-white fw-bold rounded-pill shadow-sm" onclick="addQ('true_false')" title="Add True/False Question">
-                                    <i class="fas fa-plus me-1"></i>True/False
-                                </button>
+                                <div class="d-flex flex-wrap gap-2">
+
+    <!-- Multiple Choice -->
+    <div class="d-flex align-items-center gap-1 border rounded-pill bg-white shadow-sm px-2 py-1">
+        <span class="small fw-bold text-primary ps-1 pe-1" style="white-space:nowrap;">
+            <i class="fas fa-list-ul me-1"></i>MC
+        </span>
+        <button type="button" class="btn btn-sm p-0 d-flex align-items-center justify-content-center text-muted"
+                style="width:24px;height:24px;" onclick="adjustCount('mc', -1)" title="Decrease">
+            <i class="fas fa-minus" style="font-size:.65rem;"></i>
+        </button>
+        <input type="number" id="mc-count" value="1" min="1" max="50"
+               class="form-control form-control-sm border-0 text-center fw-bold p-0"
+               style="width:36px;font-size:.85rem;" title="Multiple choice count">
+        <button type="button" class="btn btn-sm p-0 d-flex align-items-center justify-content-center text-muted"
+                style="width:24px;height:24px;" onclick="adjustCount('mc', 1)" title="Increase">
+            <i class="fas fa-plus" style="font-size:.65rem;"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-primary rounded-pill fw-bold px-3 py-1"
+                style="font-size:.78rem;" onclick="addQBulk('multiple_choice', 'mc')"
+                title="Add multiple choice questions">
+            Add
+        </button>
+    </div>
+
+    <!-- True / False -->
+    <div class="d-flex align-items-center gap-1 border rounded-pill bg-white shadow-sm px-2 py-1">
+        <span class="small fw-bold text-success ps-1 pe-1" style="white-space:nowrap;">
+            <i class="fas fa-check-circle me-1"></i>T/F
+        </span>
+        <button type="button" class="btn btn-sm p-0 d-flex align-items-center justify-content-center text-muted"
+                style="width:24px;height:24px;" onclick="adjustCount('tf', -1)" title="Decrease">
+            <i class="fas fa-minus" style="font-size:.65rem;"></i>
+        </button>
+        <input type="number" id="tf-count" value="1" min="1" max="50"
+               class="form-control form-control-sm border-0 text-center fw-bold p-0"
+               style="width:36px;font-size:.85rem;" title="True/false count">
+        <button type="button" class="btn btn-sm p-0 d-flex align-items-center justify-content-center text-muted"
+                style="width:24px;height:24px;" onclick="adjustCount('tf', 1)" title="Increase">
+            <i class="fas fa-plus" style="font-size:.65rem;"></i>
+        </button>
+        <button type="button" class="btn btn-sm btn-success rounded-pill fw-bold px-3 py-1"
+                style="font-size:.78rem;" onclick="addQBulk('true_false', 'tf')"
+                title="Add true/false questions">
+            Add
+        </button>
+    </div>
+
+</div>
                             </div>
                         </div>
                         

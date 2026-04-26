@@ -1,11 +1,9 @@
 $(document).ready(function() {
-    // ── 1. Load sidebar & header components via jQuery ──────────────────
     $("#sidebar-container").load("../components/sidebar.html");
     $("#header-container").load("../components/header.html", function(res, status) {
         if (status !== 'error') initHeader();
     });
 
-    // ── 2. URL and Routing Setup ────────────────────────────────────────
     const urlParams = new URLSearchParams(window.location.search);
     const classId = urlParams.get('class_id');
 
@@ -14,23 +12,21 @@ $(document).ready(function() {
         return;
     }
 
-    // Update tab links to keep class_id context
     $('#tabChat').attr('href', `collaborations.html?class_id=${classId}`);
     $('#tabModules').attr('href', `modules.html?class_id=${classId}`);
     $('#tabTasks').attr('href', `todo.html?class_id=${classId}`);
 
-    // ── 3. Fetch Modules from API via AJAX ──────────────────────────────
+    let allFiles = [];
+
     $.ajax({
         url: '/artisansLMS/backend/endpoints/resources.php',
         method: 'GET',
-        data: {
-            action: 'get_modules',
-            class_id: classId
-        },
+        data: { action: 'get_modules', class_id: classId },
         dataType: 'json',
         success: function(data) {
             if (data.status === 'success') {
-                renderModules(data.resources);
+                allFiles = data.resources || [];
+                renderModules(allFiles);
                 if (data.course_name) {
                     $('#courseDescription').text(`Resources for ${data.course_name}`);
                 }
@@ -45,67 +41,125 @@ $(document).ready(function() {
         }
     });
 
-    // ── 4. Core Functions ───────────────────────────────────────────────
+    // ── File category helper ────────────────────────────────────────────
+    const EXT_MAP = {
+        pdf:   ['pdf'],
+        video: ['mp4', 'webm', 'ogg', 'mov'],
+        image: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'],
+    };
+
+    function getCategory(filePath) {
+        const ext = filePath.split('.').pop().toLowerCase();
+        if (EXT_MAP.pdf.includes(ext))   return 'pdf';
+        if (EXT_MAP.video.includes(ext)) return 'video';
+        if (EXT_MAP.image.includes(ext)) return 'image';
+        return 'other';
+    }
+
+    // ── Filter + Sort ───────────────────────────────────────────────────
+    function applyFilters() {
+        const activeVal    = $('#typeFilters .filter-pill.active').data('val') || 'all';
+        const sortAsc      = $('#sort-asc').hasClass('active');
+
+        let filtered = [...allFiles];
+
+        if (activeVal !== 'all') {
+            filtered = filtered.filter(f => getCategory(f.file_path) === activeVal);
+        }
+
+        filtered.sort((a, b) => {
+            const da = new Date(a.uploaded_at), db = new Date(b.uploaded_at);
+            return sortAsc ? da - db : db - da;
+        });
+
+        if (filtered.length === 0) {
+            $('#moduleContainer').addClass('d-none');
+            $('#emptyState').addClass('d-none');
+            $('#filterEmpty').removeClass('d-none');
+        } else {
+            $('#filterEmpty').addClass('d-none');
+            $('#emptyState').addClass('d-none');
+            $('#moduleContainer').removeClass('d-none');
+            renderModules(filtered);
+        }
+    }
+
+    // Filter pill clicks
+    $(document).on('click', '#typeFilters .filter-pill', function() {
+        $('#typeFilters .filter-pill').removeClass('active');
+        $(this).addClass('active');
+        applyFilters();
+    });
+
+    // Sort button clicks
+    $('#sort-asc, #sort-desc').on('click', function() {
+        $('#sort-asc, #sort-desc').removeClass('active');
+        $(this).addClass('active');
+        applyFilters();
+    });
+
+    // ── Render ──────────────────────────────────────────────────────────
     function renderModules(files) {
         const $container = $('#moduleContainer');
-        
+
         if (!files || files.length === 0) {
             showEmptyState();
             return;
         }
 
-        const htmlContent = files.map(file => {
-            const ext = file.file_path.split('.').pop().toLowerCase();
+        $container.html(files.map(file => {
+            const ext    = file.file_path.split('.').pop().toLowerCase();
             const config = getFileIconConfig(ext);
-
             return `
                 <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-2">
                     <div class="card-body p-3 d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3 overflow-hidden">
-                            <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" 
-                                 style="width: 48px; height: 48px; background-color: ${config.bg}; color: ${config.color};">
+                            <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                                 style="width:48px;height:48px;background-color:${config.bg};color:${config.color};">
                                 <i class="fas ${config.icon} fa-lg"></i>
                             </div>
                             <div class="overflow-hidden">
                                 <h6 class="mb-0 fw-bold text-dark text-truncate">${file.file_name}</h6>
-                                <small class="text-muted text-uppercase fw-bold" style="font-size: 0.65rem; letter-spacing: 0.5px;">
+                                <small class="text-muted text-uppercase fw-bold" style="font-size:.65rem;letter-spacing:.5px;">
                                     ${file.description || (ext.toUpperCase() + ' File')}
                                 </small>
                             </div>
                         </div>
-                        <a href="${file.file_path}" target="_blank" class="btn btn-light border text-primary fw-bold btn-sm rounded-3 px-3 py-2">
+                        <a href="${file.file_path}" target="_blank"
+                           class="btn btn-light border text-primary fw-bold btn-sm rounded-3 px-3 py-2">
                             <i class="fas fa-external-link-alt me-1"></i> View
                         </a>
                     </div>
-                </div>
-            `;
-        }).join('');
-
-        $container.html(htmlContent);
+                </div>`;
+        }).join(''));
     }
 
     function getFileIconConfig(ext) {
         const map = {
-            'pdf':  { icon: 'fa-file-pdf', color: '#ef4444', bg: '#fee2e2' },
-            'doc':  { icon: 'fa-file-word', color: '#3b82f6', bg: '#dbeafe' },
-            'docx': { icon: 'fa-file-word', color: '#3b82f6', bg: '#dbeafe' },
-            'ppt':  { icon: 'fa-file-powerpoint', color: '#f59e0b', bg: '#fef3c7' },
-            'pptx': { icon: 'fa-file-powerpoint', color: '#f59e0b', bg: '#fef3c7' },
-            'xls':  { icon: 'fa-file-excel', color: '#22c55e', bg: '#dcfce7' },
-            'xlsx': { icon: 'fa-file-excel', color: '#22c55e', bg: '#dcfce7' },
-            'jpg':  { icon: 'fa-file-image', color: '#8b5cf6', bg: '#f3e8ff' },
-            'jpeg': { icon: 'fa-file-image', color: '#8b5cf6', bg: '#f3e8ff' },
-            'png':  { icon: 'fa-file-image', color: '#8b5cf6', bg: '#f3e8ff' },
-            'mp4':  { icon: 'fa-file-video', color: '#ef4444', bg: '#fee2e2' }
+            'pdf':  { icon: 'fa-file-pdf',        color: '#ef4444', bg: '#fee2e2' },
+            'doc':  { icon: 'fa-file-word',        color: '#3b82f6', bg: '#dbeafe' },
+            'docx': { icon: 'fa-file-word',        color: '#3b82f6', bg: '#dbeafe' },
+            'ppt':  { icon: 'fa-file-powerpoint',  color: '#f59e0b', bg: '#fef3c7' },
+            'pptx': { icon: 'fa-file-powerpoint',  color: '#f59e0b', bg: '#fef3c7' },
+            'xls':  { icon: 'fa-file-excel',       color: '#22c55e', bg: '#dcfce7' },
+            'xlsx': { icon: 'fa-file-excel',       color: '#22c55e', bg: '#dcfce7' },
+            'jpg':  { icon: 'fa-file-image',       color: '#8b5cf6', bg: '#f3e8ff' },
+            'jpeg': { icon: 'fa-file-image',       color: '#8b5cf6', bg: '#f3e8ff' },
+            'png':  { icon: 'fa-file-image',       color: '#8b5cf6', bg: '#f3e8ff' },
+            'mp4':  { icon: 'fa-file-video',       color: '#ef4444', bg: '#fee2e2' },
+            'sql':  { icon: 'fa-database',         color: '#64748b', bg: '#f1f5f9' },
         };
         return map[ext] || { icon: 'fa-file', color: '#64748b', bg: '#f1f5f9' };
     }
 
     function showEmptyState() {
         $('#moduleContainer').addClass('d-none');
+        $('#filterEmpty').addClass('d-none');
         $('#emptyState').removeClass('d-none');
     }
-});
+
+}); // ← end of document.ready
+
 
 // ─── Header & Session Logic ───────────────────────────────────────────────────
 const AUTH_API = '/artisansLMS/backend/index.php';
@@ -134,7 +188,6 @@ function initHeader() {
 
     const currentPage = window.location.pathname.split('/').pop() || 'modules.html';
     const page        = PAGE_TITLES[currentPage] || { title: 'Artisans LMS', subtitle: 'Learning Management System' };
-    
     $('#headerPageTitle').text(page.title);
     $('#headerPageSubtitle').text(page.subtitle);
     document.title = 'LMS | ' + page.title;
@@ -150,22 +203,20 @@ function initHeader() {
                 const u     = res.user;
                 const smAvt = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=e2e8f0&color=475569`;
                 const lgAvt = smAvt + '&size=128';
-                
                 $('#headerUserName').text(u.name);
-                $('#headerUserRole').text(u.role || 'User'); 
+                $('#headerUserRole').text(u.role || 'User');
                 $('#headerAvatar').attr({ src: smAvt, alt: u.name });
                 $('#dropdownUserName').text(u.name);
                 $('#dropdownUserRole').text(u.role || 'User');
                 $('#dropdownAvatar').attr({ src: lgAvt, alt: u.name });
                 $('#heroName').html(u.name + ' <span class="fs-3">👋</span>');
-                
                 sessionStorage.setItem('sb_role', (u.role || '').toLowerCase());
             } else {
                 window.location.href = '/artisansLMS/client/pages/login.html';
             }
         },
-        error: function() { 
-            window.location.href = '/artisansLMS/client/pages/login.html'; 
+        error: function() {
+            window.location.href = '/artisansLMS/client/pages/login.html';
         }
     });
 

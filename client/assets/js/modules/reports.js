@@ -81,7 +81,7 @@ $(document).ready(function() {
         $tbody.empty();
 
         if (courses.length === 0) {
-            $tbody.html('<tr><td colspan="5" class="text-center py-4 text-muted small">No class data available yet.</td></tr>');
+            $tbody.html('<tr><td colspan="4" class="text-center py-4 text-muted small">No class data available yet.</td></tr>');
             return;
         }
 
@@ -107,17 +107,16 @@ $(document).ready(function() {
             if (avg >= 75)     statusCell = '<span class="status-good"><i class="fas fa-check-circle me-1"></i>Meeting Targets</span>';
             else if (avg > 0)  statusCell = '<span class="status-bad"><i class="fas fa-exclamation-triangle me-1"></i>Intervention Needed</span>';
 
-            html += `
-            <tr>
-                <td class="ps-4">
-                    <div class="fw-bold">${c.course_code}</div>
-                    <small class="text-muted">${c.name}</small>
-                </td>
-                <td><span class="badge bg-light text-dark border">${c.sub_count}</span></td>
-                <td>${quizCell}</td>
-                <td>${gradeCell}</td>
-                <td class="text-end pe-4">${statusCell}</td>
-            </tr>`;
+           html += `
+        <tr>
+            <td class="ps-3">
+                <div class="fw-bold">${c.course_code}</div>
+                <small class="text-muted">${c.name}</small>
+            </td>
+            <td><span class="badge bg-light text-dark border">${c.sub_count}</span></td>
+            <td>${gradeCell}</td>
+            <td class="text-end pe-3">${statusCell}</td>
+        </tr>`;
         });
         $tbody.html(html);
     }

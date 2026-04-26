@@ -20,6 +20,7 @@ function initHeader() {
         'my_grades.html':              { title: 'My Grades',              subtitle: 'Track your academic performance and feedback.' },
         'my_analytics.html':           { title: 'Achievement Board',      subtitle: 'View your milestones, badges, and learning statistics.' },
         'instructor_dashboard.html':   { title: 'Instructor Dashboard',   subtitle: 'Manage your assigned courses and student spaces.' },
+        'instructor_courses.html':     { title: 'My Courses',             subtitle: 'Manage your course materials, assignments, and students.' },
         'courses.html':                { title: 'Course Materials',       subtitle: 'Upload and organize files, lectures, and resources.' },
         'instructor_assignments.html': { title: 'Task Manager',           subtitle: 'Create and manage assignments for your assigned classes.' },
         'students.html':               { title: 'Manage Students',        subtitle: 'Manage student profiles, accounts, and records.' },
@@ -145,9 +146,9 @@ function buildCourseCard(course) {
                     <button class="btn btn-outline-primary btn-sm rounded-pill px-4 fw-bold shadow-sm" onclick="openUploadModal('${cid}')">
                         <i class="fas fa-plus me-1"></i> Upload
                     </button>
-                    <a href="../pages/interactions.html?class_id=${chatClassId}" class="btn btn-link btn-sm text-info text-decoration-none p-0 fw-bold">
-                        Open Chat
-                    </a>
+                    <a href="../pages/collaborations.html?class_id=${chatClassId}" class="btn btn-link btn-sm text-info text-decoration-none p-0 fw-bold">
+    Open Chat
+</a>
                 </div>
             </div>
         </div>
@@ -197,13 +198,64 @@ window.filterCourses = function() {
 };
 
 window.viewFile = function(path, name) {
+    console.log('Raw DB path:', path);
+
+    const fullPath = path.startsWith('http') || path.startsWith('/')
+        ? path
+        : '/artisansLMS/client/assets/' + path;
+
+    const ext       = name.split('.').pop().toLowerCase();
+    const container = document.getElementById('fileViewerContainer');
+
+    if (ext === 'pdf') {
+        // Native PDF viewer via iframe works fine locally
+        container.innerHTML = `
+            <iframe src="${fullPath}" 
+                    style="width:100%;height:75vh;min-height:500px;border:none;"
+                    title="${name}"></iframe>`;
+
+    } else if (['png','jpg','jpeg','gif','webp','svg'].includes(ext)) {
+        container.innerHTML = `
+            <div class="d-flex align-items-center justify-content-center"
+                 style="min-height:500px;background:#0f172a;">
+                <img src="${fullPath}" alt="${name}"
+                     style="max-width:100%;max-height:75vh;object-fit:contain;border-radius:8px;">
+            </div>`;
+
+    } else if (['mp4','webm','ogg'].includes(ext)) {
+        container.innerHTML = `
+            <video controls style="width:100%;height:75vh;min-height:500px;background:#000;display:block;">
+                <source src="${fullPath}" type="video/${ext}">
+            </video>`;
+
+    } else {
+        // .docx / .pptx / .xlsx — can't preview locally, offer download
+        container.innerHTML = `
+            <div class="d-flex flex-column align-items-center justify-content-center text-center"
+                 style="min-height:500px;background:#f8fafc;">
+                <i class="fas fa-file-alt fa-5x text-primary mb-4 opacity-50"></i>
+                <h5 class="fw-bold text-dark mb-1">${escHtml(name)}</h5>
+                <p class="text-muted small mb-4">
+                    This file type cannot be previewed in the browser.<br>
+                    Download it to open with the appropriate application.
+                </p>
+                <a href="${fullPath}" download="${name}"
+                   class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">
+                    <i class="fas fa-download me-2"></i> Download File
+                </a>
+                <a href="${fullPath}" target="_blank"
+                   class="btn btn-link text-muted small mt-2">
+                    <i class="fas fa-external-link-alt me-1"></i> Open in new tab
+                </a>
+            </div>`;
+    }
+
     document.getElementById('viewFileName').innerText = name;
-    document.getElementById('fileViewerFrame').src    = path;
     new bootstrap.Modal(document.getElementById('viewFileModal')).show();
 };
 
 document.getElementById('viewFileModal')?.addEventListener('hidden.bs.modal', () => {
-    document.getElementById('fileViewerFrame').src = '';
+    document.getElementById('fileViewerContainer').innerHTML = '';
 });
 
 window.openEditModal = function(id, btn) {

@@ -229,9 +229,10 @@ function renderTable(students) {
         const col      = avatar_colors[i % avatar_colors.length];
 
         let g      = (row.gender || '').toLowerCase();
-        let gkey   = (g === 'm' || g === 'male') ? 'm' : ((g === 'f' || g === 'female') ? 'f' : 'other');
-        let glabel = gkey === 'm' ? 'Male' : (gkey === 'f' ? 'Female' : (row.gender ? row.gender.charAt(0).toUpperCase() + row.gender.slice(1) : '—'));
-        let gbg    = gkey === 'm' ? 'background:#dbeafe;color:#1d4ed8;' : (gkey === 'f' ? 'background:#fce7f3;color:#be185d;' : 'background:#f1f5f9;color:#475569;');
+        const gkey   = { m: 'm', male: 'm', f: 'f', female: 'f' }[(row.gender || '').toLowerCase()] || 'other';
+        const glabel = { m: 'Male', f: 'Female' }[gkey] || (row.gender ? row.gender.charAt(0).toUpperCase() + row.gender.slice(1) : '—');
+        const gbg    = { m: 'background:#dbeafe;color:#1d4ed8;', f: 'background:#fce7f3;color:#be185d;', other: 'background:#f1f5f9;color:#475569;' }[gkey];
+        const gstyle = `${gbg} display:inline-block; min-width:60px; text-align:center; padding:2px 8px; border-radius:999px;`;
 
         const dateStr  = row.enrollment_date
             ? new Date(row.enrollment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -240,9 +241,9 @@ function renderTable(students) {
 
         // Department display
         const deptLabel = row.dept_name || '—';
-        const deptHtml  = row.dept_name
-            ? `<span class="badge bg-light text-dark border" style="font-size:.72rem;">${deptLabel}</span>`
-            : `<span class="text-muted small">—</span>`;
+       const deptHtml = row.dept_name
+    ? `<span class="badge bg-light text-dark border text-truncate d-inline-block" style="font-size:.72rem;max-width:220px;vertical-align:middle;" title="${deptLabel}">${deptLabel}</span>`
+    : `<span class="text-muted small">—</span>`;
 
         let actionHtml = '';
         if (isAdmin) {
@@ -250,20 +251,28 @@ function renderTable(students) {
             const safeLname = last.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
             const safeEmail = (row.email || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
 
-            actionHtml = `
-                <td class="text-end pe-4">
-                    <button class="btn-edit"
-                        data-bs-toggle="modal" data-bs-target="#editStudentModal"
-                        data-id="${row.student_id}" data-fname="${safeFname}"
-                        data-lname="${safeLname}" data-email="${safeEmail}"
-                        data-dob="${row.dob || ''}" data-gender="${row.gender || ''}">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
-                    <button type="button" class="btn-archive" onclick="archiveStudent(${row.student_id})">
-                        <i class="fas fa-archive"></i> Archive
-                    </button>
-                </td>
-            `;
+           // TO:
+actionHtml = `
+    <td class="text-end pe-4">
+        <div class="d-flex gap-2 justify-content-end">
+            <button class="btn-edit"
+                style="width:34px;height:34px;padding:0;justify-content:center;"
+                data-bs-toggle="modal" data-bs-target="#editStudentModal"
+                data-id="${row.student_id}" data-fname="${safeFname}"
+                data-lname="${safeLname}" data-email="${safeEmail}"
+                data-dob="${row.dob || ''}" data-gender="${row.gender || ''}"
+                title="Edit Student">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button type="button" class="btn-archive"
+                style="width:34px;height:34px;padding:0;justify-content:center;"
+                onclick="archiveStudent(${row.student_id})"
+                title="Archive Student">
+                <i class="fas fa-archive"></i>
+            </button>
+        </div>
+    </td>
+`;
         }
 
         html += `
@@ -280,7 +289,7 @@ function renderTable(students) {
             <td><span class="stu-email">${row.email || '—'}</span></td>
             <td>${deptHtml}</td>
             <td>
-                <span style="font-size:.72rem;font-weight:600;padding:3px 9px;border-radius:6px;${gbg}">
+                <span style="font-size:.72rem;font-weight:600;padding:3px 9px;border-radius:6px;display:inline-block;min-width:60px;text-align:center;${gbg}">
                     ${glabel}
                 </span>
             </td>
@@ -300,10 +309,9 @@ function renderTable(students) {
         const $row        = $(this);
         const textMatch   = !q || $row.text().toLowerCase().includes(q);
         const genderMatch = activeGender === 'all' || $row.attr('data-gender') === activeGender;
-        // Department dropdown filter matches the data-dept attribute on the row
-        const deptMatch   = !activeDept || $row.attr('data-dept') === activeDept.toLowerCase();
 
-        if (textMatch && genderMatch && deptMatch) {
+        // Department is handled server-side by fetchStudents(deptId) — no client check needed
+        if (textMatch && genderMatch) {
             $row.show();
             visible++;
         } else {

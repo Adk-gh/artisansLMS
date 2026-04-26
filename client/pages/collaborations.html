@@ -78,22 +78,16 @@
 
             <main id="selectionView" class="flex-grow-1 overflow-auto p-4 p-md-5">
 
-                <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-                    <div>
-                        <div class="fs-5 fw-bold text-dark mb-1">
-                            <i class="fas fa-door-open me-2"></i>Collaboration Spaces
-                        </div>
-                        <p class="text-muted small mb-0">Select a class to enter its live chat, modules, and assignments.</p>
-                    </div>
-                    <div class="btn-group shadow-sm border rounded-2 p-1 bg-white" role="group">
-                        <button type="button" class="btn btn-sm btn-dark rounded-2 fw-bold" id="btnGrid" onclick="window.toggleView('grid')">
-                            <i class="fas fa-th-large me-1"></i> Grid
-                        </button>
-                        <button type="button" class="btn btn-sm btn-light rounded-2 text-secondary fw-bold border-0" id="btnList" onclick="window.toggleView('list')">
-                            <i class="fas fa-list me-1"></i> List
-                        </button>
-                    </div>
-                </div>
+                <div class="d-flex flex-wrap justify-content-end align-items-center mb-4 gap-3">
+    <div class="btn-group shadow-sm border rounded-2 p-1 bg-white" role="group">
+        <button type="button" class="btn btn-sm btn-dark rounded-2 fw-bold" id="btnGrid" onclick="window.toggleView('grid')">
+            <i class="fas fa-th-large me-1"></i> Grid
+        </button>
+        <button type="button" class="btn btn-sm btn-light rounded-2 text-secondary fw-bold border-0" id="btnList" onclick="window.toggleView('list')">
+            <i class="fas fa-list me-1"></i> List
+        </button>
+    </div>
+</div>
 
                 <div class="row g-3 g-md-4" id="gridViewContainer">
                     <div class="col-12 text-center py-5 text-muted">

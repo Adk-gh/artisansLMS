@@ -420,57 +420,178 @@ $(document).ready(function () {
     });
 
     // ── A11. Teacher grade modal ──
-    window.openGradeModal = function (aid) {
-        const task = taskList.find(t => t.assignment_id == aid);
-        if (!task) return;
-        $('#gradeTaskTitle').text(task.title);
+window.openGradeModal = function (aid) {
+    const task = taskList.find(t => t.assignment_id == aid);
+    if (!task) return;
+    $('#gradeTaskTitle').text(task.title);
 
-        let html = '';
-        if (!task.submissions || task.submissions.length === 0) {
-            html = '<div class="text-center py-5 text-muted fw-bold"><i class="fas fa-inbox fa-2x mb-2 opacity-50 d-block"></i>No submissions yet.</div>';
-        } else {
-            task.submissions.forEach(sub => {
-                const init      = (sub.first_name[0] + sub.last_name[0]).toUpperCase();
-                const fileHtml  = sub.file ? `<a href="${sub.file}" target="_blank" class="btn btn-sm btn-outline-primary bg-white rounded-pill fw-bold px-3"><i class="fas fa-file-download me-1"></i>View Attached File</a>` : '<span class="text-muted small fst-italic">No file attached</span>';
-                const gradeBadge = sub.grade ? `<span class="badge bg-success ms-auto fs-6">${sub.grade}</span>` : `<span class="badge bg-warning text-dark ms-auto">Pending Grading</span>`;
-                html += `
-                <div class="card border shadow-sm rounded-4 mb-3 bg-light overflow-hidden">
-                    <div class="card-header bg-white border-bottom d-flex align-items-center p-3">
-                        <div class="badge bg-primary rounded-circle p-2 d-flex align-items-center justify-content-center me-3" style="width:40px;height:40px;font-size:1rem;">${init}</div>
+    const submissions = task.submissions || [];
+    const gradedCount = submissions.filter(s => s.grade).length;
+    const pendingCount = submissions.length - gradedCount;
+
+    // ── Filter tabs ──
+    const tabsHtml = `
+    <div class="d-flex align-items-center gap-2 px-1 py-3 border-bottom mb-3">
+        <button class="grade-filter-tab btn btn-sm btn-dark rounded-pill px-3 fw-semibold" data-filter="all"
+            onclick="switchGradeTab(this, 'all')">
+            All <span class="badge bg-secondary ms-1">${submissions.length}</span>
+        </button>
+        <button class="grade-filter-tab btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold" data-filter="pending"
+            onclick="switchGradeTab(this, 'pending')">
+            Pending <span class="badge bg-warning text-dark ms-1">${pendingCount}</span>
+        </button>
+        <button class="grade-filter-tab btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold" data-filter="graded"
+            onclick="switchGradeTab(this, 'graded')">
+            Graded <span class="badge bg-success ms-1">${gradedCount}</span>
+        </button>
+    </div>`;
+
+    let cardsHtml = '';
+    if (submissions.length === 0) {
+        cardsHtml = '<div class="text-center py-5 text-muted fw-bold"><i class="fas fa-inbox fa-2x mb-2 opacity-50 d-block"></i>No submissions yet.</div>';
+    } else {
+        submissions.forEach(sub => {
+            const init       = (sub.first_name[0] + sub.last_name[0]).toUpperCase();
+            const isGraded   = !!sub.grade;
+            const fileHtml   = sub.file
+                ? `<a href="${sub.file}" target="_blank" class="btn btn-sm btn-outline-primary bg-white rounded-pill fw-bold px-3"><i class="fas fa-file-download me-1"></i>View File</a>`
+                : '<span class="text-muted small fst-italic">No file attached</span>';
+
+            const statusBadge = isGraded
+                ? `<span class="badge rounded-pill px-3 py-2 fw-semibold" style="background:#dcfce7;color:#166534;" id="status_badge_${sub.submission_id}">Graded · ${escHtml(sub.grade)}</span>`
+                : `<span class="badge rounded-pill px-3 py-2 fw-semibold" style="background:#fef9c3;color:#854d0e;" id="status_badge_${sub.submission_id}">Pending grading</span>`;
+
+            cardsHtml += `
+            <div class="grade-sub-card mb-3 border rounded-4 overflow-hidden shadow-sm" data-status="${isGraded ? 'graded' : 'pending'}" id="subcard_${sub.submission_id}">
+
+                <div class="d-flex align-items-center justify-content-between px-3 py-2 bg-white border-bottom">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="badge bg-primary rounded-circle d-flex align-items-center justify-content-center"
+                            style="width:40px;height:40px;font-size:1rem;flex-shrink:0;">${init}</div>
                         <div>
-                            <div class="fw-bold text-dark fs-6">${sub.first_name} ${sub.last_name}</div>
+                            <div class="fw-bold text-dark">${escHtml(sub.first_name)} ${escHtml(sub.last_name)}</div>
                             <div class="small text-muted"><i class="far fa-clock me-1"></i>${new Date(sub.submit_date).toLocaleString()}</div>
                         </div>
-                        ${gradeBadge}
                     </div>
-                    <div class="card-body p-3">
-                        <div class="mb-3 pb-3 border-bottom">${fileHtml}</div>
-                        <form onsubmit="submitGrade(event, ${sub.submission_id})">
-                            <div class="d-flex gap-2 align-items-center mb-2">
-                                <input type="text" id="g_val_${sub.submission_id}" class="form-control border shadow-sm" placeholder="Grade (e.g. 95/100)" value="${sub.grade || ''}" required>
-                                <button type="submit" class="btn btn-success fw-bold rounded-3 shadow-sm px-4" id="g_btn_${sub.submission_id}"><i class="fas fa-check me-1"></i>Save</button>
-                            </div>
-                            <textarea id="g_fb_${sub.submission_id}" class="form-control border shadow-sm" placeholder="Write feedback...">${sub.feedback || ''}</textarea>
-                        </form>
-                    </div>
-                </div>`;
-            });
-        }
-        $('#gradeTaskBody').html(html);
-        new bootstrap.Modal(document.getElementById('gradeTaskModal')).show();
-    };
+                    ${statusBadge}
+                </div>
 
-    window.submitGrade = function (e, sid) {
-        e.preventDefault();
-        const grade    = $(`#g_val_${sid}`).val();
-        const feedback = $(`#g_fb_${sid}`).val();
-        const btn      = $(`#g_btn_${sid}`);
-        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
-        $.post('/artisansLMS/backend/endpoints/assignment.php', { action: 'grade_submission', submission_id: sid, grade, feedback, class_id: classId }, function () {
-            btn.prop('disabled', false).html('<i class="fas fa-check me-1"></i>Saved').removeClass('btn-success').addClass('btn-secondary');
-            setTimeout(() => { btn.removeClass('btn-secondary').addClass('btn-success'); fetchTasks(); }, 1500);
+                <div class="px-3 py-2 border-bottom bg-light d-flex align-items-center gap-2">
+                    <i class="fas fa-paperclip text-muted small"></i>
+                    ${fileHtml}
+                </div>
+
+                <div class="p-3 bg-white">
+                    <div class="small fw-bold text-uppercase text-muted mb-2" style="letter-spacing:.05em;">Grade & Feedback</div>
+
+                    <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                        <span class="small text-muted fw-semibold">Quick:</span>
+                        ${['100/100','90/100','85/100','75/100'].map(g => `
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill quick-grade-btn"
+                            style="font-size:11px;padding:2px 10px;"
+                            onclick="applyQuickGrade(${sub.submission_id}, '${g}', this)">${g}</button>`).join('')}
+                    </div>
+
+                    <form onsubmit="submitGrade(event, ${sub.submission_id})">
+                        <div class="d-flex gap-2 align-items-center mb-2 position-relative">
+                            <input type="text" id="g_val_${sub.submission_id}"
+                                class="form-control border shadow-sm"
+                                placeholder="Grade (e.g. 95/100)"
+                                value="${escHtml(sub.grade || '')}"
+                                style="padding-right: 48px;"
+                                oninput="updateGradePct(this.value, ${sub.submission_id})"
+                                required>
+                            <span id="g_pct_${sub.submission_id}"
+                                class="position-absolute end-0 me-2 small fw-bold"
+                                style="pointer-events:none;"></span>
+                            <button type="submit" class="btn btn-dark fw-bold rounded-pill px-4 shadow-sm flex-shrink-0"
+                                id="g_btn_${sub.submission_id}">
+                                <i class="fas fa-save me-1"></i>Save
+                            </button>
+                        </div>
+                        <textarea id="g_fb_${sub.submission_id}"
+                            class="form-control border shadow-sm"
+                            rows="2"
+                            placeholder="Write feedback...">${escHtml(sub.feedback || '')}</textarea>
+                    </form>
+                </div>
+            </div>`;
+        });
+    }
+
+    $('#gradeTaskBody').html(tabsHtml + `<div id="gradeCardsContainer">${cardsHtml}</div>`);
+    new bootstrap.Modal(document.getElementById('gradeTaskModal')).show();
+};
+
+
+window.switchGradeTab = function (btn, filter) {
+    $('.grade-filter-tab')
+        .removeClass('btn-dark text-white')
+        .addClass('btn-outline-secondary');
+    $(btn).removeClass('btn-outline-secondary').addClass('btn-dark text-white');
+
+    $('.grade-sub-card').each(function () {
+        const match = filter === 'all' || $(this).data('status') === filter;
+        $(this).toggle(match);
+    });
+};
+
+window.applyQuickGrade = function (sid, grade, btn) {
+    $(btn).closest('.d-flex').find('.quick-grade-btn')
+        .removeClass('btn-dark text-white').addClass('btn-light');
+    $(btn).removeClass('btn-light').addClass('btn-dark text-white');
+    $(`#g_val_${sid}`).val(grade);
+    updateGradePct(grade, sid);
+};
+
+window.updateGradePct = function (val, sid) {
+    const el  = $(`#g_pct_${sid}`);
+    const match = val.match(/^(\d+)\/(\d+)$/);
+    if (match) {
+        const pct = Math.round(parseInt(match[1]) / parseInt(match[2]) * 100);
+        el.text(pct + '%').css('color', pct >= 75 ? '#16a34a' : '#dc2626');
+    } else {
+        el.text('');
+    }
+};
+   window.submitGrade = function (e, sid) {
+    e.preventDefault();
+    const grade    = $(`#g_val_${sid}`).val();
+    const feedback = $(`#g_fb_${sid}`).val();
+    const btn      = $(`#g_btn_${sid}`);
+
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Saving...');
+
+    $.post('/artisansLMS/backend/endpoints/assignment.php',
+        { action: 'grade_submission', submission_id: sid, grade, feedback, class_id: classId },
+        function () {
+            // Update the status badge inline
+            $(`#status_badge_${sid}`)
+                .text(`Graded · ${grade}`)
+                .css({ background: '#dcfce7', color: '#166534' });
+
+            // Flip the card's data-status so tab filtering works immediately
+            $(`#subcard_${sid}`).attr('data-status', 'graded');
+
+            // Recount and update tab badges
+            const total   = $('.grade-sub-card').length;
+            const graded  = $('.grade-sub-card[data-status="graded"]').length;
+            const pending = total - graded;
+            $('[data-filter="all"] .badge').text(total);
+            $('[data-filter="pending"] .badge').text(pending);
+            $('[data-filter="graded"] .badge').text(graded);
+
+            btn.prop('disabled', false)
+               .removeClass('btn-dark').addClass('btn-success')
+               .html('<i class="fas fa-check me-1"></i>Saved!');
+
+            setTimeout(() => {
+                btn.removeClass('btn-success').addClass('btn-dark')
+                   .html('<i class="fas fa-save me-1"></i>Save');
+                fetchTasks();
+            }, 1500);
         }, 'json');
-    };
+};
 
 
     // ════════════════════════════════════════════════════════════════
