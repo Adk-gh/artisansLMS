@@ -8,13 +8,11 @@
  * Scheduling System API with an HMAC-SHA256 signature.
  *
  * POST body:
- *   { action:'submit', class_id, room_id (optional),
- *     requested_date, start_time, end_time, purpose,
- *     resources: [{resource_id, resource_name, quantity}] }
- *   { action:'cancel', request_id }
+ * { action:'submit', class_id, room_id (optional),
+ * requested_date, start_time, end_time, purpose,
+ * resources: [{resource_id, resource_name, quantity}] }
+ * { action:'cancel', request_id }
  *
- * GET ?action=get_rooms
- * GET ?action=get_resources
  * GET ?action=get_my_requests&class_id=X
  */
 
@@ -85,76 +83,6 @@ $method = $_SERVER['REQUEST_METHOD'];
 // ── GET ────────────────────────────────────────────────────────────────────────
 if ($method === 'GET') {
     $action = $_GET['action'] ?? '';
-
-    // ── GET rooms ──────────────────────────────────────────────────────────
-    if ($action === 'get_rooms') {
-        $res = $conn->query("SELECT room_id, name, location, capacity FROM rooms ORDER BY name");
-        if (!$res) {
-            echo json_encode(['status' => 'error', 'message' => 'DB Error (Rooms): ' . $conn->error]);
-            exit;
-        }
-        $rooms = [];
-        while ($r = $res->fetch_assoc()) $rooms[] = $r;
-        echo json_encode(['status' => 'success', 'rooms' => $rooms]);
-        exit;
-    }
-
-    // ── GET resources ──────────────────────────────────────────────────────
-    // Fetches from the Scheduling System's resource catalogue.
-    // Falls back to the local `resources` table if the Scheduling System
-    // is unreachable or not yet integrated.
-    if ($action === 'get_resources') {
-
-        // ── Try Scheduling System first ────────────────────────────────────
-        $schedulingResourcesUrl = (getenv('SCHEDULING_API_URL')
-            ? rtrim(dirname(getenv('SCHEDULING_API_URL')), '/') . '/resources.php'
-            : null);
-
-        if ($schedulingResourcesUrl) {
-            $ch = curl_init($schedulingResourcesUrl . '?action=get_resources');
-            curl_setopt_array($ch, [
-                CURLOPT_HTTPHEADER     => ['X-API-Key: ' . LMS_SECRET_TOKEN],
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT        => 5,
-            ]);
-            $raw     = curl_exec($ch);
-            $curlErr = curl_error($ch);
-            curl_close($ch);
-
-            if (!$curlErr && $raw) {
-                $remoteData = json_decode($raw, true);
-                if (isset($remoteData['status']) && $remoteData['status'] === 'success') {
-                    echo $raw; // forward the Scheduling System's response as-is
-                    exit;
-                }
-            }
-            // If we get here, fall through to local table
-        }
-
-        // ── Fallback: local resources table ───────────────────────────────
-        // Table structure expected:
-        //   resources (resource_id INT PK, name VARCHAR, category VARCHAR, available_qty INT)
-       $res = $conn->query("
-    SELECT resource_id, name, type AS category, description, NULL AS available_qty
-    FROM   resources
-    ORDER  BY type ASC, name ASC
-");
-
-        if (!$res) {
-            // Table might not exist yet — return empty rather than erroring out
-            echo json_encode(['status' => 'success', 'resources' => [], 'source' => 'local_empty']);
-            exit;
-        }
-
-        $resources = [];
-        while ($r = $res->fetch_assoc()) {
-            $r['resource_id']    = (int)$r['resource_id'];
-            $r['available_qty']  = $r['available_qty'] !== null ? (int)$r['available_qty'] : null;
-            $resources[] = $r;
-        }
-        echo json_encode(['status' => 'success', 'resources' => $resources, 'source' => 'local']);
-        exit;
-    }
 
     // ── GET my requests (with resources) ──────────────────────────────────
     if ($action === 'get_my_requests') {
