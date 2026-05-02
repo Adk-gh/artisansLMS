@@ -13,6 +13,7 @@ if (!$route) {
 match ($route) {
     'auth'        => require __DIR__ . '/endpoints/auth.php',
     'courses'     => require __DIR__ . '/endpoints/courses.php',
+    'collaborations' => require __DIR__ . '/endpoints/collaborations.php',
     'assignments' => require __DIR__ . '/endpoints/assignments.php',
     'quizzes'     => require __DIR__ . '/endpoints/quizzes.php',
     'grades'      => require __DIR__ . '/endpoints/grades.php',
