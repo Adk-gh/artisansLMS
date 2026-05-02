@@ -177,8 +177,9 @@ document.addEventListener('DOMContentLoaded', () => {
 function initSelectionGrid() {
     showSelectionView();
 
-    fetch('/backend/endpoints/collaborations.php?action=get_classes')
+    fetch('/backend/endpoints/collaborations.php?action=get_classes', {
         credentials: 'include'
+    })
         .then(async r => {
             // Grab the raw text FIRST before trying to read it as JSON
             const text = await r.text(); 
