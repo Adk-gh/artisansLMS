@@ -463,6 +463,7 @@ function initHeader() {
     $.ajax({
         url: AUTH_API,
         method: 'POST',
+        
         contentType: 'application/json',
         dataType: 'json',
         data: JSON.stringify({ route: 'auth', action: 'checkSession' }),
