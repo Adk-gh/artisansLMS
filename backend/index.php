@@ -2,6 +2,9 @@
 require_once __DIR__ . '/middleware/cors.php';
 require_once __DIR__ . '/middleware/json_response.php';
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 // Read route from GET or POST body
 $route = $_GET['route'] ?? '';
 
