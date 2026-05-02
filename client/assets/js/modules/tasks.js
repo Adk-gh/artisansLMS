@@ -1064,7 +1064,7 @@ window.updateGradePct = function (val, sid) {
 });
 
 // ─── Header & Session Logic ───────────────────────────────────────────────────
-const AUTH_API = '/artisansLMS/backend/index.php';
+const AUTH_API = 'https://artisanslms.onrender.com/backend/index.php';
 
 function initHeader() {
     const PAGE_TITLES = {

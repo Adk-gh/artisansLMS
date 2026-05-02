@@ -8,7 +8,7 @@ import {
 import { initRoomRequest, renderRoomSystemMessage } from './collaborations_room_request.js';
 // ─────────────────────────────────────────────────────────────────────────────
 
-const API = '/artisansLMS/backend/index.php';
+const API = 'https://artisanslms.onrender.com/backend/index.php';
 
 // ─── Globals ─────────────────────────────────────────────────────────────────
 let currentUser = {};

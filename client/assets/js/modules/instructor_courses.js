@@ -1,5 +1,6 @@
-const API_COURSES = '../../backend/endpoints/instructor_courses.php';
-const API         = '/artisansLMS/backend/index.php';
+
+const API_COURSES = 'https://artisanslms.onrender.com/backend/endpoints/instructor_courses.php';
+const API = 'https://artisanslms.onrender.com/backend/index.php';
 
 $(document).ready(function() {
     $("#sidebar-container").load("../components/sidebar.html");

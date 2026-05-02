@@ -1,4 +1,4 @@
-const API = '/artisansLMS/backend/index.php';
+const API = 'https://artisanslms.onrender.com/backend/index.php';
 
 // ─── Page Title Map ───────────────────────────────────────────────────────────
 

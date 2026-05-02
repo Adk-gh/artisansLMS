@@ -3,7 +3,7 @@
  * Handles the teacher-facing dashboard page.
  */
 
-const API = '/artisansLMS/backend/index.php';
+const API = 'https://artisanslms.onrender.com/backend/index.php';
 
 $(document).ready(function () {
 

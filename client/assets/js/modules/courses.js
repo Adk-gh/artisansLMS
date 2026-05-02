@@ -466,7 +466,7 @@ $(document).ready(function() {
 // ═════════════════════════════════════════════════════════════════════════════
 // 3. HEADER LOGIC
 // ═════════════════════════════════════════════════════════════════════════════
-const AUTH_API = '/artisansLMS/backend/index.php';
+const AUTH_API = 'https://artisanslms.onrender.com/backend/index.php';
 
 function initHeader() {
     const PAGE_TITLES = {

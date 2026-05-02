@@ -1,7 +1,7 @@
 import { initializeApp }   from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getDatabase, ref, push, onChildAdded, onValue, set, remove, get, off } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-const API = '/artisansLMS/backend/index.php';
+const API = 'https://artisanslms.onrender.com/backend/index.php';
 
 $(document).ready(function() {
     $("#sidebar-container").load("../components/sidebar.html");

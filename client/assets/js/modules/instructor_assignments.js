@@ -283,7 +283,7 @@ window.addQBulk = function(type, key) {
 });
 
 // ─── Header ───────────────────────────────────────────────────────────────────
-const API = '/artisansLMS/backend/index.php';
+const API = 'https://artisanslms.onrender.com/backend/index.php';
 
 function initHeader() {
     const PAGE_TITLES = {
