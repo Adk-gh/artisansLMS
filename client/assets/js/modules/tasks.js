@@ -345,7 +345,7 @@ $(document).ready(function () {
 
         $.ajax({
             url: '/backend/endpoints/instructor_assignments.php',
-            type: 'POST', data: formData, contentType: false, processData: false, dataType: 'json',
+            type: 'POST', data: formData, contentType: false, processData: false, dataType: 'json', xhrFields: { withCredentials: true },
             success: function (res) {
                 if (res.status === 'success') {
                     $('#createModal').modal('hide');
@@ -414,7 +414,7 @@ $(document).ready(function () {
 
         $.ajax({
             url: '/backend/endpoints/assignment.php',
-            type: 'POST', data: formData, contentType: false, processData: false, dataType: 'json',
+            type: 'POST', data: formData, contentType: false, processData: false, dataType: 'json', xhrFields: { withCredentials: true },
             success: function () { $('#submitTaskModal').modal('hide'); fetchTasks(); btn.prop('disabled', false).html('Submit Work'); }
         });
     });
@@ -834,6 +834,7 @@ window.updateGradePct = function (val, sid) {
         $.ajax({
             url: '/backend/endpoints/quiz_handler.php',
             method: 'POST',
+            xhrFields: { withCredentials: true },
             data: {
                 action: 'create_quiz', class_ids: cids.join(','),
                 title, description: $('#qzDesc').val(),
@@ -1031,6 +1032,7 @@ window.updateGradePct = function (val, sid) {
         $.ajax({
             url: '/backend/endpoints/quiz_handler.php',
             method: 'POST',
+            xhrFields: { withCredentials: true },
             data: { action: 'submit_quiz', attempt_id: quizState.attemptId, quiz_id: quizState.quizId, answers: JSON.stringify(quizState.answers) },
             dataType: 'json',
             success: function (res) {
@@ -1097,6 +1099,7 @@ function initHeader() {
     $.ajax({
         url: AUTH_API,
         method: 'POST',
+        xhrFields: { withCredentials: true },
         contentType: 'application/json',
         dataType: 'json',
         data: JSON.stringify({ route: 'auth', action: 'checkSession' }),
@@ -1127,7 +1130,7 @@ function initHeader() {
     $(document).on('click', '#logoutBtn', function(e) {
         e.preventDefault();
         $.ajax({
-            url: AUTH_API, method: 'POST', contentType: 'application/json', dataType: 'json',
+            url: AUTH_API, method: 'POST', contentType: 'application/json', dataType: 'json', xhrFields: { withCredentials: true },
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
             complete: function() { window.location.href = '/client/pages/login.html'; }
         });

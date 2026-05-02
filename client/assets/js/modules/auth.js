@@ -6,6 +6,7 @@ $(function () {
     $.ajax({
         url: API,
         method: 'POST', // Changed to POST to match your controller setup
+        xhrFields: { withCredentials: true },
         contentType: 'application/json',
         data: JSON.stringify({ route: 'auth', action: 'checkSession' }), // Use checkSession
         dataType: 'json',
@@ -27,6 +28,7 @@ $(function () {
         $.ajax({
             url: API,
             method: 'POST',
+            xhrFields: { withCredentials: true },
             contentType: 'application/json',
             dataType: 'json',
             data: JSON.stringify({
@@ -76,6 +78,7 @@ $(function () {
         $.ajax({
             url: API,
             method: 'POST',
+            xhrFields: { withCredentials: true },
             contentType: 'application/json',
             dataType: 'json',
             data: JSON.stringify({

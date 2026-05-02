@@ -29,6 +29,7 @@ $(document).ready(function() {
         $.ajax({
             url: `${API_URL}?action=archive`,
             method: 'POST',
+            xhrFields: { withCredentials: true },
             contentType: 'application/json',
             data: JSON.stringify({ course_id: courseId }),
             success: function(json) {
@@ -51,6 +52,7 @@ $(document).ready(function() {
         $.ajax({
             url: `${API_URL}?action=delete_resource`,
             method: 'POST',
+            xhrFields: { withCredentials: true },
             contentType: 'application/json',
             data: JSON.stringify({ resource_id: resourceId }),
             success: function(json) {
@@ -238,6 +240,7 @@ $(document).ready(function() {
         $.ajax({
             url: `${API_URL}?action=create`,
             method: 'POST',
+            xhrFields: { withCredentials: true },
             contentType: 'application/json',
             data: JSON.stringify(data),
             success: function(json) {
@@ -267,6 +270,7 @@ $(document).ready(function() {
         $.ajax({
             url: `${API_URL}?action=update`,
             method: 'POST',
+            xhrFields: { withCredentials: true },
             contentType: 'application/json',
             data: JSON.stringify(data),
             success: function(json) {
@@ -491,6 +495,7 @@ function initHeader() {
     $.ajax({
         url: AUTH_API,
         method: 'POST',
+        xhrFields: { withCredentials: true },
         contentType: 'application/json',
         data: JSON.stringify({ route: 'auth', action: 'checkSession' }),
         success: function(res) {
@@ -516,6 +521,7 @@ function initHeader() {
         $.ajax({
             url: AUTH_API, 
             method: 'POST', 
+            xhrFields: { withCredentials: true },
             contentType: 'application/json',
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
             complete: function() { 

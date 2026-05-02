@@ -55,6 +55,7 @@ function initHeader() {
     $.ajax({
         url: API,
         method: 'POST',
+        xhrFields: { withCredentials: true },
         contentType: 'application/json',
         dataType: 'json',
         data: JSON.stringify({ route: 'auth', action: 'checkSession' }),
@@ -89,6 +90,7 @@ function initHeader() {
         $.ajax({
             url: API,
             method: 'POST',
+            xhrFields: { withCredentials: true },
             contentType: 'application/json',
             dataType: 'json',
             data: JSON.stringify({ route: 'auth', action: 'logout' }),

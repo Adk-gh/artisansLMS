@@ -311,6 +311,7 @@ function initHeader() {
     $.ajax({
         url: AUTH_API,
         method: 'POST',
+        xhrFields: { withCredentials: true },
         contentType: 'application/json',
         dataType: 'json',
         data: JSON.stringify({ route: 'auth', action: 'checkSession' }),

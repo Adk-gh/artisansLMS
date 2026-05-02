@@ -119,6 +119,7 @@ $(document).ready(function() {
         $.ajax({
             url: `${API_URL}?action=create`,
             method: 'POST',
+            xhrFields: { withCredentials: true },
             contentType: 'application/json',
             data: JSON.stringify(data),
             dataType: 'json',
@@ -149,6 +150,7 @@ $(document).ready(function() {
         $.ajax({
             url: `${API_URL}?action=update`,
             method: 'POST',
+            xhrFields: { withCredentials: true },
             contentType: 'application/json',
             data: JSON.stringify(data),
             dataType: 'json',
@@ -170,6 +172,7 @@ $(document).ready(function() {
         $.ajax({
             url: `${API_URL}?action=archive`,
             method: 'POST',
+            xhrFields: { withCredentials: true },
             contentType: 'application/json',
             data: JSON.stringify({ class_id: classId }),
             dataType: 'json',
@@ -381,6 +384,7 @@ function initHeader() {
     $.ajax({
         url: AUTH_API,
         method: 'POST',
+        xhrFields: { withCredentials: true },
         contentType: 'application/json',
         dataType: 'json',
         data: JSON.stringify({ route: 'auth', action: 'checkSession' }),

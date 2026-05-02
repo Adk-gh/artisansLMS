@@ -75,6 +75,7 @@ $(document).ready(function() {
         $.ajax({
             url: `${API_URL}?action=restore`,
             method: 'POST',
+            xhrFields: { withCredentials: true },
             contentType: 'application/json',
             data: JSON.stringify({ archive_id: id }),
             dataType: 'json',

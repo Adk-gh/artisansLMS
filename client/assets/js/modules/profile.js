@@ -253,6 +253,7 @@ function initHeader() {
     $.ajax({
         url: AUTH_API,
         method: 'POST',
+        xhrFields: { withCredentials: true },
         contentType: 'application/json',
         dataType: 'json',
         data: JSON.stringify({ route: 'auth', action: 'checkSession' }),
@@ -283,7 +284,7 @@ function initHeader() {
     $(document).on('click', '#logoutBtn', function(e) {
         e.preventDefault();
         $.ajax({
-            url: AUTH_API, method: 'POST', contentType: 'application/json', dataType: 'json',
+            url: AUTH_API, method: 'POST', contentType: 'application/json', dataType: 'json', xhrFields: { withCredentials: true },
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
             complete: function() { window.location.href = '/client/pages/login.html'; }
         });

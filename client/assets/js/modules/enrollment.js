@@ -255,6 +255,7 @@ $(document).ready(function () {
         $.ajax({
             url: `${API_URL}?action=enroll`,
             method: 'POST',
+            xhrFields: { withCredentials: true },
             contentType: 'application/json',
             data: JSON.stringify({ student_id: studentId, class_ids: classIds }),
             dataType: 'json',
@@ -282,6 +283,7 @@ $(document).ready(function () {
         $.ajax({
             url: `${API_URL}?action=drop`,
             method: 'POST',
+            xhrFields: { withCredentials: true },
             contentType: 'application/json',
             data: JSON.stringify({ enrollment_id: enrollmentId }),
             dataType: 'json',
@@ -573,6 +575,7 @@ function initHeader() {
     $.ajax({
         url: AUTH_API,
         method: 'POST',
+        xhrFields: { withCredentials: true },
         contentType: 'application/json',
         dataType: 'json',
         data: JSON.stringify({ route: 'auth', action: 'checkSession' }),
@@ -597,7 +600,7 @@ function initHeader() {
     $(document).on('click', '#logoutBtn', function (e) {
         e.preventDefault();
         $.ajax({
-            url: AUTH_API, method: 'POST', contentType: 'application/json', dataType: 'json',
+            url: AUTH_API, method: 'POST', contentType: 'application/json', dataType: 'json', xhrFields: { withCredentials: true },
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
             complete: function () { window.location.href = '/client/pages/login.html'; }
         });
