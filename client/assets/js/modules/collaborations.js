@@ -141,11 +141,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Check session first, then branch
-    fetch('/backend/endpoints/auth.php', {
+   // Check session first, then branch
+    fetch(API, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'checkSession' })
+        body: JSON.stringify({ route: 'auth', action: 'checkSession' })
     })
     .then(r => r.json())
     .then(data => {
@@ -177,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function initSelectionGrid() {
     showSelectionView();
 
-    fetch('/backend/endpoints/collaborations.php?action=get_classes', {
+    fetch(`${API}?route=collaborations&action=get_classes`, {
         credentials: 'include'
     })
         .then(async r => {
@@ -281,7 +282,7 @@ function initChatView() {
     // Chat tab stays on this page — just prevents default
     document.getElementById('tabChatLink').addEventListener('click', e => e.preventDefault());
 
-    fetch(`/backend/endpoints/collaborations.php?action=get_class_details&class_id=${classId}`, {
+    fetch(`${API}?route=collaborations&action=get_class_details&class_id=${classId}`, {
         credentials: 'include'
     })
         .then(r => r.json())
