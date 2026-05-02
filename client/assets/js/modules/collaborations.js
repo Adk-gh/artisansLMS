@@ -142,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check session first, then branch
     fetch('/backend/endpoints/auth.php', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'checkSession' })
     })
@@ -176,6 +177,7 @@ function initSelectionGrid() {
     showSelectionView();
 
     fetch('/backend/endpoints/collaborations.php?action=get_classes')
+        credentials: 'include'
         .then(async r => {
             // Grab the raw text FIRST before trying to read it as JSON
             const text = await r.text(); 
@@ -277,7 +279,9 @@ function initChatView() {
     // Chat tab stays on this page — just prevents default
     document.getElementById('tabChatLink').addEventListener('click', e => e.preventDefault());
 
-    fetch(`/backend/endpoints/collaborations.php?action=get_class_details&class_id=${classId}`)
+    fetch(`/backend/endpoints/collaborations.php?action=get_class_details&class_id=${classId}`, {
+        credentials: 'include'
+    })
         .then(r => r.json())
         .then(data => {
             if (data.status === 'success') {
