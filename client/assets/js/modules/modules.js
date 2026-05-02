@@ -19,7 +19,7 @@ $(document).ready(function() {
     let allFiles = [];
 
     $.ajax({
-        url: '/artisansLMS/backend/endpoints/resources.php',
+        url: '/backend/endpoints/resources.php',
         method: 'GET',
         data: { action: 'get_modules', class_id: classId },
         dataType: 'json',
@@ -212,11 +212,11 @@ function initHeader() {
                 $('#heroName').html(u.name + ' <span class="fs-3">👋</span>');
                 sessionStorage.setItem('sb_role', (u.role || '').toLowerCase());
             } else {
-                window.location.href = '/artisansLMS/client/pages/login.html';
+                window.location.href = '/client/pages/login.html';
             }
         },
         error: function() {
-            window.location.href = '/artisansLMS/client/pages/login.html';
+            window.location.href = '/client/pages/login.html';
         }
     });
 
@@ -225,7 +225,7 @@ function initHeader() {
         $.ajax({
             url: AUTH_API, method: 'POST', contentType: 'application/json', dataType: 'json',
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
-            complete: function() { window.location.href = '/artisansLMS/client/pages/login.html'; }
+            complete: function() { window.location.href = '/client/pages/login.html'; }
         });
     });
 }

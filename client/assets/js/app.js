@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(tabTasks) tabTasks.href = `todo.html?class_id=${cid}`;
 
         // 2. Fetch Modules from API
-        fetch(`/artisansLMS/backend/endpoints/resources.php?action=get_modules&class_id=${cid}`)
+        fetch(`/backend/endpoints/resources.php?action=get_modules&class_id=${cid}`)
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {

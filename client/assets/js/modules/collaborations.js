@@ -55,8 +55,8 @@ function showChatView() {
 
 // ─── Bootstrap ───────────────────────────────────────────────────────────────
 $(document).ready(function () {
-    $("#sidebar-container").load("/artisansLMS/client/components/sidebar.html");
-    $("#header-container").load("/artisansLMS/client/components/header.html", function (res, status) {
+    $("#sidebar-container").load("/client/components/sidebar.html");
+    $("#header-container").load("/client/components/header.html", function (res, status) {
         if (status !== 'error') initHeader();
     });
 });
@@ -114,10 +114,10 @@ function initHeader() {
                 $('#heroName').html(u.name + ' <span class="fs-3">👋</span>');
 
             } else {
-                window.location.href = '/artisansLMS/client/pages/login.html';
+                window.location.href = '/client/pages/login.html';
             }
         },
-        error() { window.location.href = '/artisansLMS/client/pages/login.html'; }
+        error() { window.location.href = '/client/pages/login.html'; }
     });
 
     // ── Logout ────────────────────────────────────────────────────────────
@@ -126,7 +126,7 @@ function initHeader() {
         $.ajax({
             url: API, method: 'POST', contentType: 'application/json', dataType: 'json',
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
-            complete() { window.location.href = '/artisansLMS/client/pages/login.html'; }
+            complete() { window.location.href = '/client/pages/login.html'; }
         });
     });
 }
@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Check session first, then branch
-    fetch('/artisansLMS/backend/endpoints/auth.php', {
+    fetch('/backend/endpoints/auth.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'checkSession' })
@@ -157,11 +157,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 initSelectionGrid(); // no param        → show class picker
             }
         } else {
-            window.location.href = '/artisansLMS/client/pages/login.html';
+            window.location.href = '/client/pages/login.html';
         }
     })
     .catch(() => {
-        window.location.href = '/artisansLMS/client/pages/login.html';
+        window.location.href = '/client/pages/login.html';
     });
 
 });
@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function initSelectionGrid() {
     showSelectionView();
 
-    fetch('/artisansLMS/backend/endpoints/collaborations.php?action=get_classes')
+    fetch('/backend/endpoints/collaborations.php?action=get_classes')
         .then(async r => {
             // Grab the raw text FIRST before trying to read it as JSON
             const text = await r.text(); 
@@ -277,7 +277,7 @@ function initChatView() {
     // Chat tab stays on this page — just prevents default
     document.getElementById('tabChatLink').addEventListener('click', e => e.preventDefault());
 
-    fetch(`/artisansLMS/backend/endpoints/collaborations.php?action=get_class_details&class_id=${classId}`)
+    fetch(`/backend/endpoints/collaborations.php?action=get_class_details&class_id=${classId}`)
         .then(r => r.json())
         .then(data => {
             if (data.status === 'success') {

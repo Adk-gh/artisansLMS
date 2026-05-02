@@ -19,7 +19,7 @@ $(document).ready(function () {
 
     // ── Dashboard Data Fetch ──────────────────────────────────────────────────
     $.ajax({
-        url: '/artisansLMS/backend/endpoints/instructor_dashboard.php',
+        url: '/backend/endpoints/instructor_dashboard.php',
         method: 'GET',
         dataType: 'json',
         success: function (data) {
@@ -92,11 +92,11 @@ function initHeader() {
                 $('#heroName').html(esc(u.name) + ' <span class="fs-3">👋</span>');
 
             } else {
-                window.location.href = '/artisansLMS/client/pages/login.html';
+                window.location.href = '/client/pages/login.html';
             }
         },
         error: function () {
-            window.location.href = '/artisansLMS/client/pages/login.html';
+            window.location.href = '/client/pages/login.html';
         }
     });
 
@@ -109,7 +109,7 @@ function initHeader() {
             dataType: 'json',
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
             complete: function () {
-                window.location.href = '/artisansLMS/client/pages/login.html';
+                window.location.href = '/client/pages/login.html';
             }
         });
     });

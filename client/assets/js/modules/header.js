@@ -64,11 +64,11 @@ window.initHeader = function () {
                 $('#dropdownAvatar').attr('src', avatarLg);
 
             } else {
-                window.location.href = '/artisansLMS/client/pages/login.html';
+                window.location.href = '/client/pages/login.html';
             }
         },
         error: function () {
-            window.location.href = '/artisansLMS/client/pages/login.html';
+            window.location.href = '/client/pages/login.html';
         }
     });
 
@@ -84,7 +84,7 @@ window.initHeader = function () {
             dataType: 'json',
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
             complete: function () {
-                window.location.href = '/artisansLMS/client/pages/login.html';
+                window.location.href = '/client/pages/login.html';
             }
         });
     });

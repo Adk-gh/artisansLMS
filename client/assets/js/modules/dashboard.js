@@ -4,11 +4,11 @@ const API = 'https://artisanslms.onrender.com/backend/index.php';
 
 $(document).ready(function () {
 
-    $("#sidebar-container").load("/artisansLMS/client/components/sidebar.html", function (res, status, xhr) {
+    $("#sidebar-container").load("/client/components/sidebar.html", function (res, status, xhr) {
         if (status === 'error') console.error('Sidebar failed:', xhr.status, xhr.statusText);
     });
 
-    $("#header-container").load("/artisansLMS/client/components/header.html", function (res, status, xhr) {
+    $("#header-container").load("/client/components/header.html", function (res, status, xhr) {
         if (status === 'error') {
             console.error('Header failed:', xhr.status, xhr.statusText);
             return;
@@ -75,11 +75,11 @@ function initHeader() {
                 $('#heroName').html(fullName + ' <span class="fs-3">👋</span>');
 
             } else {
-                window.location.href = '/artisansLMS/client/pages/login.html';
+                window.location.href = '/client/pages/login.html';
             }
         },
         error: function () {
-            window.location.href = '/artisansLMS/client/pages/login.html';
+            window.location.href = '/client/pages/login.html';
         }
     });
 
@@ -93,7 +93,7 @@ function initHeader() {
             dataType: 'json',
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
             complete: function () {
-                window.location.href = '/artisansLMS/client/pages/login.html';
+                window.location.href = '/client/pages/login.html';
             }
         });
     });
@@ -112,7 +112,7 @@ function initDashboard() {
     else if (hour < 17) greeting = 'Good afternoon';
     $('#greetingText').text(greeting);
 
-    fetch('/artisansLMS/backend/endpoints/dashboard.php')
+    fetch('/backend/endpoints/dashboard.php')
         .then(r => r.json())
         .then(data => {
             if (data.status === 'success') {

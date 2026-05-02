@@ -13,7 +13,7 @@ $(document).ready(function() {
 
     function fetchData() {
         $.ajax({
-            url: '/artisansLMS/backend/endpoints/instructor_assignments.php',
+            url: '/backend/endpoints/instructor_assignments.php',
             method: 'GET',
             data: { action: 'get_all' },
             dataType: 'json',
@@ -156,7 +156,7 @@ $(document).ready(function() {
 
     window.deleteTask = function(id, type) {
         if (!confirm('Delete this task and all submissions?')) return;
-        $.post('/artisansLMS/backend/endpoints/instructor_assignments.php', { action: 'delete_task', task_id: id, task_type: type }, function(res) {
+        $.post('/backend/endpoints/instructor_assignments.php', { action: 'delete_task', task_id: id, task_type: type }, function(res) {
             if(res.status==='success') { showAlert('success', 'Task deleted.'); fetchData(); }
         }, 'json');
     };
@@ -189,7 +189,7 @@ $(document).ready(function() {
         if(cids.length === 0) { alert('Select at least one class.'); return; }
         
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Assigning...');
-        $.post('/artisansLMS/backend/endpoints/instructor_assignments.php', {
+        $.post('/backend/endpoints/instructor_assignments.php', {
             action: 'reassign_task', reassign_id: $('#ri_id').val(), reassign_type: $('#ri_type').val(), new_class_ids: cids.join(',')
         }, function(res) {
             if(res.status==='success') { $('#reassignModal').modal('hide'); showAlert('success', res.message); fetchData(); } 
@@ -265,7 +265,7 @@ window.addQBulk = function(type, key) {
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Creating...');
 
         $.ajax({
-            url: '/artisansLMS/backend/endpoints/instructor_assignments.php', type: 'POST', data: formData, contentType: false, processData: false, dataType: 'json',
+            url: '/backend/endpoints/instructor_assignments.php', type: 'POST', data: formData, contentType: false, processData: false, dataType: 'json',
             success: function(res) {
                 if(res.status==='success') { $('#createModal').modal('hide'); form.reset(); qs = []; renderQs(); showAlert('success', res.message); fetchData(); }
                 else { alert(res.message); }
@@ -332,10 +332,10 @@ function initHeader() {
                 $('#dropdownAvatar').attr({ src: lgAvt, alt: u.name });
                 $('#heroName').html(u.name + ' <span class="fs-3">👋</span>');
             } else {
-                window.location.href = '/artisansLMS/client/pages/login.html';
+                window.location.href = '/client/pages/login.html';
             }
         },
-        error: function() { window.location.href = '/artisansLMS/client/pages/login.html'; }
+        error: function() { window.location.href = '/client/pages/login.html'; }
     });
 
     $(document).on('click', '#logoutBtn', function(e) {
@@ -343,7 +343,7 @@ function initHeader() {
         $.ajax({
             url: API, method: 'POST', contentType: 'application/json', dataType: 'json',
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
-            complete: function() { window.location.href = '/artisansLMS/client/pages/login.html'; }
+            complete: function() { window.location.href = '/client/pages/login.html'; }
         });
     });
 }

@@ -158,7 +158,7 @@
 <nav id="sidebar">
     <div class="sb-header">
         <div class="sb-logo-wrap">
-            <img src="/artisansLMS/client/assets/img/logo.png" class="sb-logo" alt="LMS Logo">
+            <img src="/client/assets/img/logo.png" class="sb-logo" alt="LMS Logo">
             <span class="sb-brand">Artisans</span>
         </div>
         <button class="sb-toggle d-none d-md-flex" id="btnCollapse" title="Toggle sidebar">
@@ -170,7 +170,7 @@
 <div class="sb-section role-teacher">
             <div class="sb-divider"></div>
             <span class="sb-label">Faculty Portal</span>
-            <a href="/artisansLMS/client/pages/instructor_dashboard.html"
+            <a href="/client/pages/instructor_dashboard.html"
             class="sb-link"
             data-label="Dashboard"
             data-active-page="instructor_dashboard.html">
@@ -178,7 +178,7 @@
                 <span class="sb-link-text">Dashboard</span>
             </a>
 
-            <a href="/artisansLMS/client/pages/instructor_courses.html"
+            <a href="/client/pages/instructor_courses.html"
                class="sb-link"
                data-label="Course Materials"
                data-active-page="instructor_courses.html">
@@ -186,7 +186,7 @@
                 <span class="sb-link-text">Course Materials</span>
             </a>
 
-            <a href="/artisansLMS/client/pages/instructor_assignments.html"
+            <a href="/client/pages/instructor_assignments.html"
                class="sb-link"
                data-label="Task Manager"
                data-active-page="instructor_assignments.html">
@@ -198,7 +198,7 @@
         <div class="sb-section" >
             <span class="sb-label">General</span>
             <div class="sb-section role-admin">
-            <a href="/artisansLMS/client/pages/dashboard.html"
+            <a href="/client/pages/dashboard.html"
                class="sb-link"
                data-label="Dashboard"
                data-active-page="dashboard.html">
@@ -206,7 +206,7 @@
                 <span class="sb-link-text">Dashboard</span>
             </a>
             </div>  
-            <a href="/artisansLMS/client/pages/collaborations.html"
+            <a href="/client/pages/collaborations.html"
                class="sb-link"
                data-label="Classes"
                data-active-page="collaborations.html">
@@ -214,7 +214,7 @@
                 <span class="sb-link-text">Classes</span>
             </a>
 
-            <a href="/artisansLMS/client/pages/messages.html"
+            <a href="/client/pages/messages.html"
                class="sb-link"
                data-label="Direct Messages"
                data-active-page="messages.html">
@@ -227,7 +227,7 @@
             <div class="sb-divider"></div>
             <span class="sb-label">Student Portal</span>
 
-            <a href="/artisansLMS/client/pages/my_grades.html"
+            <a href="/client/pages/my_grades.html"
                class="sb-link"
                data-label="My Grades"
                data-active-page="my_grades.html">
@@ -235,7 +235,7 @@
                 <span class="sb-link-text">My Grades</span>
             </a>
 
-            <a href="/artisansLMS/client/pages/my_analytics.html"
+            <a href="/client/pages/my_analytics.html"
                class="sb-link"
                data-label="Achievement Board"
                data-active-page="my_analytics.html">
@@ -250,7 +250,7 @@
             <div class="sb-divider"></div>
             <span class="sb-label">System Admin</span>
 
-            <a href="/artisansLMS/client/pages/instructor_assignments.html"
+            <a href="/client/pages/instructor_assignments.html"
                class="sb-link"
                data-label="Task Manager"
                data-active-page="instructor_assignments.html">
@@ -263,7 +263,7 @@
             <div class="sb-divider"></div>
             <span class="sb-label">System Admin</span>
 
-            <a href="/artisansLMS/client/pages/enrollment.html"
+            <a href="/client/pages/enrollment.html"
                class="sb-link"
                data-label="Student Enrollment"
                data-active-page="enrollment.html">
@@ -271,7 +271,7 @@
                 <span class="sb-link-text">Student Enrollment</span>
             </a>
 
-            <a href="/artisansLMS/client/pages/students.html"
+            <a href="/client/pages/students.html"
                class="sb-link"
                data-label="Manage Students"
                data-active-page="students.html">
@@ -279,7 +279,7 @@
                 <span class="sb-link-text">Manage Students</span>
             </a>
 
-            <a href="/artisansLMS/client/pages/courses.html"
+            <a href="/client/pages/courses.html"
                class="sb-link"
                data-label="Master Courses"
                data-active-page="courses.html">
@@ -287,7 +287,7 @@
                 <span class="sb-link-text">Master Courses</span>
             </a>
 
-            <a href="/artisansLMS/client/pages/classes.html"
+            <a href="/client/pages/classes.html"
                class="sb-link"
                data-label="Class Management"
                data-active-page="classes.html">
@@ -295,7 +295,7 @@
                 <span class="sb-link-text">Class Management</span>
             </a>
 
-            <a href="/artisansLMS/client/pages/instructors.html"
+            <a href="/client/pages/instructors.html"
                class="sb-link"
                data-label="Master Instructors"
                data-active-page="instructors.html">
@@ -303,7 +303,7 @@
                 <span class="sb-link-text">Master Instructors</span>
             </a>
 
-            <a href="/artisansLMS/client/pages/reports.html"
+            <a href="/client/pages/reports.html"
                class="sb-link"
                data-label="System Reports"
                data-active-page="reports.html">
@@ -311,7 +311,7 @@
                 <span class="sb-link-text">System Reports</span>
             </a>
 
-            <a href="/artisansLMS/client/pages/archived.html"
+            <a href="/client/pages/archived.html"
                class="sb-link"
                data-label="Archives"
                data-active-page="archived.html">
@@ -365,7 +365,7 @@
     if (cachedRole) applyRole(cachedRole);
 
     // Always verify against the live server session
-    fetch('/artisansLMS/backend/middleware/session_info.php')
+    fetch('/backend/middleware/session_info.php')
         .then(r => r.json())
         .then(data => {
             if (data.role) {

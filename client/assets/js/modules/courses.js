@@ -503,11 +503,11 @@ function initHeader() {
                 $('#headerAvatar, #dropdownAvatar').attr('src', avt);
                 $('#heroName').html(u.name + ' <span class="fs-3">👋</span>');
             } else {
-                window.location.href = '/artisansLMS/client/pages/login.html';
+                window.location.href = '/client/pages/login.html';
             }
         },
         error: function() {
-            window.location.href = '/artisansLMS/client/pages/login.html';
+            window.location.href = '/client/pages/login.html';
         }
     });
 
@@ -519,7 +519,7 @@ function initHeader() {
             contentType: 'application/json',
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
             complete: function() { 
-                window.location.href = '/artisansLMS/client/pages/login.html'; 
+                window.location.href = '/client/pages/login.html'; 
             }
         });
     });

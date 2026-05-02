@@ -94,7 +94,7 @@ $(function () {
                                   .addClass('alert-success').text(res.message);
                     $('#registerForm').trigger('reset');
                     setTimeout(() => {
-                        window.location.href = '/artisansLMS/client/pages/login.html';
+                        window.location.href = '/client/pages/login.html';
                     }, 2000);
                 } else {
                     $('#alertMsg').removeClass('d-none alert-success')

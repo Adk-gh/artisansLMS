@@ -287,7 +287,7 @@ if ($method === 'POST') {
             'resources'      => $cleanResources,   // ← forwarded to Scheduling System
             'webhook_url'    => (isset($_SERVER['HTTPS']) ? 'https' : 'http')
                                 . '://' . $_SERVER['HTTP_HOST']
-                                . '/artisansLMS/backend/api/webhook_room.php',
+                                . '/backend/api/webhook_room.php',
         ];
 
         $forward = forwardToSchedulingSystem($schedulingPayload);

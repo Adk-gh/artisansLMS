@@ -49,7 +49,7 @@ $(document).ready(function () {
     // ── A1. Single fetch — drives BOTH panels ──
     function fetchTasks() {
         $.ajax({
-            url: '/artisansLMS/backend/endpoints/assignments.php',
+            url: '/backend/endpoints/assignments.php',
             method: 'GET',
             data: { action: 'get_tasks', class_id: classId },
             dataType: 'json',
@@ -296,7 +296,7 @@ $(document).ready(function () {
     // ── A6. Delete task ──
     window.deleteTask = function (id, type) {
         if (!confirm('Are you sure you want to delete this task and all submissions?')) return;
-        $.post('/artisansLMS/backend/endpoints/assignment.php', { action: 'delete_task', task_id: id, task_type: type, class_id: classId }, function (res) {
+        $.post('/backend/endpoints/assignment.php', { action: 'delete_task', task_id: id, task_type: type, class_id: classId }, function (res) {
             if (res.status === 'success') { showAlert('success', 'Task deleted.'); fetchTasks(); }
         }, 'json');
     };
@@ -344,7 +344,7 @@ $(document).ready(function () {
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Creating...');
 
         $.ajax({
-            url: '/artisansLMS/backend/endpoints/instructor_assignments.php',
+            url: '/backend/endpoints/instructor_assignments.php',
             type: 'POST', data: formData, contentType: false, processData: false, dataType: 'json',
             success: function (res) {
                 if (res.status === 'success') {
@@ -387,7 +387,7 @@ $(document).ready(function () {
         const btn = $('#reassignSubmitBtn');
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Assigning...');
 
-        $.post('/artisansLMS/backend/endpoints/instructor_assignments.php', {
+        $.post('/backend/endpoints/instructor_assignments.php', {
             action: 'reassign_task', reassign_id: $('#ri_id').val(), reassign_type: $('#ri_type').val(), new_class_ids: cids.join(',')
         }, function (res) {
             if (res.status === 'success') { $('#reassignModal').modal('hide'); showAlert('success', res.message); fetchTasks(); }
@@ -413,7 +413,7 @@ $(document).ready(function () {
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Submitting...');
 
         $.ajax({
-            url: '/artisansLMS/backend/endpoints/assignment.php',
+            url: '/backend/endpoints/assignment.php',
             type: 'POST', data: formData, contentType: false, processData: false, dataType: 'json',
             success: function () { $('#submitTaskModal').modal('hide'); fetchTasks(); btn.prop('disabled', false).html('Submit Work'); }
         });
@@ -562,7 +562,7 @@ window.updateGradePct = function (val, sid) {
 
     btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Saving...');
 
-    $.post('/artisansLMS/backend/endpoints/assignment.php',
+    $.post('/backend/endpoints/assignment.php',
         { action: 'grade_submission', submission_id: sid, grade, feedback, class_id: classId },
         function () {
             // Update the status badge inline
@@ -832,7 +832,7 @@ window.updateGradePct = function (val, sid) {
         }));
 
         $.ajax({
-            url: '/artisansLMS/backend/endpoints/quiz_handler.php',
+            url: '/backend/endpoints/quiz_handler.php',
             method: 'POST',
             data: {
                 action: 'create_quiz', class_ids: cids.join(','),
@@ -870,7 +870,7 @@ window.updateGradePct = function (val, sid) {
         new bootstrap.Modal(document.getElementById('quizResultsModal')).show();
 
         $.ajax({
-            url: '/artisansLMS/backend/endpoints/quiz_handler.php',
+            url: '/backend/endpoints/quiz_handler.php',
             method: 'GET',
             data: { action: 'get_results', quiz_id: quizId },
             dataType: 'json',
@@ -926,7 +926,7 @@ window.updateGradePct = function (val, sid) {
         if (!confirm(`You are about to start "${title}".\n\n⚠️ You only get ONE attempt. Start now?`)) return;
 
         $.ajax({
-            url: '/artisansLMS/backend/endpoints/quiz_handler.php',
+            url: '/backend/endpoints/quiz_handler.php',
             method: 'GET',
             data: { action: 'get_quiz', quiz_id: quizId },
             dataType: 'json',
@@ -1029,7 +1029,7 @@ window.updateGradePct = function (val, sid) {
         btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Submitting...');
 
         $.ajax({
-            url: '/artisansLMS/backend/endpoints/quiz_handler.php',
+            url: '/backend/endpoints/quiz_handler.php',
             method: 'POST',
             data: { action: 'submit_quiz', attempt_id: quizState.attemptId, quiz_id: quizState.quizId, answers: JSON.stringify(quizState.answers) },
             dataType: 'json',
@@ -1116,11 +1116,11 @@ function initHeader() {
                 
                 sessionStorage.setItem('sb_role', (u.role || '').toLowerCase());
             } else {
-                window.location.href = '/artisansLMS/client/pages/login.html';
+                window.location.href = '/client/pages/login.html';
             }
         },
         error: function() { 
-            window.location.href = '/artisansLMS/client/pages/login.html'; 
+            window.location.href = '/client/pages/login.html'; 
         }
     });
 
@@ -1129,7 +1129,7 @@ function initHeader() {
         $.ajax({
             url: AUTH_API, method: 'POST', contentType: 'application/json', dataType: 'json',
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
-            complete: function() { window.location.href = '/artisansLMS/client/pages/login.html'; }
+            complete: function() { window.location.href = '/client/pages/login.html'; }
         });
     });
 }

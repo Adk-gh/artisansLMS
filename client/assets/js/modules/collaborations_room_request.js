@@ -6,7 +6,7 @@
  * Resources use a searchable dropdown → basket UI.
  */
 
-const API = '/artisansLMS/backend/api/submit_schedule_request.php';
+const API = 'https://artisanslms.onrender.com/backend/api/submit_schedule_request.php';
 
 // ── Module state ──────────────────────────────────────────────────────────────
 let _allResources  = [];   // full list fetched once

@@ -58,10 +58,10 @@ function initHeader() {
                 $('#dropdownAvatar').attr({ src: lgAvt, alt: u.name });
                 $('#heroName').html(u.name + ' <span class="fs-3">👋</span>');
             } else {
-                window.location.href = '/artisansLMS/client/pages/login.html';
+                window.location.href = '/client/pages/login.html';
             }
         },
-        error: function() { window.location.href = '/artisansLMS/client/pages/login.html'; }
+        error: function() { window.location.href = '/client/pages/login.html'; }
     });
 
     $(document).on('click', '#logoutBtn', function(e) {
@@ -69,7 +69,7 @@ function initHeader() {
         $.ajax({
             url: API, method: 'POST', contentType: 'application/json', dataType: 'json',
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
-            complete: function() { window.location.href = '/artisansLMS/client/pages/login.html'; }
+            complete: function() { window.location.href = '/client/pages/login.html'; }
         });
     });
 }
@@ -88,7 +88,7 @@ try {
     });
     
     if (result.status !== 'success') {
-        window.location.href = '/artisansLMS/login.php';
+        window.location.href = '/login.php';
     }
 
     usersData = result.data.all_users;
@@ -767,7 +767,7 @@ $('#fileUploadInput').change(function () {
     const fd = new FormData(); fd.append('file', file);
     
     $.ajax({
-        url: '/artisansLMS/backend/endpoints/upload.php',
+        url: '/backend/endpoints/upload.php',
         type: 'POST', data: fd, processData: false, contentType: false,
         success: res => {
             if (res.status === 'success') {
