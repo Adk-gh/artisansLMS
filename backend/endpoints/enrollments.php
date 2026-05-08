@@ -100,13 +100,17 @@ switch ($action) {
         ]);
         break;
 
-    case 'get_form_data':
+case 'get_form_data':
         $students = [];
-        $res = $conn->query("SELECT student_id, first_name, last_name FROM students ORDER BY last_name ASC");
-        while ($row = $res->fetch_assoc()) $students[] = $row;
+        // NEW: We now select the department_id for each student
+        $res = $conn->query("SELECT student_id, first_name, last_name, department_id FROM students ORDER BY last_name ASC");
+        while ($row = $res->fetch_assoc()) {
+            $row['department_id'] = $row['department_id'] !== null ? (int)$row['department_id'] : null;
+            $students[] = $row;
+        }
 
         $classes = [];
-        $res2    = $conn->query(
+        $res2 = $conn->query(
             "SELECT c.class_id, co.course_code, co.name, emp.last_name,
                     d.department_id, d.name AS dept_name
              FROM classes c
@@ -115,16 +119,17 @@ switch ($action) {
              LEFT JOIN departments d ON co.department_id = d.department_id
              ORDER BY co.course_code ASC"
         );
-        while ($row = $res2->fetch_assoc()) $classes[] = $row;
+        while ($row = $res2->fetch_assoc()) {
+            $row['department_id'] = $row['department_id'] !== null ? (int)$row['department_id'] : null;
+            $classes[] = $row;
+        }
 
-        // Rejected enrollments are excluded so the student can be re-enrolled
         $enrollments = [];
         $res3 = $conn->query("SELECT student_id, class_id FROM enrollments WHERE status != 'Rejected'");
         while ($row = $res3->fetch_assoc()) {
             $enrollments[$row['student_id']][] = (string)$row['class_id'];
         }
 
-        // Departments for modal class filter dropdown
         $dept_res2  = $conn->query("SELECT department_id, name FROM departments ORDER BY name ASC");
         $dept_opts2 = [];
         if ($dept_res2) {

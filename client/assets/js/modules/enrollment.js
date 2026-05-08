@@ -178,28 +178,35 @@ $(document).ready(function () {
     $('#enrollForm').on('submit', handleEnrollmentSubmit);
 
     $('#studentSelect').on('change', function () {
-        const sid         = $(this).val();
-        const $helperText = $('#enrollmentHelperText');
-        const $filterRow  = $('#modalClassFilters');
+    const $selectedOption = $(this).find('option:selected');
+    const sid = $(this).val();
+    const deptId = $selectedOption.attr('data-dept'); // Get the student's dept
 
-        $('#modalClassSearch').val('');
-        $('#modalClassDept').val('');
+    const $helperText = $('#enrollmentHelperText');
+    const $filterRow  = $('#modalClassFilters');
 
-        if (!sid) {
-            $filterRow.attr('style', 'display: none !important');
-            $('.class-check-wrapper').addClass('d-none');
-            $('.class-checkbox').prop('checked', false);
-            $helperText.removeClass('d-none').text('Select a student to view available classes.');
-            $('#selectedCount').hide();
-            return;
-        }
+    $('#modalClassSearch').val('');
+    
+    // AUTO-FILTER: Set the department dropdown to the student's department
+    $('#modalClassDept').val(deptId); 
+    $('#modalClassDept').prop('disabled', true);
 
-        $filterRow.attr('style', 'display: flex !important');
-        $helperText.addClass('d-none');
+    if (!sid) {
+        $filterRow.attr('style', 'display: none !important');
+        $('.class-check-wrapper').addClass('d-none');
         $('.class-checkbox').prop('checked', false);
-        buildCheckboxList(sid);
-        filterModalClasses();
-    });
+        $helperText.removeClass('d-none').text('Select a student to view available classes.');
+        $('#selectedCount').hide();
+        return;
+    }
+
+    $filterRow.attr('style', 'display: flex !important');
+    $helperText.addClass('d-none');
+    $('.class-checkbox').prop('checked', false);
+    
+    // Trigger the filter logic to show only matching classes
+    filterModalClasses(); 
+});
 
     // ── API ───────────────────────────────────────────────────────────────────
     function fetchEnrollments() {
@@ -296,12 +303,15 @@ $(document).ready(function () {
 
     // ── DOM Rendering ─────────────────────────────────────────────────────────
     function populateStudentSelect(students) {
-        let html = '<option value="">-- Choose Student --</option>';
-        students.forEach(s => {
-            html += `<option value="${s.student_id}">${s.last_name}, ${s.first_name} (ID: ${s.student_id})</option>`;
-        });
-        $('#studentSelect').html(html);
-    }
+    let html = '<option value="">-- Choose Student --</option>';
+    students.forEach(s => {
+        // We add data-dept here so we know the student's college immediately
+        html += `<option value="${s.student_id}" data-dept="${s.department_id || ''}">
+                    ${s.last_name}, ${s.first_name} (ID: ${s.student_id})
+                 </option>`;
+    });
+    $('#studentSelect').html(html);
+}
 
     function populateClassCheckboxes() {
         const $list = $('#checkboxList');
