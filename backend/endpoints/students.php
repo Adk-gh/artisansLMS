@@ -37,7 +37,7 @@ switch ($action) {
         LEFT JOIN enrollments e  ON s.student_id = e.student_id AND e.status = 'Approved'
         LEFT JOIN classes c      ON e.class_id = c.class_id
         LEFT JOIN courses co     ON c.course_id = co.course_id
-        LEFT JOIN departments d  ON co.department_id = d.department_id";
+        LEFT JOIN departments d  ON s.department_id = d.department_id";
 
 if ($dept_filter !== null) {
     $sql .= " WHERE d.department_id = $dept_filter";
