@@ -28,7 +28,7 @@ switch ($action) {
                 JOIN classes c        ON e.class_id      = c.class_id
                 JOIN courses co       ON c.course_id     = co.course_id
                 JOIN employees emp    ON c.instructor_id = emp.employee_id
-                LEFT JOIN departments d ON co.department_id = d.department_id
+                LEFT JOIN departments d ON s.department_id = d.department_id
                 ORDER BY
                     FIELD(e.status, 'Pending Finance', 'Approved', 'Rejected'),
                     s.last_name ASC,
