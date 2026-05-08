@@ -78,27 +78,63 @@ $sql .= " GROUP BY s.student_id ORDER BY s.enrollment_date DESC";
     case 'create':
         $input = json_decode(file_get_contents('php://input'), true);
 
-        $fname  = trim($input['fname']  ?? '');
-        $lname  = trim($input['lname']  ?? '');
-        $email  = trim($input['email']  ?? '');
-        $dob    = $input['dob']         ?? null;
-        $gender = in_array($input['gender'] ?? '', ['M','F','Other']) ? $input['gender'] : 'M';
-        $today  = date('Y-m-d');
+        $fname   = trim($input['fname']  ?? '');
+        $lname   = trim($input['lname']  ?? '');
+        $email   = trim($input['email']  ?? '');
+        $dob     = $input['dob']         ?? null;
+        $gender  = in_array($input['gender'] ?? '', ['M','F','Other']) ? $input['gender'] : 'M';
+        
+        // NEW: Grab department_id from the frontend
+        $dept_id = isset($input['department_id']) && $input['department_id'] !== '' ? (int)$input['department_id'] : null; 
+        
+        $today   = date('Y-m-d');
 
         if (!$fname || !$lname || !$email) {
             json_response(["status" => "error", "message" => "Missing required fields."], 400);
         }
 
+        // NEW: Added department_id to the INSERT statement
         $stmt = $conn->prepare(
-            "INSERT INTO students (first_name, last_name, email, dob, gender, enrollment_date)
-             VALUES (?, ?, ?, ?, ?, ?)"
+            "INSERT INTO students (first_name, last_name, email, dob, gender, department_id, enrollment_date)
+             VALUES (?, ?, ?, ?, ?, ?, ?)"
         );
-        $stmt->bind_param("ssssss", $fname, $lname, $email, $dob, $gender, $today);
+        $stmt->bind_param("sssssis", $fname, $lname, $email, $dob, $gender, $dept_id, $today);
 
         if ($stmt->execute()) {
             json_response(["status" => "success", "message" => "Student registered successfully."]);
         } else {
             json_response(["status" => "error", "message" => "Failed to register student."], 500);
+        }
+        break;
+
+    case 'update':
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        $id      = (int)($input['student_id'] ?? 0);
+        $fname   = trim($input['fname']  ?? '');
+        $lname   = trim($input['lname']  ?? '');
+        $email   = trim($input['email']  ?? '');
+        $dob     = $input['dob']         ?? null;
+        $gender  = in_array($input['gender'] ?? '', ['M','F','Other']) ? $input['gender'] : 'M';
+        
+        // NEW: Grab department_id so the admin can update it
+        $dept_id = isset($input['department_id']) && $input['department_id'] !== '' ? (int)$input['department_id'] : null;
+
+        if (!$id || !$fname || !$lname || !$email) {
+            json_response(["status" => "error", "message" => "Missing required fields."], 400);
+        }
+
+        // NEW: Added department_id to the UPDATE statement
+        $stmt = $conn->prepare(
+            "UPDATE students SET first_name=?, last_name=?, email=?, dob=?, gender=?, department_id=?
+             WHERE student_id=?"
+        );
+        $stmt->bind_param("sssssii", $fname, $lname, $email, $dob, $gender, $dept_id, $id);
+
+        if ($stmt->execute()) {
+            json_response(["status" => "success", "message" => "Student updated successfully."]);
+        } else {
+            json_response(["status" => "error", "message" => "Failed to update student."], 500);
         }
         break;
 

@@ -1,7 +1,29 @@
 const API = 'https://artisanslms.onrender.com/backend/index.php';
 
 $(function () {
-
+    // Populate department dropdown on registration page
+if ($('#department_id').length) {
+    $.ajax({
+        url: API,
+        method: 'POST',
+        xhrFields: { withCredentials: true },
+        contentType: 'application/json',
+        dataType: 'json',
+        data: JSON.stringify({ route: 'auth', action: 'getDepartments' }),
+        success: function (res) {
+            if (res.status === 'success' && res.departments) {
+                const $select = $('#department_id');
+                $select.empty().append('<option value="" disabled selected>Select your department</option>');
+                res.departments.forEach(function (dept) {
+                    $select.append(`<option value="${dept.department_id}">${dept.name}</option>`);
+                });
+            }
+        },
+        error: function () {
+            $('#department_id').html('<option value="" disabled selected>Failed to load departments</option>');
+        }
+    });
+}
     // Session check on Login/Register pages
     $.ajax({
         url: API,
@@ -58,7 +80,7 @@ $(function () {
         });
     });
 
-    // Register
+  // Register
     $('#registerForm').submit(function (e) {
         e.preventDefault();
         $('#alertMsg').addClass('d-none').removeClass('alert-danger alert-success');
@@ -82,14 +104,15 @@ $(function () {
             contentType: 'application/json',
             dataType: 'json',
             data: JSON.stringify({
-                route:      'auth',
-                action:     'register',
-                first_name: $('#regFirstName').val(),
-                last_name:  $('#regLastName').val(),
-                dob:        $('#regDOB').val(),
-                gender:     $('#regGender').val(),
-                email:      $('#regEmail').val(),
-                password:   password
+                route:         'auth',
+                action:        'register',
+                first_name:    $('#regFirstName').val(),
+                last_name:     $('#regLastName').val(),
+                dob:           $('#regDOB').val(),
+                gender:        $('#regGender').val(),
+                email:         $('#regEmail').val(),
+                password:      password,
+                department_id: $('#department_id').val() // <-- Added this line
             }),
             success: function (res) {
                 if (res.status === 'success') {
@@ -116,5 +139,4 @@ $(function () {
             }
         });
     });
-
 });

@@ -47,6 +47,10 @@ switch ($action) {
     case 'logout':
         $controller->logout();
         break;
+    case 'getDepartments': 
+        $controller->getDepartments();
+        break;
+
     default:
         json_response(['status' => 'error', 'message' => 'Invalid action: ' . $action]);
 }

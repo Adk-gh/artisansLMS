@@ -15,7 +15,7 @@
             
             <div class="text-center mb-4">
                 <div class="mb-3">
-                    <img src="/artisansLMS/client/assets/img/logo.png" alt="Artisans LMS Logo" class="img-fluid" style="max-width: 70px;">
+                    <img src="/client/assets/img/logo.png" alt="Artisans LMS Logo" class="img-fluid" style="max-width: 70px;">
                 </div>
                 <h3 class="fw-bold text-dark mb-1">Join ARTISANS | LMS</h3>
                 <p class="text-muted small mb-0">Register for a new student account</p>
@@ -51,6 +51,14 @@
                         </select>
                     </div>
                 </div>
+                <div class="mb-3">
+                        <label for="department_id" class="form-label fw-semibold text-secondary small mb-1">
+                            Department / Program
+                        </label>
+                        <select id="department_id" name="department_id" class="form-select py-2" required>
+                            <option value="" disabled selected>Loading departments...</option>
+                        </select>
+                    </div>
 
                 <div class="mb-3">
                     <label class="form-label fw-semibold text-secondary small mb-1">Email Address</label>
@@ -74,7 +82,7 @@
 
                 <div class="text-center mt-4 pt-3 border-top">
                     <span class="text-muted small">Already have an account?</span>
-                    <a href="/artisansLMS/client/pages/login.html" class="text-decoration-none fw-bold text-primary small ms-1">Sign In</a>
+                    <a href="/client/pages/login.html" class="text-decoration-none fw-bold text-primary small ms-1">Sign In</a>
                 </div>
             </form>
             
