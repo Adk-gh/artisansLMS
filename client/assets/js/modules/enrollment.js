@@ -80,21 +80,25 @@ function applyFiltersAndRender() {
     const q     = $('#enrollSearch').val().toLowerCase().trim();
     const cf    = $('#enrollClassFilter').val();
     const statf = $('#enrollStatusFilter').val();
+    const df    = $('#enrollDeptFilter').val(); // NEW: Get department filter value
 
     _filteredStudents = _allStudents.filter(student => {
         const name     = (student.name || '').toLowerCase();
         const sid      = String(student.student_id);
+        const sDeptId  = String(student.dept_id || ''); // The student's department ID
         const count    = student.classes.length;
         const statuses = [...new Set(student.classes.map(c => c.status))];
 
         const nameOk   = !q     || name.includes(q) || sid.includes(q);
         const statusOk = !statf || statuses.includes(statf);
-        let   cntOk    = true;
+        const deptOk   = !df    || sDeptId === df; // NEW: Check department match
+
+        let cntOk = true;
         if      (cf === '1') cntOk = count === 1;
         else if (cf === '2') cntOk = count === 2;
         else if (cf === '3') cntOk = count >= 3;
 
-        return nameOk && cntOk && statusOk;
+        return nameOk && cntOk && statusOk && deptOk; // Include deptOk in the final check
     });
 
     _currentPage = Math.min(_currentPage, Math.ceil(_filteredStudents.length / PAGE_SIZE)) || 1;
@@ -219,17 +223,27 @@ $(document).ready(function () {
 });
 
     // ── API ───────────────────────────────────────────────────────────────────
-    function fetchEnrollments() {
-        $.ajax({
-            url: `${API_URL}?action=get_all`,
-            method: 'GET',
-            dataType: 'json',
-            success: function (json) {
-                if (json.status === 'success') {
-                    _allStudents = json.data;
-                    _archivesData = json.archives;
-                    applyFiltersAndRender();
-                } else {
+   function fetchEnrollments() {
+    $.ajax({
+        url: `${API_URL}?action=get_all`,
+        method: 'GET',
+        dataType: 'json',
+        success: function (json) {
+            if (json.status === 'success') {
+                _allStudents = json.data;
+                _archivesData = json.archives;
+
+                // NEW: Populate the main Department Filter dropdown
+                if (json.departments) {
+                    let dHtml = '<option value="">All Departments</option>';
+                    json.departments.forEach(d => {
+                        dHtml += `<option value="${d.department_id}">${d.name}</option>`;
+                    });
+                    $('#enrollDeptFilter').html(dHtml);
+                }
+
+                applyFiltersAndRender();
+            } else {
                     showToast(json.message || 'Failed to load enrollments.', 'error');
                 }
             },
@@ -455,15 +469,17 @@ function renderTablePage(pageData, totalFiltered) {
             : `<span class="status-badge status-approved"><i class="fas fa-check-circle" style="font-size:.6rem;"></i> All Approved</span>`;
 
         $tbody.append(`
-        <tbody class="student-row-wrap"
-            data-name="${(student.name || '').toLowerCase()}"
-            data-id="${sid}"
-            data-count="${classCount}"
-            data-statuses="${statuses}">
-            <tr class="collapse-toggle" data-bs-toggle="collapse" data-bs-target="#student-${sid}" aria-expanded="false">
+            <tbody class="student-row-wrap" ...>
+            <tr class="collapse-toggle" data-bs-toggle="collapse" data-bs-target="#student-${sid}">
                 <td class="ps-4 py-3">
                     <div class="fw-bold text-dark">${student.name}</div>
                     <small class="text-muted" style="font-family:'JetBrains Mono',monospace;">ID: #${sid}</small>
+                </td>
+                <td class="py-3">
+                    <span class="dept-badge" title="${student.dept_name}">
+                        <i class="fas fa-university me-1" style="font-size: .6rem;"></i> 
+                        ${student.dept_name || 'Unassigned'}
+                    </span>
                 </td>
                 <td class="py-3">
                     <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-bold me-2" style="min-width:90px;text-align:center;">
