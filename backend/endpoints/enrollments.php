@@ -21,12 +21,14 @@ switch ($action) {
                        s.student_id, s.first_name, s.last_name,
                        co.course_code, co.name AS course_name,
                        emp.last_name AS prof,
-                       c.semester, c.year, c.class_id
+                       c.semester, c.year, c.class_id,
+                       d.department_id, d.name AS dept_name
                 FROM enrollments e
                 JOIN students s       ON e.student_id    = s.student_id
                 JOIN classes c        ON e.class_id      = c.class_id
                 JOIN courses co       ON c.course_id     = co.course_id
                 JOIN employees emp    ON c.instructor_id = emp.employee_id
+                LEFT JOIN departments d ON co.department_id = d.department_id
                 ORDER BY
                     FIELD(e.status, 'Pending Finance', 'Approved', 'Rejected'),
                     s.last_name ASC,
@@ -39,9 +41,11 @@ switch ($action) {
                 $sid = $row['student_id'];
                 if (!isset($grouped[$sid])) {
                     $grouped[$sid] = [
-                        'student_id' => $sid,
-                        'name'       => $row['last_name'] . ', ' . $row['first_name'],
-                        'classes'    => []
+                        'student_id'    => $sid,
+                        'name'          => $row['last_name'] . ', ' . $row['first_name'],
+                        'dept_id'       => $row['department_id'] ?? '',
+                        'dept_name'     => $row['dept_name']     ?? '',
+                        'classes'       => []
                     ];
                 }
                 $grouped[$sid]['classes'][] = $row;
@@ -78,11 +82,21 @@ switch ($action) {
             "SELECT COUNT(*) FROM enrollments WHERE status = 'Pending Finance'"
         )->fetch_row()[0] ?? 0;
 
+        // Departments list for the filter dropdown
+        $dept_res  = $conn->query("SELECT department_id, name FROM departments ORDER BY name ASC");
+        $dept_opts = [];
+        if ($dept_res) {
+            while ($dr = $dept_res->fetch_assoc()) {
+                $dept_opts[] = $dr;
+            }
+        }
+
         json_response([
             "status"        => "success",
             "data"          => array_values($grouped),
             "archives"      => $archive_data,
-            "pending_count" => (int)$pending_count
+            "pending_count" => (int)$pending_count,
+            "departments"   => $dept_opts
         ]);
         break;
 
@@ -93,10 +107,12 @@ switch ($action) {
 
         $classes = [];
         $res2    = $conn->query(
-            "SELECT c.class_id, co.course_code, co.name, emp.last_name
+            "SELECT c.class_id, co.course_code, co.name, emp.last_name,
+                    d.department_id, d.name AS dept_name
              FROM classes c
              JOIN courses co    ON c.course_id    = co.course_id
              JOIN employees emp ON c.instructor_id = emp.employee_id
+             LEFT JOIN departments d ON co.department_id = d.department_id
              ORDER BY co.course_code ASC"
         );
         while ($row = $res2->fetch_assoc()) $classes[] = $row;
@@ -108,11 +124,21 @@ switch ($action) {
             $enrollments[$row['student_id']][] = (string)$row['class_id'];
         }
 
+        // Departments for modal class filter dropdown
+        $dept_res2  = $conn->query("SELECT department_id, name FROM departments ORDER BY name ASC");
+        $dept_opts2 = [];
+        if ($dept_res2) {
+            while ($dr = $dept_res2->fetch_assoc()) {
+                $dept_opts2[] = $dr;
+            }
+        }
+
         json_response([
             "status"      => "success",
             "students"    => $students,
             "classes"     => $classes,
-            "enrollments" => $enrollments
+            "enrollments" => $enrollments,
+            "departments" => $dept_opts2
         ]);
         break;
 

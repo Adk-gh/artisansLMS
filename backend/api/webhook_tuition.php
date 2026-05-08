@@ -47,6 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     webhook_log('REJECTED', 'Non-POST request: ' . $_SERVER['REQUEST_METHOD']);
     json_response(['status' => 'error', 'message' => 'Method not allowed.'], 405);
+    exit; // FIX: Halt execution
 }
 
 // ── Read raw body ─────────────────────────────────────────────────────────────
@@ -55,6 +56,7 @@ $raw_body = file_get_contents('php://input');
 if (empty($raw_body)) {
     webhook_log('REJECTED', 'Empty request body');
     json_response(['status' => 'error', 'message' => 'Empty request body.'], 400);
+    exit; // FIX: Halt execution
 }
 
 // ── Verify HMAC signature ─────────────────────────────────────────────────────
@@ -67,6 +69,7 @@ $provided_sig = trim(
 if (empty($provided_sig)) {
     webhook_log('REJECTED', 'Missing signature header');
     json_response(['status' => 'error', 'message' => 'Missing X-Finance-Signature header.'], 401);
+    exit; // FIX: Halt execution
 }
 
 $expected_sig = hash_hmac('sha256', $raw_body, TUITION_WEBHOOK_SECRET);
@@ -74,6 +77,7 @@ $expected_sig = hash_hmac('sha256', $raw_body, TUITION_WEBHOOK_SECRET);
 if (!hash_equals($expected_sig, $provided_sig)) {
     webhook_log('REJECTED', 'Signature mismatch. Provided: ' . $provided_sig);
     json_response(['status' => 'error', 'message' => 'Invalid signature. Unauthorized.'], 401);
+    exit; // FIX: Halt execution
 }
 
 // ── Parse JSON body ───────────────────────────────────────────────────────────
@@ -82,6 +86,7 @@ $payload = json_decode($raw_body, true);
 if (json_last_error() !== JSON_ERROR_NONE || !is_array($payload)) {
     webhook_log('REJECTED', 'Invalid JSON payload');
     json_response(['status' => 'error', 'message' => 'Invalid JSON payload.'], 400);
+    exit; // FIX: Halt execution
 }
 
 $event = trim($payload['event'] ?? '');
@@ -91,6 +96,7 @@ webhook_log('RECEIVED', "event={$event} data=" . json_encode($data));
 
 if (empty($event)) {
     json_response(['status' => 'error', 'message' => 'Missing event type in payload.'], 400);
+    exit; // FIX: Halt execution
 }
 
 $conn = getConnection();
@@ -106,6 +112,7 @@ switch ($event) {
         $eid = (int)($data['enrollment_id'] ?? 0);
         if (!$eid) {
             json_response(['status' => 'error', 'message' => 'Missing enrollment_id in data.'], 400);
+            exit;
         }
 
         $stmt = $conn->prepare(
@@ -129,6 +136,7 @@ switch ($event) {
         $student_id = (int)($data['student_id'] ?? 0);
         if (!$student_id) {
             json_response(['status' => 'error', 'message' => 'Missing student_id in data.'], 400);
+            exit;
         }
 
         $stmt = $conn->prepare(
@@ -151,6 +159,7 @@ switch ($event) {
         $eid = (int)($data['enrollment_id'] ?? 0);
         if (!$eid) {
             json_response(['status' => 'error', 'message' => 'Missing enrollment_id in data.'], 400);
+            exit;
         }
 
         $stmt = $conn->prepare(
@@ -174,6 +183,7 @@ switch ($event) {
         $eid = (int)($data['enrollment_id'] ?? 0);
         if (!$eid) {
             json_response(['status' => 'error', 'message' => 'Missing enrollment_id in data.'], 400);
+            exit;
         }
 
         $stmt = $conn->prepare(

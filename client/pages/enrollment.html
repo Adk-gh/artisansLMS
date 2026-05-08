@@ -63,6 +63,9 @@
         /* ── Toast ── */
         .toast-bar { position: fixed; top: 20px; right: 20px; z-index: 9999; padding: 12px 20px; border-radius: 10px; font-size: .8rem; font-weight: 600; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 20px rgba(0,0,0,.12); animation: slideIn .3s ease; transition: opacity .5s; }
         @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* ── Department badge ── */
+        .dept-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: .65rem; font-weight: 700; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -85,6 +88,9 @@
                 <i class="fas fa-search"></i>
                 <input type="text" class="sf-input" id="enrollSearch" placeholder="Search student name or ID…">
             </div>
+            <select class="sf-select" id="enrollDeptFilter">
+                <option value="">All Departments</option>
+            </select>
             <select class="sf-select" id="enrollClassFilter">
                 <option value="">All Counts</option>
                 <option value="1">1 Class</option>
@@ -108,12 +114,13 @@
                     <thead class="bg-light text-muted small">
                         <tr>
                             <th class="ps-4">Student</th>
+                            <th>Department</th>
                             <th>Enrolled Classes</th>
                             <th class="text-end pe-4">Details</th>
                         </tr>
                     </thead>
                     <tbody id="enrollBody">
-                        <tr><td colspan="3" class="text-center py-5 text-muted small">Loading Enrollments…</td></tr>
+                        <tr><td colspan="4" class="text-center py-5 text-muted small">Loading Enrollments…</td></tr>
                     </tbody>
                 </table>
             </div>
