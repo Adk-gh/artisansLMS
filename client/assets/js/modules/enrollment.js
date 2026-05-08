@@ -119,17 +119,20 @@ function filterModalClasses() {
     const sid = $('#studentSelect').val();
     if (!sid) return;
 
-    const q       = $('#modalClassSearch').val().toLowerCase().trim();
-    const dept    = $('#modalClassDept').val();
+    // Get the deptId we stored in the change event
+    const targetDept = String($('#studentSelect').data('current-dept') || '');
+    const q = $('#modalClassSearch').val().toLowerCase().trim();
     const already = _enrolledData[sid] || [];
-    let   count   = 0;
+    let count = 0;
 
     const $helperText = $('#enrollmentHelperText');
 
     $('.class-check-wrapper').each(function () {
         const $wrap = $(this);
-        const cid   = $wrap.attr('data-class-id');
+        const cid = $wrap.attr('data-class-id');
+        const cDept = String($wrap.attr('data-dept') || '');
 
+        // 1. Hide if already enrolled
         if (already.includes(cid)) {
             $wrap.addClass('d-none');
             $wrap.find('input').prop('disabled', true);
@@ -139,12 +142,19 @@ function filterModalClasses() {
         $wrap.find('input').prop('disabled', false);
 
         const nameData = $wrap.attr('data-name') || '';
-        const cDept    = $wrap.attr('data-dept') || '';
-        const matchSearch = !q    || nameData.includes(q);
-        const matchDept   = !dept || cDept === dept;
+        const matchSearch = !q || nameData.includes(q);
+        
+        // 2. STRICT FILTER: The course department MUST match the student's department
+        // If the student has no dept, we show nothing or everything based on your preference.
+        // Here, we force the match:
+        const matchDept = (targetDept === "" || cDept === targetDept);
 
-        if (matchSearch && matchDept) { $wrap.removeClass('d-none'); count++; }
-        else                          { $wrap.addClass('d-none'); }
+        if (matchSearch && matchDept) { 
+            $wrap.removeClass('d-none'); 
+            count++; 
+        } else { 
+            $wrap.addClass('d-none'); 
+        }
     });
 
     if (count === 0 && !q && !dept) {
@@ -177,26 +187,27 @@ $(document).ready(function () {
     $('#modalClassDept').on('change', filterModalClasses);
     $('#enrollForm').on('submit', handleEnrollmentSubmit);
 
-    $('#studentSelect').on('change', function () {
+   $('#studentSelect').on('change', function () {
     const $selectedOption = $(this).find('option:selected');
     const sid = $(this).val();
-    const deptId = $selectedOption.attr('data-dept'); // Get the student's dept
+    const deptId = $selectedOption.attr('data-dept') || ''; 
+
+    // Store the deptId on the select element for the filter to use later
+    $(this).data('current-dept', deptId); 
 
     const $helperText = $('#enrollmentHelperText');
     const $filterRow  = $('#modalClassFilters');
 
     $('#modalClassSearch').val('');
     
-    // AUTO-FILTER: Set the department dropdown to the student's department
-    $('#modalClassDept').val(deptId); 
-    $('#modalClassDept').prop('disabled', true);
+    // Set the dropdown value and lock it
+    $('#modalClassDept').val(deptId).prop('disabled', true); 
 
     if (!sid) {
         $filterRow.attr('style', 'display: none !important');
         $('.class-check-wrapper').addClass('d-none');
         $('.class-checkbox').prop('checked', false);
         $helperText.removeClass('d-none').text('Select a student to view available classes.');
-        $('#selectedCount').hide();
         return;
     }
 
@@ -204,7 +215,6 @@ $(document).ready(function () {
     $helperText.addClass('d-none');
     $('.class-checkbox').prop('checked', false);
     
-    // Trigger the filter logic to show only matching classes
     filterModalClasses(); 
 });
 
@@ -301,11 +311,10 @@ $(document).ready(function () {
         });
     };
 
-    // ── DOM Rendering ─────────────────────────────────────────────────────────
-    function populateStudentSelect(students) {
+function populateStudentSelect(students) {
     let html = '<option value="">-- Choose Student --</option>';
     students.forEach(s => {
-        // We add data-dept here so we know the student's college immediately
+        // ADD data-dept="${s.department_id || ''}" BELOW
         html += `<option value="${s.student_id}" data-dept="${s.department_id || ''}">
                     ${s.last_name}, ${s.first_name} (ID: ${s.student_id})
                  </option>`;
