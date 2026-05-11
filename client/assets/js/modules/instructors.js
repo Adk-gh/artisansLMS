@@ -1,3 +1,4 @@
+//C:\xampp\htdocs\artisansLMS\client\assets\js\modules\instructors.js
 $(document).ready(function() {
     // ── Load UI Components ──
     $("#sidebar-placeholder").load("../components/sidebar.html");
@@ -5,7 +6,7 @@ $(document).ready(function() {
         if (status !== 'error') initHeader();
     });
 
-    const API_URL = '../../backend/api/instructors.php'; // ensure this path matches your setup
+    const API_URL = '../../backend/api/get_faculty.php'; // ensure this path matches your setup
 
     let instructorsData = [];
     let currentView = localStorage.getItem('instructorViewPref') || 'grid';
@@ -23,7 +24,7 @@ $(document).ready(function() {
     $('#btnSyncHris').on('click', function() {
         const $btn = $(this);
         const originalHtml = $btn.html();
-        
+
         // Add loading spinner
         $btn.html('<i class="fas fa-spinner fa-spin me-1 me-md-2"></i><span class="d-none d-sm-inline">Syncing...</span>').prop('disabled', true);
 
@@ -288,9 +289,9 @@ $(document).ready(function() {
         let visible  = 0;
 
         function matches($el) {
-            const name    = $el.attr('data-name')    || '';  
+            const name    = $el.attr('data-name')    || '';
             const email   = $el.attr('data-email')   || '';
-            const deptVal = $el.attr('data-dept')    || '';  
+            const deptVal = $el.attr('data-dept')    || '';
             const classes = parseInt($el.attr('data-classes')) || 0;
 
             const nameOk  = !q || name.includes(q) || email.includes(q) || deptVal.includes(q);
