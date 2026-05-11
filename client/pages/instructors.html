@@ -24,13 +24,16 @@
             cursor:pointer; transition:.15s; text-decoration:none;
         }
         .btn-archive-inst:hover { background:#ffedd5; color:#9a3412; }
-        .btn-edit-inst {
+        
+        /* Changed from Edit to Generate Password styling */
+        .btn-gen-pass {
             display:inline-flex; align-items:center; gap:4px;
             padding:5px 12px; border-radius:8px; font-size:.72rem; font-weight:700;
             background:#f0f9ff; color:#0369a1; border:1px solid #bae6fd;
             cursor:pointer; transition:.15s;
         }
-        .btn-edit-inst:hover { background:#e0f2fe; color:#0c4a6e; }
+        .btn-gen-pass:hover { background:#e0f2fe; color:#0c4a6e; }
+
         .btn-instructor {
             display:inline-flex;align-items:center;gap:8px;
             background:#1e293b;color:#fff;border:none;border-radius:10px;
@@ -118,20 +121,20 @@
     <main class="p-4 p-md-5">
 
         <div class="d-flex flex-wrap justify-content-end align-items-center mb-4 gap-3">
-    <div class="d-flex gap-2 align-items-center flex-wrap">
-        <div class="btn-group view-toggle shadow-sm" role="group">
-            <button type="button" class="btn active" id="btnGrid" onclick="toggleView('grid')">
-                <i class="fas fa-th-large me-1"></i><span class="d-none d-sm-inline">Grid</span>
-            </button>
-            <button type="button" class="btn" id="btnList" onclick="toggleView('list')">
-                <i class="fas fa-list me-1"></i><span class="d-none d-sm-inline">List</span>
-            </button>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <div class="btn-group view-toggle shadow-sm" role="group">
+                    <button type="button" class="btn active" id="btnGrid" onclick="toggleView('grid')">
+                        <i class="fas fa-th-large me-1"></i><span class="d-none d-sm-inline">Grid</span>
+                    </button>
+                    <button type="button" class="btn" id="btnList" onclick="toggleView('list')">
+                        <i class="fas fa-list me-1"></i><span class="d-none d-sm-inline">List</span>
+                    </button>
+                </div>
+                <button class="btn-instructor px-3 px-md-4 shadow-sm fw-bold" id="btnSyncHris">
+                    <i class="fas fa-sync-alt me-1 me-md-2"></i><span class="d-none d-sm-inline">Sync </span>HRIS
+                </button>
+            </div>
         </div>
-        <button class="btn-instructor px-3 px-md-4 shadow-sm fw-bold" data-bs-toggle="modal" data-bs-target="#addInstructorModal">
-            <i class="fas fa-user-plus me-1 me-md-2"></i><span class="d-none d-sm-inline">Add </span>Instructor
-        </button>
-    </div>
-</div>
 
         <div class="sf-bar">
             <div class="sf-search-wrap">
@@ -172,12 +175,11 @@
                             <th>Contact</th>
                             <th>Department</th>
                             <th>Classes</th>
-                            <th>Hired</th>
                             <th class="text-end pe-4">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="instTableBody">
-                        <tr><td colspan="6" class="text-center py-5 text-muted small">Loading Instructors...</td></tr>
+                        <tr><td colspan="5" class="text-center py-5 text-muted small">Loading Instructors...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -193,149 +195,9 @@
     </main>
 </div>
 
-<div class="modal fade" id="addInstructorModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <form id="addInstructorForm" class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-dark text-white border-0 py-3 px-4">
-                <h5 class="modal-title fw-bold"><i class="fas fa-user-tie me-2 text-info"></i>New Faculty Registration</h5>
-                <button type="button" title="Close" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <div class="row g-3">
-                    <div class="col-12 col-md-6">
-                        <label class="small fw-bold text-muted">First Name</label>
-                        <input type="text" name="fname" title="First Name" class="form-control bg-light border-0" required>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label class="small fw-bold text-muted">Last Name</label>
-                        <input type="text" name="lname" title="Last Name" class="form-control bg-light border-0" required>
-                    </div>
-                    <div class="col-12 col-sm-4">
-                        <label class="small fw-bold text-muted">Birth Date</label>
-                        <input type="date" name="dob" title="Birth Date" class="form-control bg-light border-0">
-                    </div>
-                    <div class="col-12 col-sm-4">
-                        <label class="small fw-bold text-muted">Gender</label>
-                        <select name="gender" title="Select Gender" class="form-select bg-light border-0">
-                            <option value="M">Male</option>
-                            <option value="F">Female</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div class="col-12 col-sm-4">
-                        <label class="small fw-bold text-muted">Hire Date</label>
-                        <input type="date" title="Hire Date" name="hire_date" class="form-control bg-light border-0" required>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label class="small fw-bold text-muted">Department</label>
-                        <select name="department_id" title="Select Department" id="add_dept" class="form-select bg-light border-0" required>
-                            <option value="">Loading Departments...</option>
-                        </select>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label class="small fw-bold text-muted">Position</label>
-                        <select name="position_id" title="Select Position" id="add_pos" class="form-select bg-light border-0" required>
-                            <option value="">Loading Positions...</option>
-                        </select>
-                    </div>
-                    <div class="col-12">
-                        <label class="small fw-bold text-muted">Monthly Salary</label>
-                        <input type="number" step="0.01" name="salary" class="form-control bg-light border-0" placeholder="0.00">
-                    </div>
-                    <div class="col-12 border-top mt-2 pt-3">
-                        <label class="small fw-bold text-muted">Official Email</label>
-                        <input type="email" title="Official Email" name="email" class="form-control bg-light border-0" required>
-                    </div>
-                    <div class="col-12">
-                        <label class="small fw-bold text-muted">Temporary Password</label>
-                        <div class="input-group">
-                            <input type="text" title="Temporary Password" name="password" id="passInput" class="form-control bg-light border-0" required>
-                            <button class="btn btn-dark" type="button" title="Generate Password" onclick="generatePass()">Generate</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer border-0 p-4 pt-0">
-                <button type="submit" class="btn btn-primary w-100 py-3 shadow fw-bold">Register Instructor</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<div class="modal fade" id="editInstructorModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <form id="editInstructorForm" class="modal-content border-0 shadow-lg">
-            <div class="modal-header bg-primary text-white border-0 py-3 px-4">
-                <h5 class="modal-title fw-bold"><i class="fas fa-user-edit me-2"></i>Edit Instructor</h5>
-                <button type="button" title="Close" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <input type="hidden" id="edit_emp_id">
-                <div class="row g-3">
-                    <div class="col-12 col-md-6">
-                        <label class="small fw-bold text-muted">First Name</label>
-                        <input type="text" id="edit_fname" title="First Name" class="form-control bg-light border-0" required>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label class="small fw-bold text-muted">Last Name</label>
-                        <input type="text" id="edit_lname" title="Last Name" class="form-control bg-light border-0" required>
-                    </div>
-                    <div class="col-12 col-sm-4">
-                        <label class="small fw-bold text-muted">Birth Date</label>
-                        <input type="date" id="edit_dob" title="Birth Date" class="form-control bg-light border-0">
-                    </div>
-                    <div class="col-12 col-sm-4">
-                        <label class="small fw-bold text-muted">Gender</label>
-                        <select id="edit_gender" title="Select Gender" class="form-select bg-light border-0">
-                            <option value="M">Male</option>
-                            <option value="F">Female</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div class="col-12 col-sm-4">
-                        <label class="small fw-bold text-muted">Hire Date</label>
-                        <input type="date" title="Hire Date" id="edit_hire" class="form-control bg-light border-0">
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label class="small fw-bold text-muted">Department</label>
-                        <select id="edit_dept" title="Select Department" class="form-select bg-light border-0" required>
-                            <option value="">Loading Departments...</option>
-                        </select>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <label class="small fw-bold text-muted">Position</label>
-                        <select id="edit_pos"   title="Select Position" class="form-select bg-light border-0" required>
-                            <option value="">Loading Positions...</option>
-                        </select>
-                    </div>
-                    <div class="col-12">
-                        <label class="small fw-bold text-muted">Monthly Salary</label>
-                        <input type="number" title="Monthly Salary" step="0.01" id="edit_salary" class="form-control bg-light border-0">
-                    </div>
-                    <div class="col-12 border-top mt-2 pt-3">
-                        <label class="small fw-bold text-muted">Official Email</label>
-                        <input type="email" title="Official Email" id="edit_email" class="form-control bg-light border-0" required>
-                    </div>
-                    <div class="col-12">
-                        <label class="small fw-bold text-muted">New Password <span class="text-muted fw-normal">(leave blank to keep current)</span></label>
-                        <div class="input-group">
-                            <input type="text" id="edit_password" class="form-control bg-light border-0" placeholder="Leave blank to keep unchanged">
-                            <button class="btn btn-dark" type="button" onclick="generatePassEdit()">Generate</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer border-0 p-4 pt-0">
-                <button type="submit" class="btn btn-primary w-100 py-3 shadow fw-bold">
-                    <i class="fas fa-save me-2"></i>Save Changes
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="/client/assets/js/modules/instructors.js"></script>
 </body>
 </html>

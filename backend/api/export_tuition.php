@@ -93,7 +93,7 @@ $BASE_SELECT = "
     JOIN students   s   ON s.student_id    = e.student_id
     JOIN classes    c   ON c.class_id      = e.class_id
     JOIN courses    co  ON co.course_id    = c.course_id
-    LEFT JOIN departments d   ON d.department_id = co.department_id
+    LEFT JOIN departments d   ON d.department_id = s.department_id
     JOIN employees  emp ON emp.employee_id = c.instructor_id
 ";
 
