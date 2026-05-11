@@ -42,10 +42,10 @@ if ($method === 'POST') {
         if (!$target_email) json_response(['status' => 'error', 'message' => 'No email provided for archiving.'], 400);
 
         $safe_email = $conn->real_escape_string($target_email);
-        
+
         // Soft delete the faculty member by setting is_archived = 1
         $conn->query("UPDATE employees SET is_archived = 1 WHERE email = '$safe_email'");
-        
+
         json_response(['status' => 'success', 'message' => 'Faculty archived successfully.']);
     }
 
@@ -53,7 +53,7 @@ if ($method === 'POST') {
     // --- SYNC FACULTY & MASTER DATA (Triggered by HRIS add.php / edit.php) ---
     // ════════════════════════════════════════════════════════════════════════
     if ($action === 'sync_faculty') {
-        
+
         // --- 1. SYNC MASTER DATA: DEPARTMENTS ---
         if (!empty($data['departments'])) {
             foreach ($data['departments'] as $dept) {
@@ -114,7 +114,9 @@ if ($method === 'POST') {
 
             if ($existing) {
                 $eid = (int)$existing['employee_id'];
-                $conn->query("UPDATE employees SET first_name='$safe_fname', last_name='$safe_lname', gender='$gender', department_id=$safe_dept, position_id=$safe_pos, is_faculty=1 WHERE employee_id=$eid");
+                $stmt = $conn->prepare("UPDATE employees SET first_name=?, last_name=?, gender=?, department_id=?, position_id=?, is_faculty=1 WHERE employee_id=?");
+                $stmt->bind_param("sssiii", $first_name, $last_name, $gender, $dept_id, $pos_id, $eid);
+                $stmt->execute();
                 $updated++;
             } else {
                 $chars      = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';

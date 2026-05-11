@@ -5,7 +5,7 @@ ini_set('display_errors', 0);
 require_once __DIR__ . '/../../server/config/db.php';
 require_once __DIR__ . '/../middleware/json_response.php';
 
-define('HRIS_API_URL', 'https://hris.infinityfreeapp.com/api/faculty.php');
+define('HRIS_API_URL', 'https://hris.infinityfreeapp.com/');
 define('HRIS_API_KEY', getenv('HRIS_API_KEY') ?: 'local_hris_api_key');
 
 if (session_status() === PHP_SESSION_NONE) session_start();
