@@ -6,7 +6,7 @@ $(document).ready(function() {
         if (status !== 'error') initHeader();
     });
 
-    const API_URL = '../../backend/api/get_faculty.php'; // ensure this path matches your setup
+const API_URL = '../../backend/endpoints/instructors.php'; // ensure this path matches your setup
 
     let instructorsData = [];
     let currentView = localStorage.getItem('instructorViewPref') || 'grid';
