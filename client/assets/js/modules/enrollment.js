@@ -147,17 +147,17 @@ function filterModalClasses() {
 
         const nameData = $wrap.attr('data-name') || '';
         const matchSearch = !q || nameData.includes(q);
-        
+
         // 2. STRICT FILTER: The course department MUST match the student's department
         // If the student has no dept, we show nothing or everything based on your preference.
         // Here, we force the match:
         const matchDept = (targetDept === "" || cDept === targetDept);
 
-        if (matchSearch && matchDept) { 
-            $wrap.removeClass('d-none'); 
-            count++; 
-        } else { 
-            $wrap.addClass('d-none'); 
+        if (matchSearch && matchDept) {
+            $wrap.removeClass('d-none');
+            count++;
+        } else {
+            $wrap.addClass('d-none');
         }
     });
 
@@ -194,18 +194,18 @@ $(document).ready(function () {
    $('#studentSelect').on('change', function () {
     const $selectedOption = $(this).find('option:selected');
     const sid = $(this).val();
-    const deptId = $selectedOption.attr('data-dept') || ''; 
+    const deptId = $selectedOption.attr('data-dept') || '';
 
     // Store the deptId on the select element for the filter to use later
-    $(this).data('current-dept', deptId); 
+    $(this).data('current-dept', deptId);
 
     const $helperText = $('#enrollmentHelperText');
     const $filterRow  = $('#modalClassFilters');
 
     $('#modalClassSearch').val('');
-    
+
     // Set the dropdown value and lock it
-    $('#modalClassDept').val(deptId).prop('disabled', true); 
+    $('#modalClassDept').val(deptId).prop('disabled', true);
 
     if (!sid) {
         $filterRow.attr('style', 'display: none !important');
@@ -218,8 +218,8 @@ $(document).ready(function () {
     $filterRow.attr('style', 'display: flex !important');
     $helperText.addClass('d-none');
     $('.class-checkbox').prop('checked', false);
-    
-    filterModalClasses(); 
+
+    filterModalClasses();
 });
 
     // ── API ───────────────────────────────────────────────────────────────────
@@ -477,7 +477,7 @@ function renderTablePage(pageData, totalFiltered) {
                 </td>
                 <td class="py-3">
                     <span class="dept-badge" title="${student.dept_name}">
-                        <i class="fas fa-university me-1" style="font-size: .6rem;"></i> 
+                        <i class="fas fa-university me-1" style="font-size: .6rem;"></i>
                         ${student.dept_name || 'Unassigned'}
                     </span>
                 </td>
@@ -494,7 +494,7 @@ function renderTablePage(pageData, totalFiltered) {
                 </td>
             </tr>
             <tr>
-                <td colspan="3" class="p-0 border-0">
+                <td colspan="100" class="p-0 border-0">
                     <div class="collapse" id="student-${sid}">
                         <div class="p-3 p-md-4 expanded-row-bg border-bottom">
                             <h6 class="fw-bold text-dark mb-3">
