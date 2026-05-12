@@ -22,19 +22,15 @@ if ($method === 'POST') {
 
     if (!$data) json_response(['status' => 'error', 'message' => 'Invalid JSON payload.'], 400);
 
-// ── Verify HMAC signature (Via Headers) ───────────────────────────────────────
-$received_sig = $_SERVER['HTTP_X_HRIS_SIGNATURE'] ?? '';
+// ── Verify API Key ────────────────────────────────────────────────────────────
+$received_key = $_SERVER['HTTP_X_API_KEY'] ?? '';
 
-// We hash the exact raw string ($raw) that arrived over the internet
-$expected_sig = hash_hmac('sha256', $raw, HRIS_WEBHOOK_SECRET);
-
-if (!hash_equals($expected_sig, $received_sig)) {
-    // I added a debug helper here so if it fails, it tells you exactly why!
+if ($received_key !== HRIS_WEBHOOK_SECRET) {
     json_response([
         'status' => 'error',
-        'message' => 'Invalid signature.',
-        'debug_received' => $received_sig,
-        'debug_expected' => $expected_sig
+        'message' => 'Invalid API Key.',
+        'debug_received' => $received_key,
+        'debug_expected' => HRIS_WEBHOOK_SECRET
     ], 401);
 }
 
