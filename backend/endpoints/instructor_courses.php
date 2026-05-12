@@ -12,7 +12,7 @@ if (!isset($_SESSION['user_id']) || !in_array(strtolower(trim($_SESSION['role'] 
 }
 
 $instructor_id = (int) $_SESSION['user_id'];
-$conn   = getConnection(); // Ensure this returns a new mysqli() object
+$conn   = getConnection();
 $action = $_REQUEST['action'] ?? '';
 
 // ── GET: courses + resources ─────────────────────────────────────────────────
@@ -57,26 +57,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'upload_resource') {
     $custom_name = trim($_POST['custom_name'] ?? '');
     $file_desc   = trim($_POST['file_desc']   ?? '');
 
+    // Fetch the Firebase URL passed from frontend JS
+    $file_url    = trim($_POST['file_url'] ?? '');
+
     if (!$course_id) json_response(['status' => 'error', 'message' => 'Invalid course ID.']);
-    if (empty($_FILES['file_to_upload']['name'])) json_response(['status' => 'error', 'message' => 'No file received.']);
+    if (empty($file_url)) json_response(['status' => 'error', 'message' => 'No Firebase URL received.']);
 
-    $upload_dir = __DIR__ . '/../../uploads/course_resources/';
-    if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+    // Ensure we have a display name
+    $display_name = $custom_name ?: 'Uploaded Resource';
 
-    $orig_name = basename($_FILES['file_to_upload']['name']);
-    $safe_name = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $orig_name);
-    $target    = $upload_dir . $safe_name;
-    $web_path  = 'uploads/course_resources/' . $safe_name;
-
-    if (!move_uploaded_file($_FILES['file_to_upload']['tmp_name'], $target)) {
-        json_response(['status' => 'error', 'message' => 'File move failed.']);
-    }
-
-    $display_name = $custom_name ?: $orig_name;
-
-    // MySQLi Prepared Statement
+    // MySQLi Prepared Statement - Save URL as file_path
     $stmt = $conn->prepare("INSERT INTO course_resources (course_id, file_name, file_path, description) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("isss", $course_id, $display_name, $web_path, $file_desc);
+    $stmt->bind_param("isss", $course_id, $display_name, $file_url, $file_desc);
     $stmt->execute();
 
     if ($stmt->affected_rows > 0) {
@@ -86,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'upload_resource') {
             'status'      => 'success',
             'resource_id' => $new_id,
             'file_name'   => $display_name,
-            'file_path'   => $web_path,
+            'file_path'   => $file_url, // Return Firebase URL to JS
         ]);
     }
 
@@ -99,15 +91,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'delete_resource') {
     $resource_id = (int) ($_POST['resource_id'] ?? 0);
     if (!$resource_id) json_response(['status' => 'error', 'message' => 'Invalid resource ID.']);
 
+    // Get the Firebase URL before deleting so JS can remove it from cloud
     $res = $conn->query("SELECT file_path FROM course_resources WHERE resource_id = $resource_id");
 
     if ($res && $res->num_rows > 0) {
         $row = $res->fetch_assoc();
-        $file_abs = __DIR__ . '/../../' . $row['file_path'];
-        if (file_exists($file_abs)) unlink($file_abs);
+        $file_path = $row['file_path'];
 
         $conn->query("DELETE FROM course_resources WHERE resource_id = $resource_id");
-        json_response(['status' => 'success', 'message' => 'Deleted.']);
+
+        json_response([
+            'status' => 'success',
+            'message' => 'Deleted.',
+            'file_path' => $file_path // Pass URL back so JS can call deleteObject()
+        ]);
     }
     json_response(['status' => 'error', 'message' => 'Resource not found.']);
 }
