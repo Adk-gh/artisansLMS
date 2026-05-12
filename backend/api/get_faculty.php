@@ -29,7 +29,13 @@ $received_sig = $_SERVER['HTTP_X_HRIS_SIGNATURE'] ?? '';
 $expected_sig = hash_hmac('sha256', $raw, HRIS_WEBHOOK_SECRET);
 
 if (!hash_equals($expected_sig, $received_sig)) {
-    json_response(['status' => 'error', 'message' => 'Invalid signature.'], 401);
+    // I added a debug helper here so if it fails, it tells you exactly why!
+    json_response([
+        'status' => 'error',
+        'message' => 'Invalid signature.',
+        'debug_received' => $received_sig,
+        'debug_expected' => $expected_sig
+    ], 401);
 }
 
     $action = $data['action'] ?? '';
