@@ -58,8 +58,8 @@ $(document).ready(function() {
 
     // ── Filter + Sort ───────────────────────────────────────────────────
     function applyFilters() {
-        const activeVal    = $('#typeFilters .filter-pill.active').data('val') || 'all';
-        const sortAsc      = $('#sort-asc').hasClass('active');
+        const activeVal = $('#typeFilters .filter-pill.active').data('val') || 'all';
+        const sortAsc   = $('#sort-asc').hasClass('active');
 
         let filtered = [...allFiles];
 
@@ -107,9 +107,16 @@ $(document).ready(function() {
             return;
         }
 
+        // Remove loading spinner if still present
+        $('#moduleLoadingState').remove();
+
         $container.html(files.map(file => {
             const ext    = file.file_path.split('.').pop().toLowerCase();
             const config = getFileIconConfig(ext);
+
+            // file_path is already an absolute path from PHP — use it directly
+            const filePath = file.file_path;
+
             return `
                 <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-2">
                     <div class="card-body p-3 d-flex align-items-center justify-content-between">
@@ -125,7 +132,7 @@ $(document).ready(function() {
                                 </small>
                             </div>
                         </div>
-                        <a href="${file.file_path}" target="_blank"
+                        <a href="${filePath}" target="_blank"
                            class="btn btn-light border text-primary fw-bold btn-sm rounded-3 px-3 py-2">
                             <i class="fas fa-external-link-alt me-1"></i> View
                         </a>
@@ -193,7 +200,7 @@ function initHeader() {
     document.title = 'LMS | ' + page.title;
 
     $.ajax({
-        url: AUTH_API,
+        url: API,
         method: 'POST',
         xhrFields: { withCredentials: true },
         contentType: 'application/json',
@@ -224,7 +231,7 @@ function initHeader() {
     $(document).on('click', '#logoutBtn', function(e) {
         e.preventDefault();
         $.ajax({
-            url: AUTH_API, method: 'POST', contentType: 'application/json', dataType: 'json', xhrFields: { withCredentials: true },
+            url: API, method: 'POST', contentType: 'application/json', dataType: 'json', xhrFields: { withCredentials: true },
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
             complete: function() { window.location.href = '/client/pages/login.html'; }
         });

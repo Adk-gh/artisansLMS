@@ -1,4 +1,3 @@
-
 const API_COURSES = 'https://artisanslms.onrender.com/backend/endpoints/instructor_courses.php';
 const API = 'https://artisanslms.onrender.com/backend/index.php';
 
@@ -133,7 +132,7 @@ function buildCourseCard(course) {
                     </span>
                     <small class="fw-bold text-dark">${escHtml(String(course.credits))} Units</small>
                 </div>
-                
+
                 <h5 class="fw-bold text-dark mb-1 course-title">${escHtml(course.name)}</h5>
                 <p class="text-muted small mb-4">${escHtml(course.description || 'No description available.')}</p>
 
@@ -149,25 +148,52 @@ function buildCourseCard(course) {
                         <i class="fas fa-plus me-1"></i> Upload
                     </button>
                     <a href="../pages/collaborations.html?class_id=${chatClassId}" class="btn btn-link btn-sm text-info text-decoration-none p-0 fw-bold">
-    Open Chat
-</a>
+                        Open Chat
+                    </a>
                 </div>
             </div>
         </div>
     </div>`;
 }
 
+// ── Icon map by file extension ────────────────────────────────────────────────
+function getFileIcon(ext) {
+    const map = {
+        pdf:  'fa-file-pdf text-danger',
+        doc:  'fa-file-word text-primary',
+        docx: 'fa-file-word text-primary',
+        ppt:  'fa-file-powerpoint text-warning',
+        pptx: 'fa-file-powerpoint text-warning',
+        xls:  'fa-file-excel text-success',
+        xlsx: 'fa-file-excel text-success',
+        mp4:  'fa-file-video text-danger',
+        webm: 'fa-file-video text-danger',
+        ogg:  'fa-file-video text-danger',
+        png:  'fa-file-image text-secondary',
+        jpg:  'fa-file-image text-secondary',
+        jpeg: 'fa-file-image text-secondary',
+        gif:  'fa-file-image text-secondary',
+        zip:  'fa-file-archive text-warning',
+        sql:  'fa-database text-secondary',
+    };
+    return map[ext] || 'fa-file text-secondary';
+}
+
 function buildResourceItem(file) {
     const rid  = file.resource_id;
     const name = escHtml(file.file_name);
-    const path = escHtml(file.file_path);
-    
+    const ext  = file.file_name.split('.').pop().toLowerCase();
+    const icon = getFileIcon(ext);
+
+    // file_path comes from PHP already as an absolute path — use it directly.
+    const path = escAttr(file.file_path);
+
     return `
     <div class="resource-item d-flex justify-content-between align-items-center py-2 border-bottom" id="resource-${rid}" style="border-color: #f1f5f9 !important;">
-        <span onclick="viewFile('${path}', '${escAttr(file.file_name)}')" 
-              class="file-link flex-grow-1 text-truncate pe-2 fw-medium text-dark" 
+        <span onclick="viewFile('${path}', '${escAttr(file.file_name)}')"
+              class="file-link flex-grow-1 text-truncate pe-2 fw-medium text-dark"
               style="cursor: pointer; font-size: 0.85rem; text-decoration: none;">
-            <i class="fas fa-file-pdf me-2 text-danger"></i>${name}
+            <i class="fas ${icon} me-2"></i>${name}
         </span>
         <div class="dropdown">
             <a class="text-muted px-2" href="#" role="button" data-bs-toggle="dropdown" style="cursor: pointer; text-decoration: none;">
@@ -175,7 +201,7 @@ function buildResourceItem(file) {
             </a>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3">
                 <li>
-                    <button class="dropdown-item small py-2" onclick="openEditModal(${rid}, this)" 
+                    <button class="dropdown-item small py-2" onclick="openEditModal(${rid}, this)"
                             data-name="${escAttr(file.file_name)}" data-desc="${escAttr(file.description ?? '')}">
                         <i class="fas fa-edit me-2 text-info"></i> Edit
                     </button>
@@ -199,28 +225,26 @@ window.filterCourses = function() {
     });
 };
 
+// ── viewFile: path is already absolute from PHP — use it directly ─────────────
 window.viewFile = function(path, name) {
-    console.log('Raw DB path:', path);
-
-    const fullPath = path.startsWith('http') || path.startsWith('/')
-        ? path
-        : '/client/assets/' + path;
+    // path arrives as an absolute root-relative URL (e.g. /artisansLMS/backend/uploads/...)
+    // No further prefixing needed.
+    const fullPath = path;
 
     const ext       = name.split('.').pop().toLowerCase();
     const container = document.getElementById('fileViewerContainer');
 
     if (ext === 'pdf') {
-        // Native PDF viewer via iframe works fine locally
         container.innerHTML = `
-            <iframe src="${fullPath}" 
+            <iframe src="${fullPath}"
                     style="width:100%;height:75vh;min-height:500px;border:none;"
-                    title="${name}"></iframe>`;
+                    title="${escHtml(name)}"></iframe>`;
 
     } else if (['png','jpg','jpeg','gif','webp','svg'].includes(ext)) {
         container.innerHTML = `
             <div class="d-flex align-items-center justify-content-center"
                  style="min-height:500px;background:#0f172a;">
-                <img src="${fullPath}" alt="${name}"
+                <img src="${fullPath}" alt="${escHtml(name)}"
                      style="max-width:100%;max-height:75vh;object-fit:contain;border-radius:8px;">
             </div>`;
 
@@ -231,7 +255,7 @@ window.viewFile = function(path, name) {
             </video>`;
 
     } else {
-        // .docx / .pptx / .xlsx — can't preview locally, offer download
+        // .docx / .pptx / .xlsx — can't preview in browser, offer download
         container.innerHTML = `
             <div class="d-flex flex-column align-items-center justify-content-center text-center"
                  style="min-height:500px;background:#f8fafc;">
@@ -241,7 +265,7 @@ window.viewFile = function(path, name) {
                     This file type cannot be previewed in the browser.<br>
                     Download it to open with the appropriate application.
                 </p>
-                <a href="${fullPath}" download="${name}"
+                <a href="${fullPath}" download="${escHtml(name)}"
                    class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">
                     <i class="fas fa-download me-2"></i> Download File
                 </a>
@@ -288,7 +312,11 @@ window.submitEditResource = async function() {
         const row = document.getElementById(`resource-${id}`);
         if (row) {
             const link = row.querySelector('.file-link');
-            if (link) link.childNodes[1].textContent = name;
+            // Update visible text node (second child after the icon)
+            if (link) {
+                const textNode = [...link.childNodes].find(n => n.nodeType === Node.TEXT_NODE);
+                if (textNode) textNode.textContent = name;
+            }
             const editBtn = row.querySelector('[data-name]');
             if (editBtn) { editBtn.dataset.name = name; editBtn.dataset.desc = desc; }
         }
@@ -362,13 +390,19 @@ window.submitResourceUpload = function() {
             pctLabel.textContent = '100%';
             btn.innerHTML        = '<i class="fas fa-check me-2"></i> Done';
 
+            // Build an absolute path for the newly uploaded file the same way PHP does
+            let newPath = res.file_path;
+            if (!newPath.startsWith('http') && !newPath.startsWith('/')) {
+                newPath = '/artisansLMS/backend/' + newPath;
+            }
+
             const listEl = document.getElementById(`resource-list-${courseId}`);
             if (listEl) {
                 listEl.querySelector('.no-materials-msg')?.remove();
                 listEl.insertAdjacentHTML('beforeend', buildResourceItem({
                     resource_id: res.resource_id,
                     file_name:   res.file_name,
-                    file_path:   res.file_path,
+                    file_path:   newPath,
                     description: '',
                 }));
             }

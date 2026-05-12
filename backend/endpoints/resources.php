@@ -48,14 +48,10 @@ if ($rRes) {
     while ($row = $rRes->fetch_assoc()) {
         $path = $row['file_path'];
 
-        if (str_starts_with($path, 'http') || str_starts_with($path, '/')) {
-            // already absolute
-        } elseif (str_starts_with($path, 'uploads/resources/')) {
-            $row['file_path'] = '/artisansLMS/client/assets/' . $path;
-        } elseif (str_starts_with($path, 'uploads/')) {
+        // If it's not already an absolute URL or root-relative path,
+        // prefix with the backend uploads root — this is where files are saved.
+        if (!str_starts_with($path, 'http') && !str_starts_with($path, '/')) {
             $row['file_path'] = '/artisansLMS/backend/' . $path;
-        } else {
-            $row['file_path'] = '/artisansLMS/client/assets/' . $path;
         }
 
         $resources[] = $row;
