@@ -9,7 +9,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
-        body { font-family: 'Sora', sans-serif; background: #f0f2f7; }
+        body { font-family: 'Sora', sans-serif; background: #f0f2f7; overflow: hidden; /* Prevent body scroll */ }
+
         .page-strip { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; gap:16px; flex-wrap:wrap; }
         .page-strip h4 { font-size:1.25rem; font-weight:800; color:#0f172a; margin:0; }
         .page-strip p  { font-size:.78rem; color:#94a3b8; margin:2px 0 0; }
@@ -22,14 +23,13 @@
         }
         .btn-register:hover { background:#0f172a; color:#fff; transform:translateY(-1px); box-shadow:0 6px 16px rgba(15,23,42,.2); }
 
-        /* ── Filter Bar — matches courses.html sf-bar style ── */
+        /* ── Filter Bar ── */
         .filter-bar {
             background:#fff; border:1px solid #e9ecef; border-radius:16px;
             padding:14px 18px; margin-bottom:20px;
             display:flex; align-items:center; gap:12px; flex-wrap:wrap;
             box-shadow:0 2px 10px rgba(0,0,0,.02);
         }
-        /* Search */
         .search-wrap { position:relative; flex:1; min-width:200px; }
         .search-wrap i { position:absolute; left:16px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:.9rem; pointer-events:none; }
         .search-wrap input {
@@ -40,7 +40,6 @@
         }
         .search-wrap input:focus { border-color:#0ea5e9; background:#fff; box-shadow:0 0 0 3px rgba(14,165,233,.08); }
 
-        /* Department dropdown — sf-select style from courses.html */
         .sf-select {
             padding:10px 36px 10px 14px;
             border:1.5px solid #e2e8f0; border-radius:10px;
@@ -53,11 +52,9 @@
         }
         .sf-select:focus { border-color:#0ea5e9; background-color:#fff; box-shadow:0 0 0 3px rgba(14,165,233,.08); }
 
-        /* Gender chips */
         .filter-chip { font-size:.72rem; font-weight:600; padding:6px 14px; border-radius:20px; border:1px solid #e2e8f0; background:#f8fafc; color:#64748b; cursor:pointer; transition:.15s; white-space:nowrap; }
         .filter-chip:hover, .filter-chip.active { background:#1e293b; color:#fff; border-color:#1e293b; }
 
-        /* Count */
         .sf-count { font-size:.75rem; font-weight:700; color:#94a3b8; white-space:nowrap; margin-left:auto; }
         .sf-count span { color:#0ea5e9; font-size:.85rem; }
 
@@ -67,8 +64,34 @@
         .mini-stat .msn { font-size:1.4rem; font-weight:800; color:#0f172a; font-family:'JetBrains Mono',monospace; line-height:1; }
         .mini-stat .msl { font-size:.62rem; text-transform:uppercase; letter-spacing:.8px; color:#94a3b8; font-weight:700; margin-top:2px; }
 
+        /* ── Scrollable Table Wrapper ── */
+        .table-scroll-wrapper {
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+        .table-scroll-wrapper::-webkit-scrollbar { width: 6px; }
+        .table-scroll-wrapper::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+
         .student-table-card { background:#fff; border:1px solid #e9ecef; border-radius:16px; overflow:hidden; }
-        .student-table-card table thead tr th { background:#fafafa; font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.9px; color:#94a3b8; padding:14px 20px; border-bottom:2px solid #f1f5f9; }
+
+        /* Sticky Header */
+        .student-table-card table thead th {
+            position: sticky;
+            top: 0;
+            background: #fafafa;
+            z-index: 10;
+            font-size: .65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .9px;
+            color: #94a3b8;
+            padding: 14px 20px;
+            /* Box-shadow replaces border-bottom for sticky elements to avoid gaps */
+            border-bottom: none !important;
+            box-shadow: inset 0 -2px 0 #f1f5f9;
+        }
+
         .student-table-card table tbody tr:hover td { background:#fafcff; }
         .student-table-card table tbody td { padding:14px 20px; border-bottom:1px solid #f8fafc; vertical-align:middle; }
         .student-table-card table tbody tr:last-child td { border-bottom:none; }
@@ -81,7 +104,6 @@
         .badge-active { display:inline-flex; align-items:center; gap:5px; font-size:.68rem; font-weight:700; padding:4px 10px; border-radius:20px; background:#f0fdf4; color:#15803d; }
         .badge-active::before { content:''; width:6px; height:6px; border-radius:50%; background:#22c55e; box-shadow:0 0 0 2px #dcfce7; }
 
-        /* Action buttons */
         .btn-edit { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:8px; font-size:.72rem; font-weight:700; background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; cursor:pointer; transition:.15s; text-decoration:none; margin-right:4px;}
         .btn-edit:hover { background:#dbeafe; color:#1e3a8a; }
         .btn-archive { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:8px; font-size:.72rem; font-weight:700; background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; cursor:pointer; transition:.15s; text-decoration:none; }
@@ -120,14 +142,17 @@
 <div id="content">
     <div id="header-placeholder"></div>
 
-    <main class="p-4 p-md-5">
-        <div class="page-strip fade-up fd-1" style="display:flex; justify-content:flex-end;">
+    <!-- MAIN WRAPPER: Flex layout to constrain height to viewport -->
+    <main class="p-4 p-md-5 d-flex flex-column" style="height: calc(100vh - 80px);">
+
+        <!-- flex-shrink-0 prevents headers from compressing -->
+        <div class="page-strip fade-up fd-1 flex-shrink-0" style="display:flex; justify-content:flex-end;">
             <button class="btn-register" data-bs-toggle="modal" data-bs-target="#addStudentModal">
                 <i class="fas fa-plus"></i> Register Student
             </button>
         </div>
 
-        <div class="mini-stats fade-up fd-1">
+        <div class="mini-stats fade-up fd-1 flex-shrink-0">
             <div class="mini-stat">
                 <div class="mini-stat-icon" style="background:#dbeafe;"><i class="fas fa-users" style="color:#1d4ed8;"></i></div>
                 <div><div class="msn" id="statTotal">0</div><div class="msl">Total Students</div></div>
@@ -146,7 +171,7 @@
             </div>
         </div>
 
-        <div class="filter-bar fade-up fd-2">
+        <div class="filter-bar fade-up fd-2 flex-shrink-0">
             <div class="search-wrap">
                 <i class="fas fa-search"></i>
                 <input type="text" id="studentSearch" placeholder="Search by name, ID, or email…">
@@ -154,7 +179,7 @@
 
             <select class="sf-select" id="studentDeptFilter" title="Filter by Department">
                 <option value="">All Departments</option>
-                </select>
+            </select>
 
             <span class="filter-chip active" onclick="filterChip(this,'all')">All</span>
             <span class="filter-chip" onclick="filterChip(this,'m')">Male</span>
@@ -163,8 +188,10 @@
             <div class="sf-count">Showing <span id="studentCountNum">0</span> students</div>
         </div>
 
-        <div class="student-table-card shadow-sm fade-up fd-3">
-            <div class="table-responsive">
+        <!-- flex-grow-1 forces this card to fill the remaining screen space -->
+        <div class="student-table-card shadow-sm fade-up fd-3 flex-grow-1 d-flex flex-column" style="min-height: 0;">
+            <!-- table-scroll-wrapper allows internal scrolling while respecting parent bounds -->
+            <div class="table-responsive table-scroll-wrapper flex-grow-1 h-100">
                 <table class="table mb-0 align-middle" id="studentTable">
                     <thead>
                         <tr>
@@ -186,6 +213,7 @@
     </main>
 </div>
 
+<!-- Modals -->
 <div class="modal fade" id="addStudentModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
         <form id="addStudentForm" class="modal-content">

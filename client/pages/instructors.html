@@ -9,12 +9,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
-        body { font-family:'Sora',sans-serif; background:#f0f2f7; }
+        /* ── Layout Constraint ── */
+        html, body { height: 100%; margin: 0; overflow: hidden; }
+        body { font-family:'Sora',sans-serif; background:#f0f2f7; display: flex; flex-direction: column; }
 
-        /* ── Faculty cards ── */
-        .faculty-card { transition:.2s; border:1px solid #e2e8f0 !important; }
-        .faculty-card:hover { transform:translateY(-3px); box-shadow:0 8px 24px rgba(0,0,0,.08) !important; }
-        .info-label { font-size:.6rem; text-transform:uppercase; font-weight:700; color:#94a3b8; letter-spacing:.5px; }
+        #content { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 1.5rem !important; }
 
         /* ── Action buttons ── */
         .btn-archive-inst {
@@ -25,7 +25,6 @@
         }
         .btn-archive-inst:hover { background:#ffedd5; color:#9a3412; }
 
-        /* Changed from Edit to Generate Password styling */
         .btn-gen-pass {
             display:inline-flex; align-items:center; gap:4px;
             padding:5px 12px; border-radius:8px; font-size:.72rem; font-weight:700;
@@ -38,25 +37,19 @@
             display:inline-flex;align-items:center;gap:8px;
             background:#1e293b;color:#fff;border:none;border-radius:10px;
             padding:10px 20px;font-size:.82rem;font-weight:600;
-            font-family:'Sora',sans-serif;transition:.2s;cursor:pointer;
+            transition:.2s;cursor:pointer;
         }
         .btn-instructor:hover {
-            background:#0f172a;color:#fff;
-            transform:translateY(-1px);
+            background:#0f172a; transform:translateY(-1px);
             box-shadow:0 6px 16px rgba(15,23,42,.2);
         }
-
-        /* ── Toast ── */
-        .toast-bar { position:fixed; top:20px; right:20px; z-index:9999; padding:12px 20px; border-radius:10px; font-size:.8rem; font-weight:600; display:flex; align-items:center; gap:8px; box-shadow:0 4px 20px rgba(0,0,0,.12); animation:slideIn .3s ease; transition:opacity .5s; }
-        .toast-arch { background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; }
-        .toast-ok   { background:#dcfce7; color:#15803d; border:1px solid #bbf7d0; }
-        @keyframes slideIn { from{opacity:0;transform:translateX(20px)} to{opacity:1;transform:translateX(0)} }
 
         /* ── Search & Filter bar ── */
         .sf-bar {
             background:#fff; border:1px solid #e9ecef; border-radius:14px;
-            padding:14px 18px; margin-bottom:20px;
+            padding:14px 18px; margin-bottom:15px;
             display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+            flex-shrink: 0;
         }
         .sf-search-wrap { position:relative; flex:1; min-width:180px; }
         .sf-search-wrap i { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#94a3b8; font-size:.8rem; pointer-events:none; }
@@ -66,50 +59,46 @@
             font-size:.82rem; font-family:'Sora',sans-serif;
             color:#1e293b; background:#f8fafc; outline:none; transition:.2s;
         }
-        .sf-input:focus { border-color:#0ea5e9; background:#fff; box-shadow:0 0- 0 3px rgba(14,165,233,.08); }
+        .sf-input:focus { border-color:#0ea5e9; background:#fff; box-shadow:0 0 0 3px rgba(14,165,233,.08); }
         .sf-select {
             padding:9px 32px 9px 12px; border:1.5px solid #e9ecef; border-radius:10px;
-            font-size:.8rem; font-family:'Sora',sans-serif; font-weight:600;
-            color:#475569; background:#f8fafc; outline:none; cursor:pointer; transition:.2s; appearance:none;
+            font-size:.8rem; font-weight:600; color:#475569; background:#f8fafc; outline:none; appearance:none;
             background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
             background-repeat:no-repeat; background-position:right 10px center;
         }
-        .sf-select:focus { border-color:#0ea5e9; background-color:#fff; box-shadow:0 0 0 3px rgba(14,165,233,.08); }
-        .sf-count { font-size:.72rem; font-weight:700; color:#94a3b8; white-space:nowrap; }
-        .sf-count span { color:#0ea5e9; }
 
-        /* ── Table ── */
-        .faculty-table-container { background:#fff; border-radius:16px; border:1px solid #e2e8f0; overflow:hidden; display:none; }
-        .faculty-table thead th { background:#f8fafc; font-size:.7rem; text-transform:uppercase; color:#64748b; font-weight:700; padding:14px 20px; border-bottom:2px solid #f1f5f9; }
-        .faculty-table tbody td { padding:14px 20px; vertical-align:middle; border-bottom:1px solid #f1f5f9; font-size:.85rem; }
-        .faculty-table tbody tr:hover { background:#f8fafc; }
-
-        /* ── View toggle ── */
-        .view-toggle .btn { font-size:.8rem; font-weight:600; border-color:#cbd5e1; color:#64748b; padding:6px 14px; }
-        .view-toggle .btn.active { background:#1e293b; color:#fff; border-color:#1e293b; }
-        .view-toggle .btn:not(.active):hover { background:#f1f5f9; }
-
-        /* ── Hidden states ── */
-        .inst-card-col.hidden { display:none !important; }
-        .inst-table-row.hidden { display:none; }
-        .no-results-block { display:none; }
-        .no-results-block.show { display:block; }
-
-        /* ── Mobile tweaks ── */
-        @media (max-width:576px) {
-            .sf-bar { padding:12px 14px; gap:8px; }
-            .sf-select { font-size:.75rem; }
-            .sf-count { width:100%; text-align:center; }
-            .faculty-card { padding:16px !important; }
-            .faculty-card .d-flex.gap-2 { flex-wrap:wrap; }
-            .faculty-card .d-flex.gap-2 .flex-grow-1 { flex:1 1 100%; }
-            .faculty-table thead th,
-            .faculty-table tbody td { padding:10px 12px; font-size:.78rem; }
-            .faculty-table th:nth-child(4),
-            .faculty-table td:nth-child(4),
-            .faculty-table th:nth-child(5),
-            .faculty-table td:nth-child(5) { display:none; }
+        /* ── Scrollable Area ── */
+        .faculty-container-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            border-radius: 16px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            position: relative;
         }
+
+        .faculty-table thead th {
+            position: sticky; top: 0; background: #f8fafc; z-index: 10;
+            font-size:.7rem; text-transform:uppercase; color:#64748b; font-weight:700; padding:14px 20px; border-bottom:2px solid #f1f5f9;
+        }
+
+        /* ── Pagination ── */
+        .pagination-bar {
+            background: #fff; border: 1px solid #e9ecef; border-top: none;
+            border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
+            padding: 12px 20px; display: flex; align-items: center; justify-content: space-between;
+            flex-shrink: 0;
+        }
+        .page-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0;
+            background: #fff; font-size: .75rem; font-weight: 700; cursor: pointer; transition: .2s;
+        }
+        .page-btn.active { background: #1e293b; color: #fff; border-color: #1e293b; }
+        .page-btn:hover:not(.active) { background: #f1f5f9; }
+
+        /* Hide classes for views */
+        .view-toggle .btn.active { background:#1e293b; color:#fff; border-color:#1e293b; }
     </style>
 </head>
 <body>
@@ -118,80 +107,80 @@
 <div id="content">
     <div id="header-placeholder"></div>
 
-    <main class="p-4 p-md-5">
-
-        <div class="d-flex flex-wrap justify-content-end align-items-center mb-4 gap-3">
+    <main>
+        <!-- Page Header Actions -->
+        <div class="d-flex flex-wrap justify-content-end align-items-center mb-3 gap-3">
             <div class="d-flex gap-2 align-items-center flex-wrap">
                 <div class="btn-group view-toggle shadow-sm" role="group">
-                    <button type="button" class="btn active" id="btnGrid" onclick="toggleView('grid')">
-                        <i class="fas fa-th-large me-1"></i><span class="d-none d-sm-inline">Grid</span>
+                    <button type="button" class="btn active btn-sm" id="btnGrid" onclick="toggleView('grid')">
+                        <i class="fas fa-th-large me-1"></i>Grid
                     </button>
-                    <button type="button" class="btn" id="btnList" onclick="toggleView('list')">
-                        <i class="fas fa-list me-1"></i><span class="d-none d-sm-inline">List</span>
+                    <button type="button" class="btn btn-sm" id="btnList" onclick="toggleView('list')">
+                        <i class="fas fa-list me-1"></i>List
                     </button>
                 </div>
-                <button class="btn-instructor px-3 px-md-4 shadow-sm fw-bold" id="btnSyncHris">
-                    <i class="fas fa-rotate-right me-1 me-md-2"></i><span class="d-none d-sm-inline">Refresh</span>
+                <button class="btn-instructor px-3 py-2 shadow-sm fw-bold" id="btnSyncHris">
+                    <i class="fas fa-rotate-right me-2"></i>Refresh
                 </button>
             </div>
         </div>
 
+        <!-- Filter Bar -->
         <div class="sf-bar">
             <div class="sf-search-wrap">
                 <i class="fas fa-search"></i>
                 <input type="text" class="sf-input" id="instSearch" placeholder="Search name or email…">
             </div>
-            <select class="sf-select" title="Filter by Department" id="instDeptFilter">
-                <option value="">Loading Departments...</option>
-            </select>
-            <select class="sf-select" title="Filter by Class Count" id="instClassFilter">
+            <select class="sf-select" id="instDeptFilter"><option value="">All Departments</option></select>
+            <select class="sf-select" id="instClassFilter">
                 <option value="">Any Classes</option>
                 <option value="0">No Classes</option>
                 <option value="1">1+ Classes</option>
-                <option value="3">3+ Classes</option>
             </select>
-            <div class="sf-count">
-                Showing <span id="instCountNum">0</span> instructors
+            <div class="sf-count small fw-bold text-muted ms-auto">
+                Showing <span id="instCountNum" class="text-primary">0</span> instructors
             </div>
         </div>
 
-        <div class="row g-3 g-md-4" id="gridView">
+        <!-- Main Scrollable Card -->
+        <div class="faculty-container-wrapper shadow-sm">
+            <!-- Grid View -->
+            <div class="p-4" id="gridView">
+                <div class="row g-4" id="gridContent"></div>
             </div>
 
-        <div class="no-results-block" id="noResultsGrid">
-            <div class="text-center py-5 bg-white rounded-4 border">
-                <i class="fas fa-search d-block fs-2 text-muted opacity-25 mb-3"></i>
-                <div class="fw-bold text-muted">No instructors match your search</div>
-                <div class="text-muted small mt-1">Try a different name, department, or class filter</div>
-            </div>
-        </div>
-
-        <div class="faculty-table-container shadow-sm" id="tableView">
-            <div class="table-responsive">
-                <table class="table faculty-table mb-0 align-middle">
-                    <thead>
-                        <tr>
-                            <th class="ps-4">Instructor</th>
-                            <th>Contact</th>
-                            <th>Department</th>
-                            <th>Classes</th>
-                            <th class="text-end pe-4">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="instTableBody">
-                        <tr><td colspan="5" class="text-center py-5 text-muted small">Loading Instructors...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <div class="no-results-block p-4" id="noResultsList">
-                <div class="text-center py-4">
-                    <i class="fas fa-search d-block fs-2 text-muted opacity-25 mb-3"></i>
-                    <div class="fw-bold text-muted">No instructors match your search</div>
-                    <div class="text-muted small mt-1">Try a different name, department, or class filter</div>
+            <!-- List View -->
+            <div id="tableView" style="display:none;">
+                <div class="table-responsive">
+                    <table class="table faculty-table mb-0 align-middle">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Instructor</th>
+                                <th>Contact</th>
+                                <th>Department</th>
+                                <th>Classes</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="instTableBody"></tbody>
+                    </table>
                 </div>
             </div>
+
+            <!-- No Results -->
+            <div class="no-results-block text-center py-5" id="noResultsMsg" style="display:none;">
+                <i class="fas fa-search d-block fs-2 text-muted opacity-25 mb-3"></i>
+                <div class="fw-bold text-muted">No instructors match your search</div>
+            </div>
         </div>
 
+        <!-- Pagination Footer (Sticks to bottom of the card) -->
+        <div class="pagination-bar shadow-sm">
+            <div class="small fw-bold text-muted" id="paginationInfo">Page 1 of 1</div>
+            <div class="d-flex gap-1" id="paginationControls">
+                <!-- Buttons generated by JS -->
+            </div>
+        </div>
     </main>
 </div>
 

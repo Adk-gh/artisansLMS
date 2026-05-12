@@ -1,19 +1,25 @@
 // classes.js
 
+// ─── Pagination State ─────────────────────────────────────────────────────────
+const PAGE_SIZE = 50;
+let currentPage = 1;
+let allSectionsCache = []; // holds the full flat list after renderTable builds it
+
 function filterClasses() {
     const q    = $('#classSearch').val().toLowerCase().trim();
     const dept = $('#classDeptFilter').val();
     const term = $('#classTermFilter').val().toLowerCase();
     const cap  = $('#classCapFilter').val();
-    let visible = 0;
 
+    // Apply filter flags to every row-wrap
+    let filtered = [];
     $('.class-row-wrap').each(function() {
-        const $row   = $(this);
-        const name   = ($row.attr('data-name')  || '').toLowerCase();
-        const rowTerm = ($row.attr('data-term') || '').toLowerCase();
-        const rowDept = $row.attr('data-dept')  || '';
-        const isOpen  = $row.attr('data-open') === '1';
-        const isFull  = $row.attr('data-full') === '1';
+        const $row    = $(this);
+        const name    = ($row.attr('data-name')  || '').toLowerCase();
+        const rowTerm = ($row.attr('data-term')  || '').toLowerCase();
+        const rowDept = $row.attr('data-dept')   || '';
+        const isOpen  = $row.attr('data-open')  === '1';
+        const isFull  = $row.attr('data-full')  === '1';
 
         const nameOk = !q    || name.includes(q);
         const termOk = !term || rowTerm.includes(term);
@@ -22,14 +28,115 @@ function filterClasses() {
         if (cap === 'open') capOk = isOpen;
         else if (cap === 'full') capOk = isFull;
 
-        const show = nameOk && termOk && deptOk && capOk;
-        $row.toggleClass('hidden', !show);
-        if (show) visible++;
+        const matches = nameOk && termOk && deptOk && capOk;
+        $row.data('matches', matches);
+        if (matches) filtered.push($row);
     });
 
-    $('#classCountNum').text(visible);
-    if (visible === 0) $('#classNoResults').addClass('show');
-    else               $('#classNoResults').removeClass('show');
+    // Reset to page 1 whenever filter changes
+    currentPage = 1;
+    applyPagination(filtered);
+}
+
+/**
+ * Given the list of matched rows, show only the current page slice
+ * and rebuild the pagination bar.
+ */
+function applyPagination(matchedRows) {
+    const total     = matchedRows.length;
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    currentPage     = Math.min(currentPage, totalPages);
+
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const end   = start + PAGE_SIZE;
+
+    // Hide all rows, then show only this page's slice
+    $('.class-row-wrap').addClass('hidden');
+    matchedRows.forEach(($row, idx) => {
+        if (idx >= start && idx < end) $row.removeClass('hidden');
+    });
+
+    $('#classCountNum').text(total);
+
+    // No-results notice
+    if (total === 0) $('#classNoResults').addClass('show');
+    else             $('#classNoResults').removeClass('show');
+
+    // Pagination info text
+    const showingFrom = total === 0 ? 0 : start + 1;
+    const showingTo   = Math.min(end, total);
+    $('#paginationInfo').text(`Showing ${showingFrom}–${showingTo} of ${total} sections`);
+
+    // Build page buttons
+    buildPageButtons(totalPages);
+}
+
+function buildPageButtons(totalPages) {
+    const $ctrl = $('#paginationControls');
+    $ctrl.empty();
+
+    // Prev
+    const $prev = $(`<button class="page-btn" title="Previous">&lsaquo;</button>`);
+    if (currentPage === 1) $prev.prop('disabled', true).css('opacity', '.4');
+    $prev.on('click', function() { if (currentPage > 1) { currentPage--; refilter(); } });
+    $ctrl.append($prev);
+
+    // Page numbers — show at most 7 buttons with ellipsis
+    const pages = pagesToShow(currentPage, totalPages);
+    let last = 0;
+    pages.forEach(p => {
+        if (p - last > 1) {
+            $ctrl.append(`<span class="page-btn" style="cursor:default;border:none;">…</span>`);
+        }
+        const $btn = $(`<button class="page-btn${p === currentPage ? ' active' : ''}">${p}</button>`);
+        $btn.on('click', function() { currentPage = p; refilter(); });
+        $ctrl.append($btn);
+        last = p;
+    });
+
+    // Next
+    const $next = $(`<button class="page-btn" title="Next">&rsaquo;</button>`);
+    if (currentPage === totalPages) $next.prop('disabled', true).css('opacity', '.4');
+    $next.on('click', function() { if (currentPage < totalPages) { currentPage++; refilter(); } });
+    $ctrl.append($next);
+}
+
+/** Decide which page numbers to display (max ~7, with ellipsis gaps). */
+function pagesToShow(cur, total) {
+    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+    const set = new Set([1, total, cur]);
+    for (let d = 1; d <= 2; d++) { set.add(cur - d); set.add(cur + d); }
+    return [...set].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
+}
+
+/** Re-run the filter logic and paginate without resetting currentPage. */
+function refilter() {
+    const q    = $('#classSearch').val().toLowerCase().trim();
+    const dept = $('#classDeptFilter').val();
+    const term = $('#classTermFilter').val().toLowerCase();
+    const cap  = $('#classCapFilter').val();
+
+    let filtered = [];
+    $('.class-row-wrap').each(function() {
+        const $row    = $(this);
+        const name    = ($row.attr('data-name')  || '').toLowerCase();
+        const rowTerm = ($row.attr('data-term')  || '').toLowerCase();
+        const rowDept = $row.attr('data-dept')   || '';
+        const isOpen  = $row.attr('data-open')  === '1';
+        const isFull  = $row.attr('data-full')  === '1';
+
+        const nameOk = !q    || name.includes(q);
+        const termOk = !term || rowTerm.includes(term);
+        const deptOk = !dept || rowDept === dept;
+        let   capOk  = true;
+        if (cap === 'open') capOk = isOpen;
+        else if (cap === 'full') capOk = isFull;
+
+        const matches = nameOk && termOk && deptOk && capOk;
+        if (matches) filtered.push($row);
+    });
+
+    applyPagination(filtered);
 }
 
 $(document).ready(function() {
@@ -217,6 +324,7 @@ $(document).ready(function() {
     function renderTable(groupedData) {
         const $tbody = $('#classBody');
         $tbody.empty();
+        currentPage = 1; // reset on fresh load
 
         const allSections = [];
         groupedData.forEach(group => {
@@ -232,13 +340,15 @@ $(document).ready(function() {
             });
         });
 
-        $('#classCountNum').text(allSections.length);
-
         if (allSections.length === 0) {
             $tbody.html(`<tr><td colspan="5" class="text-center py-5 text-muted small">No active classes found.</td></tr>`);
+            $('#classCountNum').text(0);
+            $('#paginationInfo').text('Showing 0–0 of 0 sections');
+            $('#paginationControls').empty();
             return;
         }
 
+        // Render ALL rows into the DOM (hidden by default); pagination will reveal the right slice
         allSections.forEach(sec => {
             const cur      = parseInt(sec.current_students);
             const max      = parseInt(sec.max_enrollment);
@@ -255,7 +365,7 @@ $(document).ready(function() {
                 : '';
 
             const rowHtml = `
-            <tr class="class-row-wrap"
+            <tr class="class-row-wrap hidden"
                 data-name="${(sec.course_name + ' ' + sec.course_code).toLowerCase()}"
                 data-term="${termStr.toLowerCase()}"
                 data-dept="${sec.department_id}"
@@ -317,6 +427,7 @@ $(document).ready(function() {
             </tr>
         `);
 
+        // Trigger initial filter + paginate (shows first page)
         filterClasses();
     }
 

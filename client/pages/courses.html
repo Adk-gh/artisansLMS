@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/client/assets/css/style.css">
     <style>
-        body { font-family: 'Sora', sans-serif; background: #f0f2f7; }
+        body { font-family: 'Sora', sans-serif; background: #f0f2f7; overflow: hidden; /* Prevent body scroll */ }
 
         /* ── File Viewer ── */
         .file-link { cursor: pointer; color: #334155; text-decoration: none; word-break: break-all; font-size: .85rem; }
@@ -39,11 +39,46 @@
         .toast-arch { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
         @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
-        /* ── Table View ── */
+        /* ── Table View & Scroll Wrapping ── */
         .course-table-container { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; display: none; }
-        .course-table thead th { background: #f8fafc; font-size: .7rem; text-transform: uppercase; color: #64748b; font-weight: 700; padding: 14px 20px; border-bottom: 2px solid #f1f5f9; }
+
+        .table-scroll-wrapper {
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+        .table-scroll-wrapper::-webkit-scrollbar { width: 6px; }
+        .table-scroll-wrapper::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+
+        /* Sticky Header */
+        .course-table thead th {
+            position: sticky;
+            top: 0;
+            background: #f8fafc;
+            z-index: 10;
+            font-size: .7rem;
+            text-transform: uppercase;
+            color: #64748b;
+            font-weight: 700;
+            padding: 14px 20px;
+            border-bottom: none !important;
+            box-shadow: inset 0 -2px 0 #f1f5f9; /* Fake bottom border to prevent gap */
+        }
+
         .course-table tbody td { padding: 14px 20px; vertical-align: top; border-bottom: 1px solid #f1f5f9; font-size: .85rem; }
         .course-table tbody tr:hover { background: #f8fafc; }
+
+        /* ── Grid View Scrolling ── */
+        #gridView {
+            overflow-y: auto;
+            overflow-x: hidden;
+            align-content: flex-start; /* Stops grid cards from stretching vertically */
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+            padding-bottom: 20px;
+        }
+        #gridView::-webkit-scrollbar { width: 6px; }
+        #gridView::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
 
         /* ── View Toggle ── */
         .view-toggle .btn { font-size: .8rem; font-weight: 600; border-color: #cbd5e1; color: #64748b; padding: 6px 14px; }
@@ -77,21 +112,23 @@
 <div id="content">
     <div id="header-placeholder"></div>
 
-    <main class="p-4 p-md-5">
+    <!-- MAIN WRAPPER: Flex layout to constrain height to viewport -->
+    <main class="p-4 p-md-5 d-flex flex-column" style="height: calc(100vh - 80px);">
 
-        <div class="module-header d-flex flex-wrap justify-content-end align-items-center mb-4 gap-3">
-    <div class="d-flex gap-3 align-items-center flex-wrap">
-        <div class="btn-group view-toggle shadow-sm" role="group">
-            <button type="button" class="btn active" id="btnGrid" onclick="toggleView('grid')"><i class="fas fa-th-large me-1"></i> Grid</button>
-            <button type="button" class="btn" id="btnList" onclick="toggleView('list')"><i class="fas fa-list me-1"></i> List</button>
+        <!-- flex-shrink-0 prevents headers from compressing -->
+        <div class="module-header d-flex flex-wrap justify-content-end align-items-center mb-4 gap-3 flex-shrink-0">
+            <div class="d-flex gap-3 align-items-center flex-wrap">
+                <div class="btn-group view-toggle shadow-sm" role="group">
+                    <button type="button" class="btn active" id="btnGrid" onclick="toggleView('grid')"><i class="fas fa-th-large me-1"></i> Grid</button>
+                    <button type="button" class="btn" id="btnList" onclick="toggleView('list')"><i class="fas fa-list me-1"></i> List</button>
+                </div>
+                <button class="btn-course" data-bs-toggle="modal" data-bs-target="#addCourseModal">
+                    <i class="fas fa-plus-circle me-2"></i> Add Course
+                </button>
+            </div>
         </div>
-        <button class="btn-course" data-bs-toggle="modal" data-bs-target="#addCourseModal">
-            <i class="fas fa-plus-circle me-2"></i> Add Course
-        </button>
-    </div>
-</div>
 
-        <div class="sf-bar mb-4">
+        <div class="sf-bar mb-4 flex-shrink-0">
             <div class="sf-search-wrap">
                 <i class="fas fa-search"></i>
                 <input type="text" class="sf-input" id="courseSearch" placeholder="Search course name, code, or dept…">
@@ -110,16 +147,18 @@
             <div class="sf-count" id="courseCount">Showing <span id="courseCountNum">0</span> courses</div>
         </div>
 
-        <div class="row g-4" id="gridView"></div>
+        <!-- GRID VIEW: flex-grow-1 takes remaining space and makes the grid scrollable -->
+        <div class="row g-4 flex-grow-1" id="gridView" style="min-height: 0;"></div>
 
-        <div id="noResultsGrid" class="text-center py-5">
+        <div id="noResultsGrid" class="text-center py-5 flex-shrink-0">
             <i class="fas fa-search d-block fs-2 text-muted opacity-25 mb-3"></i>
             <div class="fw-bold text-muted">No courses match your search</div>
             <div class="text-muted small">Try a different name, department, units, or material filter</div>
         </div>
 
-        <div class="course-table-container shadow-sm" id="tableView">
-            <div class="table-responsive">
+        <!-- TABLE VIEW: flex-grow-1 takes remaining space and makes the table body scrollable -->
+        <div class="course-table-container shadow-sm flex-grow-1 d-flex flex-column" id="tableView" style="min-height: 0;">
+            <div class="table-responsive table-scroll-wrapper flex-grow-1 h-100">
                 <table class="table course-table mb-0">
                     <thead>
                         <tr>
@@ -134,7 +173,7 @@
                     </tbody>
                 </table>
             </div>
-            <div id="noResultsList" class="text-center py-5">
+            <div id="noResultsList" class="text-center py-5 flex-shrink-0">
                 <i class="fas fa-search d-block fs-2 text-muted opacity-25 mb-3"></i>
                 <div class="fw-bold text-muted">No courses match your search</div>
                 <div class="text-muted small">Try a different name, department, units, or material filter</div>
@@ -144,6 +183,7 @@
     </main>
 </div>
 
+<!-- Modals -->
 <div class="modal fade" id="viewFileModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow">

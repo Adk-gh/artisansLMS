@@ -6,6 +6,6 @@ Todo:
 
 ~~the temporary key for the instructor should work.~~
 
-
-
 integrate with schedule.
+
+make the pages not scrollable only the content. (classes.
