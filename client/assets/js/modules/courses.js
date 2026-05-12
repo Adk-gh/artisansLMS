@@ -1,26 +1,54 @@
+// ── FIREBASE SETUP ────────────────────────────────────────────────────────────
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
+
+const firebaseConfig = {
+   apiKey: "AIzaSyDQfwNYptf-gWqIQVs0welvz86DwqPI6VQ",
+  authDomain: "artisans-lms.firebaseapp.com",
+     projectId: "artisans-lms",
+  storageBucket: "artisans-lms.firebasestorage.app",
+  messagingSenderId: "897938751816",
+  appId: "1:897938751816:web:9cbdeb9ae93020dfff737d",
+};
+
+const app = initializeApp(firebaseConfig);
+const storage = getStorage(app);
+
+// ── PATH HELPER ───────────────────────────────────────────────────────────────
+function resolveFilePath(path) {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+    if (path.startsWith('/artisansLMS/client/assets/')) return path;
+
+    const clean = path.replace(/^\/+/, '');
+    if (clean.startsWith('assets/')) return '/artisansLMS/client/' + clean;
+    if (clean.startsWith('uploads/')) return '/artisansLMS/client/assets/' + clean;
+    return '/artisansLMS/client/assets/uploads/resources/' + clean.replace(/^resources\//, '');
+}
+
 $(document).ready(function() {
+    const API_URL = '../../backend/endpoints/courses.php';
+    let addModalObj = null;
+    let editModalObj = null;
+
     // ═════════════════════════════════════════════════════════════════════════
-    // 1. GLOBAL EXPORTS (Fixes "is not defined" errors for HTML onclicks)
+    // 1. GLOBAL EXPORTS
     // ═════════════════════════════════════════════════════════════════════════
-    
+
     window.toggleView = function(viewType) {
         const isList = (viewType === 'list');
-        
-        // Show/Hide Main Views
         $('#gridView').css('display', isList ? 'none' : 'flex');
         $('#tableView').css('display', isList ? 'block' : 'none');
-        
-        // Update View Toggle Buttons
         $('#btnGrid').toggleClass('active', !isList);
         $('#btnList').toggleClass('active', isList);
-        
         localStorage.setItem('courseViewPref', viewType);
         if (typeof window.applyCourseFilters === 'function') window.applyCourseFilters();
     };
 
     window.viewFile = function(path, name) {
+        const fullPath = resolveFilePath(path);
         $('#viewFileName').text(name);
-        $('#fileViewerFrame').attr('src', path);
+        $('#fileViewerFrame').attr('src', fullPath);
         new bootstrap.Modal(document.getElementById('viewFileModal')).show();
     };
 
@@ -43,78 +71,107 @@ $(document).ready(function() {
         });
     };
 
-    window.deleteResource = function(resourceId, fileName, btn) {
+    // ── FIREBASE DELETE RESOURCE ──────────────────────────────────────────────
+    window.deleteResource = async function(resourceId, fileName, btn) {
         if (!confirm(`Permanently delete "${fileName}"?`)) return;
         const origHtml = btn.innerHTML;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         btn.disabled = true;
 
-        $.ajax({
-            url: `${API_URL}?action=delete_resource`,
-            method: 'POST',
-            xhrFields: { withCredentials: true },
-            contentType: 'application/json',
-            data: JSON.stringify({ resource_id: resourceId }),
-            success: function(json) {
-                if (json.status === 'success') {
-                    $('.res-item-' + resourceId).fadeOut(300, function() { $(this).remove(); });
-                    showToast("File deleted successfully.", "success");
-                } else {
-                    showToast(json.message, "error");
-                    btn.innerHTML = origHtml;
-                    btn.disabled = false;
+        try {
+            const fd = new FormData();
+            fd.append('action', 'delete_resource');
+            fd.append('resource_id', resourceId);
+
+            const response = await fetch(API_URL, { method: 'POST', body: fd });
+            const res = await response.json();
+
+            if (res.status === 'success') {
+                if (res.file_path && res.file_path.includes('firebasestorage')) {
+                    try {
+                        const fileRef = ref(storage, res.file_path);
+                        await deleteObject(fileRef);
+                    } catch (fbErr) {
+                        console.warn("Deleted from DB, but failed to delete from Firebase Storage:", fbErr);
+                    }
                 }
+                $('.res-item-' + resourceId).fadeOut(300, function() { $(this).remove(); });
+                showToast("File deleted successfully.", "success");
+            } else {
+                throw new Error(res.message);
             }
-        });
+        } catch (err) {
+            showToast(err.message || "Network Error.", "error");
+            btn.innerHTML = origHtml;
+            btn.disabled = false;
+        }
     };
 
+    // ── FIREBASE UPLOAD RESOURCE ──────────────────────────────────────────────
     window.submitResourceUpload = function() {
         const fileInput = document.getElementById('res_file_input');
         const file = fileInput ? fileInput.files[0] : null;
-        
-        if (!file) {
-            alert('Please select a file to upload.');
-            return;
-        }
+        const courseId = $('#res_course_id').val();
+        const custName = $('#res_custom_name').val().trim() || file?.name;
+        const desc = $('#res_file_desc').val().trim();
 
-        $('#uploadProgressWrap').show();
-        $('#uploadSubmitBtn').prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Uploading...');
+        if (!file) { alert('Please select a file to upload.'); return; }
 
-        const fd = new FormData();
-        fd.append('course_id', $('#res_course_id').val());
-        fd.append('custom_name', $('#res_custom_name').val().trim());
-        fd.append('file_desc', $('#res_file_desc').val().trim());
-        fd.append('file_to_upload', file);
+        const progressWrap = document.getElementById('uploadProgressWrap');
+        const bar          = document.getElementById('uploadProgressBar');
+        const pctLabel     = document.getElementById('uploadPct');
+        const statusText   = document.getElementById('uploadStatusText');
+        const btn          = document.getElementById('uploadSubmitBtn');
 
-        const xhr = new XMLHttpRequest();
-        
-        xhr.upload.addEventListener('progress', e => {
-            if (e.lengthComputable) {
-                const pct = Math.round((e.loaded / e.total) * 100);
-                $('#uploadProgressBar').css('width', pct + '%');
-                $('#uploadPct').text(pct + '%');
-            }
-        });
+        $(progressWrap).show();
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading to Cloud...';
 
-        xhr.addEventListener('load', () => {
-            try {
-                const res = JSON.parse(xhr.responseText);
-                if (res.status === 'success') {
+        const safeFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
+        const storageRef = ref(storage, `course_resources/course_${courseId}/${safeFileName}`);
+        const uploadTask = uploadBytesResumable(storageRef, file);
+
+        uploadTask.on('state_changed',
+            (snapshot) => {
+                const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                bar.style.width = pct + '%';
+                pctLabel.textContent = pct + '%';
+                if (pct === 100) statusText.textContent = 'Saving to database...';
+            },
+            (error) => {
+                showToast('Upload failed: ' + error.message, "error");
+                bar.classList.replace('bg-primary', 'bg-danger');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-upload me-2"></i> Push File';
+            },
+            async () => {
+                try {
+                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+
+                    const fd = new FormData();
+                    fd.append('action', 'upload_resource');
+                    fd.append('course_id', courseId);
+                    fd.append('custom_name', custName);
+                    fd.append('file_desc', desc);
+                    fd.append('file_url', downloadURL);
+
+                    const response = await fetch(API_URL, { method: 'POST', body: fd });
+                    const res = await response.json();
+
+                    if (res.status !== 'success') throw new Error(res.message || 'Database save failed.');
+
                     showToast("File uploaded successfully!", "success");
                     bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
-                    fetchCourses(); 
-                } else {
-                    showToast(res.message || "Upload failed.", "error");
-                    $('#uploadSubmitBtn').prop('disabled', false).html('<i class="fas fa-upload me-2"></i> Push File');
-                }
-            } catch (err) {
-                showToast("Server error during upload.", "error");
-                $('#uploadSubmitBtn').prop('disabled', false).html('<i class="fas fa-upload me-2"></i> Push File');
-            }
-        });
+                    fetchCourses();
 
-        xhr.open('POST', `${API_URL}?action=upload_resource`);
-        xhr.send(fd);
+                } catch (err) {
+                    showToast(err.message, "error");
+                    bar.classList.replace('bg-primary', 'bg-danger');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-upload me-2"></i> Push File';
+                }
+            }
+        );
     };
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -126,10 +183,6 @@ $(document).ready(function() {
         if (status !== 'error') initHeader();
     });
 
-    const API_URL = '../../backend/endpoints/courses.php';
-    let addModalObj = null;
-    let editModalObj = null;
-
     const addEl = document.getElementById('addCourseModal');
     if (addEl) addModalObj = new bootstrap.Modal(addEl);
     const editEl = document.getElementById('editCourseModal');
@@ -137,7 +190,6 @@ $(document).ready(function() {
 
     let savedView = localStorage.getItem('courseViewPref') || 'grid';
 
-    // Initial Load
     fetchCourses();
     window.toggleView(savedView);
 
@@ -145,12 +197,11 @@ $(document).ready(function() {
     $('#courseSearch').on('input', filterCourses);
     $('#courseUnitsFilter').on('change', filterCourses);
     $('#courseMaterialFilter').on('change', filterCourses);
-    $('#courseDeptFilter').on('change', filterCourses); // Replaced tab click with Dropdown Change
+    $('#courseDeptFilter').on('change', filterCourses);
 
     $('#addCourseForm').on('submit', handleAddSubmit);
     $('#editCourseForm').on('submit', handleEditSubmit);
 
-    // Delegate edit click
     $(document).on('click', '.edit-course-btn', function() {
         $('#edit_course_id').val($(this).data('id'));
         $('#edit_course_code').val($(this).data('code'));
@@ -168,8 +219,9 @@ $(document).ready(function() {
         $('#dropZoneFileName').text('');
         $('#dropZone').removeClass('has-file');
         $('#uploadProgressWrap').hide();
-        $('#uploadProgressBar').css('width', '0%');
+        $('#uploadProgressBar').css('width', '0%').removeClass('bg-danger').addClass('bg-primary');
         $('#uploadPct').text('0%');
+        $('#uploadStatusText').text('Uploading...');
         $('#uploadSubmitBtn').prop('disabled', false).html('<i class="fas fa-upload me-2"></i> Push File');
         new bootstrap.Modal(document.getElementById('uploadModal')).show();
     });
@@ -193,9 +245,9 @@ $(document).ready(function() {
                 updateDropZoneLabel(e.dataTransfer.files[0]);
             }
         });
-        
-        fileInput.addEventListener('change', function() { 
-            if (this.files.length) updateDropZoneLabel(this.files[0]); 
+
+        fileInput.addEventListener('change', function() {
+            if (this.files.length) updateDropZoneLabel(this.files[0]);
         });
     }
 
@@ -208,9 +260,7 @@ $(document).ready(function() {
         }
     }
 
-
     // ── API AND DATA FUNCTIONS ──
-
     function fetchCourses() {
         $.ajax({
             url: `${API_URL}?action=get_all`,
@@ -285,25 +335,22 @@ $(document).ready(function() {
         });
     }
 
-
     // ── UI RENDERING & FILTERING ──
-
     function populateFilters(units, departments) {
         let uHtml = '<option value="">All Units</option>';
         (units || []).forEach(u => uHtml += `<option value="${u}">${u} Units</option>`);
         $('#courseUnitsFilter').html(uHtml);
 
         let dHtml = '<option value="">-- No Department --</option>';
-        let filterHtml = '<option value="">All Departments</option>'; // For search bar dropdown
-        
+        let filterHtml = '<option value="">All Departments</option>';
+
         (departments || []).forEach(d => {
             dHtml += `<option value="${d.department_id}">${d.name}</option>`;
             filterHtml += `<option value="${d.department_id}">${d.name}</option>`;
         });
-        
+
         $('#add_course_dept, #edit_course_dept').html(dHtml);
-        
-        // Preserve selected filter value if regenerating list
+
         const currentSelection = $('#courseDeptFilter').val();
         $('#courseDeptFilter').html(filterHtml);
         if (currentSelection) $('#courseDeptFilter').val(currentSelection);
@@ -312,13 +359,13 @@ $(document).ready(function() {
     function renderCourses(data) {
         const $grid = $('#gridView');
         const $list = $('#courseTableBody');
-        $grid.empty(); 
+        $grid.empty();
         $list.empty();
 
         data.forEach(c => {
             const items = c.resources || c.materials || [];
             const hasMats = items.length > 0 ? 'has' : 'none';
-            
+
             const safeName = (c.name || '').replace(/'/g, "&apos;");
             const safeCode = (c.course_code || '').replace(/'/g, "&apos;");
             const safeDesc = (c.description || '').replace(/'/g, "&apos;");
@@ -342,17 +389,15 @@ $(document).ready(function() {
 
             const deptBadge = deptName ? `<span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 mb-2 d-inline-flex align-items-center text-truncate" style="font-size:.65rem;max-width:100%;overflow:hidden;"><i class="fas fa-building me-1 flex-shrink-0"></i><span class="text-truncate" title="${deptName}">${deptName}</span></span>` : '';
 
-            // Attributes needed for Multi-Search (Includes department name)
             const attrString = `
-                data-name="${c.name.toLowerCase()}" 
+                data-name="${c.name.toLowerCase()}"
                 data-code="${c.course_code.toLowerCase()}"
                 data-deptname="${deptName.toLowerCase()}"
-                data-units="${c.credits}" 
-                data-materials="${hasMats}" 
+                data-units="${c.credits}"
+                data-materials="${hasMats}"
                 data-dept="${deptId}"
             `;
 
-            // Grid Template
             $grid.append(`
             <div class="col-md-6 col-xl-4 course-card-container" ${attrString}>
                 <div class="stat-card border-top border-info border-4 shadow-sm h-100 d-flex flex-column bg-white rounded-3 p-4">
@@ -376,7 +421,6 @@ $(document).ready(function() {
                 </div>
             </div>`);
 
-            // List Template
             $list.append(`
             <tr class="course-table-row" ${attrString}>
                 <td class="ps-4">
@@ -394,7 +438,7 @@ $(document).ready(function() {
                 </td>
             </tr>`);
         });
-        
+
         filterCourses();
     }
 
@@ -402,29 +446,22 @@ $(document).ready(function() {
         const q = $('#courseSearch').val().toLowerCase().trim();
         const unit = $('#courseUnitsFilter').val() ? $('#courseUnitsFilter').val().toString() : '';
         const mat = $('#courseMaterialFilter').val();
-        
-        // Grab from dropdown instead of activeDept variable
-        const activeDept = $('#courseDeptFilter').val() ? $('#courseDeptFilter').val().toString() : ''; 
-        
+        const activeDept = $('#courseDeptFilter').val() ? $('#courseDeptFilter').val().toString() : '';
+
         let visibleCount = 0;
 
         $('.course-card-container, .course-table-row').each(function() {
             const $el = $(this);
-            
-            // Search Data
+
             const nameAttr = $el.attr('data-name') || '';
             const codeAttr = $el.attr('data-code') || '';
             const deptNameAttr = $el.attr('data-deptname') || '';
-            
-            // Filter Data
+
             const unitAttr = ($el.attr('data-units') || '').toString();
             const matAttr = $el.attr('data-materials') || '';
             const deptAttr = ($el.attr('data-dept') || '').toString();
 
-            // Matches Query against Name, Code, OR Department Name
             const matchesSearch = !q || nameAttr.includes(q) || codeAttr.includes(q) || deptNameAttr.includes(q);
-            
-            // Matches Filters
             const matchesUnit = !unit || unitAttr === unit;
             const matchesMat = !mat || matAttr === mat;
             const matchesDept = !activeDept || deptAttr === activeDept;
@@ -432,10 +469,7 @@ $(document).ready(function() {
             const isVisible = matchesSearch && matchesUnit && matchesMat && matchesDept;
             $el.toggleClass('hidden', !isVisible);
 
-            // Increment count only for cards to avoid double counting
-            if (isVisible && $el.hasClass('course-card-container')) {
-                visibleCount++;
-            }
+            if (isVisible && $el.hasClass('course-card-container')) visibleCount++;
         });
 
         $('#courseCountNum').text(visibleCount);
@@ -445,7 +479,6 @@ $(document).ready(function() {
         $('#noResultsList').toggleClass('show', visibleCount === 0 && currentView === 'list');
     }
 
-    // Expose internal filter logic to the global toggleView function
     window.applyCourseFilters = filterCourses;
 
     function showToast(msg, type) {
@@ -465,7 +498,6 @@ $(document).ready(function() {
         setTimeout(() => $('#toast').fadeOut(() => $('#toast').remove()), 3500);
     }
 });
-
 
 // ═════════════════════════════════════════════════════════════════════════════
 // 3. HEADER LOGIC
@@ -519,13 +551,13 @@ function initHeader() {
     $(document).on('click', '#logoutBtn', function(e) {
         e.preventDefault();
         $.ajax({
-            url: AUTH_API, 
-            method: 'POST', 
+            url: AUTH_API,
+            method: 'POST',
             xhrFields: { withCredentials: true },
             contentType: 'application/json',
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
-            complete: function() { 
-                window.location.href = '/client/pages/login.html'; 
+            complete: function() {
+                window.location.href = '/client/pages/login.html';
             }
         });
     });

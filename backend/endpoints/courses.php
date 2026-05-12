@@ -14,6 +14,12 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 
 $conn = getConnection();
 $action = $_GET['action'] ?? '';
+$postAction = $_POST['action'] ?? '';
+
+// Check if action was passed via POST form data instead of GET query string
+if (empty($action) && !empty($postAction)) {
+    $action = $postAction;
+}
 
 switch ($action) {
     case 'get_all':
@@ -165,54 +171,39 @@ switch ($action) {
 
     case 'upload_resource':
         $course_id   = (int)($_POST['course_id'] ?? 0);
-        $custom_name = trim($_POST['custom_name'] ?? '');
+        $custom_name = trim($_POST['custom_name'] ?? 'Uploaded Resource');
         $file_desc   = trim($_POST['file_desc'] ?? '');
+        $file_url    = trim($_POST['file_url'] ?? '');
 
-        if (!$course_id || !isset($_FILES['file_to_upload']) || $_FILES['file_to_upload']['error'] !== UPLOAD_ERR_OK) {
-            echo json_encode(["status" => "error", "message" => "Invalid file or upload error."]);
+        if (!$course_id || empty($file_url)) {
+            echo json_encode(["status" => "error", "message" => "Invalid ID or no Firebase URL received."]);
             exit;
         }
 
-        $file      = $_FILES['file_to_upload'];
-        $ext       = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        $file_name = $custom_name ? $custom_name . '.' . $ext : $file['name'];
+        $stmt = $conn->prepare("INSERT INTO course_resources (course_id, file_name, file_path, description) VALUES (?, ?, ?, ?)");
+        $stmt->bind_param("isss", $course_id, $custom_name, $file_url, $file_desc);
 
-        $upload_dir = '../../uploads/materials/';
-        if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
-
-        $new_filename = uniqid('res_') . '.' . $ext;
-        $dest_path    = $upload_dir . $new_filename;
-        $db_path      = '/artisansLMS/uploads/materials/' . $new_filename;
-
-        if (move_uploaded_file($file['tmp_name'], $dest_path)) {
-            $stmt = $conn->prepare("INSERT INTO course_resources (course_id, file_name, file_path, description) VALUES (?, ?, ?, ?)");
-            $stmt->bind_param("isss", $course_id, $file_name, $db_path, $file_desc);
-            if ($stmt->execute()) {
-                echo json_encode(["status" => "success", "message" => "File uploaded successfully."]);
-            } else {
-                echo json_encode(["status" => "error", "message" => "Database insertion failed."]);
-            }
+        if ($stmt->execute()) {
+            echo json_encode(["status" => "success", "message" => "File saved successfully."]);
         } else {
-            echo json_encode(["status" => "error", "message" => "Failed to move uploaded file."]);
+            echo json_encode(["status" => "error", "message" => "Database insertion failed."]);
         }
         exit;
 
     case 'delete_resource':
-        $input  = json_decode(file_get_contents('php://input'), true);
-        $res_id = (int)($input['resource_id'] ?? 0);
+        $resource_id = (int)($_POST['resource_id'] ?? 0);
+        if (!$resource_id) json_response(["status" => "error", "message" => "Invalid resource ID."], 400);
 
-        if (!$res_id) {
-            json_response(["status" => "error", "message" => "Invalid resource ID."], 400);
-        }
+        // Fetch URL before deleting so JS can remove it from Firebase Storage
+        $file_info = $conn->query("SELECT file_path FROM course_resources WHERE resource_id=$resource_id LIMIT 1")->fetch_assoc();
+        $file_path = $file_info ? $file_info['file_path'] : '';
 
-        $file_info = $conn->query("SELECT file_path FROM course_resources WHERE resource_id=$res_id LIMIT 1")->fetch_assoc();
-        if ($file_info) {
-            $phys_path = $_SERVER['DOCUMENT_ROOT'] . $file_info['file_path'];
-            if (file_exists($phys_path)) unlink($phys_path);
-        }
-
-        if ($conn->query("DELETE FROM course_resources WHERE resource_id=$res_id")) {
-            json_response(["status" => "success", "message" => "File removed successfully."]);
+        if ($conn->query("DELETE FROM course_resources WHERE resource_id=$resource_id")) {
+            json_response([
+                "status" => "success",
+                "message" => "File removed successfully.",
+                "file_path" => $file_path
+            ]);
         } else {
             json_response(["status" => "error", "message" => "Failed to remove file."], 500);
         }

@@ -1,8 +1,6 @@
 // ── FIREBASE SETUP ────────────────────────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
-
-// TODO: Replace with your Firebase project keys
 const firebaseConfig = {
    apiKey: "AIzaSyDQfwNYptf-gWqIQVs0welvz86DwqPI6VQ",
   authDomain: "artisans-lms.firebaseapp.com",
@@ -11,7 +9,7 @@ const firebaseConfig = {
   messagingSenderId: "897938751816",
   appId: "1:897938751816:web:9cbdeb9ae93020dfff737d",
 };
- 
+
 
 const app = initializeApp(firebaseConfig);
 const storage = getStorage(app);
