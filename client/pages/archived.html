@@ -9,89 +9,142 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
-        /* JS-toggled active states — no Bootstrap utility equivalent */
-        .arch-tab.active          { background-color: #0f172a !important; color: #fff !important; }
-        .arch-filter-chip.factive { background-color: #0f172a !important; color: #fff !important; border-color: #0f172a !important; }
+        body {
+            font-family: 'Sora', sans-serif;
+            background: #f0f2f7;
+        }
 
-        /* Hide scrollbar — no Bootstrap utility equivalent */
+        /* ── Tabs Navigation ── */
+        .arch-tab-container {
+            background: #fff; border: 1px solid #e9ecef; border-radius: 14px;
+            padding: 8px; display: inline-flex; gap: 4px; overflow-x: auto;
+            max-width: 100%; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,.02);
+        }
+        .arch-tab {
+            border-radius: 10px; font-weight: 600; font-size: .85rem; color: #64748b;
+            padding: 10px 18px; transition: .2s; border: none; background: transparent;
+            display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; cursor: pointer;
+        }
+        .arch-tab:hover { background: #f8fafc; color: #1e293b; }
+        .arch-tab.active { background: #1e293b; color: #fff; }
+
+        .arch-tab .badge { font-size: .7rem; padding: 4px 8px; border-radius: 6px; transition: .2s; }
+        .arch-tab.active .badge { background: rgba(255,255,255,0.2) !important; color: #fff !important; border: none !important; }
+        .arch-tab:not(.active) .badge { background: #e2e8f0 !important; color: #475569 !important; border: none !important; }
+
+        /* Hide scrollbar for tabs */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* ── Search & Filter bar (SF-Bar) ── */
+        .sf-bar {
+            background: #fff; border: 1px solid #e9ecef; border-radius: 14px;
+            padding: 14px 18px; margin-bottom: 20px;
+            display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+        }
+        .sf-search-wrap { position: relative; flex: 1; min-width: 250px; }
+        .sf-search-wrap i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: .8rem; pointer-events: none; }
+        .sf-input {
+            width: 100%; padding: 10px 14px 10px 38px;
+            border: 1.5px solid #e9ecef; border-radius: 10px;
+            font-size: .82rem; font-family: 'Sora', sans-serif;
+            color: #1e293b; background: #f8fafc; outline: none; transition: .2s;
+        }
+        .sf-input:focus { border-color: #0ea5e9; background: #fff; box-shadow: 0 0 0 3px rgba(14,165,233,.08); }
+
+        /* Filter Chips */
+        .arch-filter-chip {
+            padding: 8px 16px; border-radius: 20px; font-size: .75rem; font-weight: 700;
+            background: #f8fafc; color: #64748b; border: 1.5px solid #e2e8f0; cursor: pointer;
+            transition: .2s; white-space: nowrap;
+        }
+        .arch-filter-chip:hover { background: #e2e8f0; color: #1e293b; }
+        .arch-filter-chip.factive { background: #1e293b; color: #fff; border-color: #1e293b; }
+
+        .sf-count { font-size: .75rem; font-weight: 700; color: #94a3b8; white-space: nowrap; margin-left: auto; }
+        .sf-count span { color: #0ea5e9; }
+
+        /* ── Dynamic Table Styling ── */
+        #tableContainer {
+            background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden;
+        }
+        #tableContainer table { width: 100%; margin-bottom: 0; }
+        #tableContainer thead th {
+            background: #f8fafc; font-size: .7rem; text-transform: uppercase;
+            color: #64748b; font-weight: 700; padding: 14px 20px; border-bottom: 2px solid #f1f5f9; border-top: none;
+        }
+        #tableContainer tbody td {
+            padding: 16px 20px; vertical-align: middle; border-bottom: 1px solid #f1f5f9;
+            font-size: .85rem; color: #1e293b;
+        }
+        #tableContainer tbody tr:hover { background: #f8fafc; }
+
+        /* Mobile Adjustments */
+        @media (max-width:576px) {
+            .sf-bar { padding: 12px 14px; gap: 10px; }
+            .arch-tab { font-size: .8rem; padding: 8px 12px; }
+            .arch-filter-chip { padding: 6px 12px; font-size: .7rem; }
+            .sf-count { width: 100%; text-align: center; margin-left: 0; }
+        }
     </style>
 </head>
-<body class="bg-light">
+<body>
 
     <div id="sidebar-placeholder"></div>
 
     <div id="content" class="min-vh-100">
         <div id="header-placeholder"></div>
 
-        <main class="p-3 p-md-5">
+        <main class="p-4 p-md-5">
 
-            
-
-            <!-- Tab Bar -->
-            <div class="d-flex bg-white border rounded-3 mb-4 overflow-auto no-scrollbar shadow-sm"
-                 style="max-width: max-content;">
-                <button class="btn btn-link text-decoration-none border-0 py-2 px-3 arch-tab text-secondary fw-bold small d-flex align-items-center gap-2"
-                        data-tab="classes" onclick="switchTab('classes')">
+            <!-- Tab Navigation Container -->
+            <div class="arch-tab-container no-scrollbar">
+                <button class="arch-tab active" data-tab="classes" onclick="switchTab('classes')">
                     <i class="fas fa-door-open"></i> Classes
-                    <span class="badge bg-light text-dark border tab-count">0</span>
+                    <span class="badge tab-count">0</span>
                 </button>
-                <button class="btn btn-link text-decoration-none border-0 py-2 px-3 arch-tab text-secondary fw-bold small d-flex align-items-center gap-2"
-                        data-tab="students" onclick="switchTab('students')">
+                <button class="arch-tab" data-tab="students" onclick="switchTab('students')">
                     <i class="fas fa-user-graduate"></i> Students
-                    <span class="badge bg-light text-dark border tab-count">0</span>
+                    <span class="badge tab-count">0</span>
                 </button>
-                <button class="btn btn-link text-decoration-none border-0 py-2 px-3 arch-tab text-secondary fw-bold small d-flex align-items-center gap-2"
-                        data-tab="courses" onclick="switchTab('courses')">
+                <button class="arch-tab" data-tab="courses" onclick="switchTab('courses')">
                     <i class="fas fa-layer-group"></i> Courses
-                    <span class="badge bg-light text-dark border tab-count">0</span>
+                    <span class="badge tab-count">0</span>
                 </button>
-                <button class="btn btn-link text-decoration-none border-0 py-2 px-3 arch-tab text-secondary fw-bold small d-flex align-items-center gap-2"
-                        data-tab="instructors" onclick="switchTab('instructors')">
+                <button class="arch-tab" data-tab="instructors" onclick="switchTab('instructors')">
                     <i class="fas fa-user-tie"></i> Instructors
-                    <span class="badge bg-light text-dark border tab-count">0</span>
+                    <span class="badge tab-count">0</span>
                 </button>
-                <button class="btn btn-link text-decoration-none border-0 py-2 px-3 arch-tab text-secondary fw-bold small d-flex align-items-center gap-2"
-                        data-tab="enrollments" onclick="switchTab('enrollments')">
+                <button class="arch-tab" data-tab="enrollments" onclick="switchTab('enrollments')">
                     <i class="fas fa-link"></i> Enrollments
-                    <span class="badge bg-light text-dark border tab-count">0</span>
+                    <span class="badge tab-count">0</span>
                 </button>
             </div>
 
-            <!-- Filter Bar -->
-            <div class="card border-0 shadow-sm rounded-3 mb-4 bg-white" id="archFilterBar">
-                <div class="card-body p-3 d-flex flex-column flex-md-row align-items-center gap-3">
+            <!-- Search & Filter Bar (SF-Bar) -->
+            <div class="sf-bar" id="archFilterBar">
+                <div class="sf-search-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="archSearch" class="sf-input" placeholder="Search archived records…">
+                </div>
 
-                    <div class="position-relative flex-grow-1 w-100" style="max-width:400px;">
-                        <i class="fas fa-search position-absolute text-muted"
-                           style="left:12px;top:50%;transform:translateY(-50%);font-size:.8rem;pointer-events:none;"></i>
-                        <input type="text" id="archSearch"
-                               class="form-control form-control-sm ps-5 rounded-2 bg-light border-0 small"
-                               placeholder="Search records…">
-                    </div>
+                <div class="d-flex align-items-center gap-2 overflow-auto no-scrollbar">
+                    <span class="arch-filter-chip factive" onclick="setDateFilter(this,'all')">All Time</span>
+                    <span class="arch-filter-chip" onclick="setDateFilter(this,'today')">Today</span>
+                    <span class="arch-filter-chip" onclick="setDateFilter(this,'week')">This Week</span>
+                    <span class="arch-filter-chip" onclick="setDateFilter(this,'month')">This Month</span>
+                </div>
 
-                    <div class="d-flex align-items-center gap-2 overflow-auto no-scrollbar w-100">
-                        <span class="btn btn-sm btn-light border rounded-pill px-3 fw-bold small text-secondary arch-filter-chip factive"
-                              onclick="setDateFilter(this,'all')">All Time</span>
-                        <span class="btn btn-sm btn-light border rounded-pill px-3 fw-bold small text-secondary arch-filter-chip"
-                              onclick="setDateFilter(this,'today')">Today</span>
-                        <span class="btn btn-sm btn-light border rounded-pill px-3 fw-bold small text-secondary arch-filter-chip"
-                              onclick="setDateFilter(this,'week')">This Week</span>
-                        <span class="btn btn-sm btn-light border rounded-pill px-3 fw-bold small text-secondary arch-filter-chip"
-                              onclick="setDateFilter(this,'month')">This Month</span>
-                        <span class="ms-auto text-muted small fw-bold text-nowrap ps-2"
-                              id="archResultCount">0 records</span>
-                    </div>
-
+                <div class="sf-count">
+                    <span id="archResultCount">0</span> records found
                 </div>
             </div>
 
             <!-- Table Container -->
-            <div id="tableContainer" class="bg-white border rounded-4 shadow-sm overflow-hidden">
+            <div id="tableContainer" class="shadow-sm">
                 <div class="text-center py-5 text-muted fw-bold">
-                    <div class="spinner-border spinner-border-sm mb-2 text-primary"></div><br>
-                    Loading archives...
+                    <div class="spinner-border spinner-border-sm mb-3 text-primary" style="width: 1.5rem; height: 1.5rem;"></div><br>
+                    <span style="font-size: .9rem;">Loading archives...</span>
                 </div>
             </div>
 
