@@ -1,21 +1,3 @@
-// ── Firebase Imports & Config ────────────────────────────────────────────────
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-storage.js";
-
-// TODO: Replace this with your actual Firebase config object from Project Settings
-const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "artisans-lms.firebaseapp.com",
-    projectId: "artisans-lms",
-    storageBucket: "artisans-lms.firebasestorage.app", // This is the crucial one
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
-};
-
-const app = initializeApp(firebaseConfig);
-const storage = getStorage(app);
-
-// ── API Endpoints ────────────────────────────────────────────────────────────
 const API_COURSES = 'https://artisanslms.onrender.com/backend/endpoints/instructor_courses.php';
 const API = 'https://artisanslms.onrender.com/backend/index.php';
 
@@ -93,6 +75,46 @@ function initHeader() {
             complete: function() { window.location.href = '/client/pages/login.html'; }
         });
     });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PATH HELPER
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Converts whatever file_path PHP returns into a browser-accessible URL.
+ * Files are stored at: C:/xampp/htdocs/artisansLMS/client/assets/uploads/resources/
+ * So the web path is:  /artisansLMS/client/assets/uploads/resources/filename.ext
+ *
+ * PHP may return any of:
+ *   "uploads/resources/file.pdf"
+ *   "assets/uploads/resources/file.pdf"
+ *   "/artisansLMS/client/assets/uploads/resources/file.pdf"  (already correct)
+ */
+function resolveFilePath(path) {
+    if (!path) return '';
+
+    // Already an absolute URL (http/https)
+    if (path.startsWith('http://') || path.startsWith('https://')) return path;
+
+    // Already a correct root-relative path
+    if (path.startsWith('/artisansLMS/client/assets/')) return path;
+
+    // Strip any accidental leading slash before normalising
+    const clean = path.replace(/^\/+/, '');
+
+    // e.g. "assets/uploads/resources/file.pdf"
+    if (clean.startsWith('assets/')) {
+        return '/artisansLMS/client/' + clean;
+    }
+
+    // e.g. "uploads/resources/file.pdf"
+    if (clean.startsWith('uploads/')) {
+        return '/artisansLMS/client/assets/' + clean;
+    }
+
+    // e.g. "resources/file.pdf" or just "file.pdf" — assume deepest folder
+    return '/artisansLMS/client/assets/uploads/resources/' + clean.replace(/^resources\//, '');
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -198,12 +220,12 @@ function getFileIcon(ext) {
 }
 
 function buildResourceItem(file) {
-    const rid  = file.resource_id;
-    const name = escHtml(file.file_name);
-    const ext  = file.file_name.split('.').pop().toLowerCase();
-    const icon = getFileIcon(ext);
-
-    const path = escAttr(file.file_path);
+    const rid      = file.resource_id;
+    const name     = escHtml(file.file_name);
+    const ext      = file.file_name.split('.').pop().toLowerCase();
+    const icon     = getFileIcon(ext);
+    // ── FIX: always resolve to the correct web path ──
+    const path     = escAttr(resolveFilePath(file.file_path));
 
     return `
     <div class="resource-item d-flex justify-content-between align-items-center py-2 border-bottom" id="resource-${rid}" style="border-color: #f1f5f9 !important;">
@@ -242,8 +264,10 @@ window.filterCourses = function() {
     });
 };
 
+// ── viewFile ──────────────────────────────────────────────────────────────────
 window.viewFile = function(path, name) {
-    const fullPath = path;
+    // ── FIX: resolve path before use ──
+    const fullPath  = resolveFilePath(path);
     const ext       = name.split('.').pop().toLowerCase();
     const container = document.getElementById('fileViewerContainer');
 
@@ -268,6 +292,7 @@ window.viewFile = function(path, name) {
             </video>`;
 
     } else {
+        // .docx / .pptx / .xlsx — can't preview in browser, offer download
         container.innerHTML = `
             <div class="d-flex flex-column align-items-center justify-content-center text-center"
                  style="min-height:500px;background:#f8fafc;">
@@ -277,9 +302,13 @@ window.viewFile = function(path, name) {
                     This file type cannot be previewed in the browser.<br>
                     Download it to open with the appropriate application.
                 </p>
-                <a href="${fullPath}" download="${escHtml(name)}" target="_blank"
+                <a href="${fullPath}" download="${escHtml(name)}"
                    class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">
-                    <i class="fas fa-download me-2"></i> Download / View File
+                    <i class="fas fa-download me-2"></i> Download File
+                </a>
+                <a href="${fullPath}" target="_blank"
+                   class="btn btn-link text-muted small mt-2">
+                    <i class="fas fa-external-link-alt me-1"></i> Open in new tab
                 </a>
             </div>`;
     }
@@ -350,12 +379,9 @@ window.openUploadModal = function(courseId) {
     new bootstrap.Modal(document.getElementById('uploadModal')).show();
 };
 
-// ── Firebase Upload Logic ────────────────────────────────────────────────────
 window.submitResourceUpload = function() {
     const file     = document.getElementById('res_file_input').files[0];
     const courseId = document.getElementById('res_course_id').value;
-    const custName = document.getElementById('res_custom_name').value.trim() || file?.name;
-    const desc     = document.getElementById('res_file_desc').value.trim();
 
     if (!file)     { alert('Please select a file to upload.'); return; }
     if (!courseId) { alert('Course ID missing.'); return; }
@@ -370,93 +396,77 @@ window.submitResourceUpload = function() {
     btn.disabled               = true;
     btn.innerHTML              = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading...';
 
-    // 1. Create a reference to Firebase Storage
-    const safeFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
-    const storageRef = ref(storage, `course_resources/${safeFileName}`);
+    const fd = new FormData();
+    fd.append('action',         'upload_resource');
+    fd.append('course_id',      courseId);
+    fd.append('custom_name',    document.getElementById('res_custom_name').value.trim());
+    fd.append('file_desc',      document.getElementById('res_file_desc').value.trim());
+    fd.append('file_to_upload', file);
 
-    // 2. Start the upload task to Firebase
-    const uploadTask = uploadBytesResumable(storageRef, file);
+    const xhr = new XMLHttpRequest();
 
-    uploadTask.on('state_changed',
-        (snapshot) => {
-            // Observe state change events such as progress
-            const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+    xhr.upload.addEventListener('progress', e => {
+        if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 100);
             bar.style.width      = pct + '%';
             pctLabel.textContent = pct + '%';
+            if (pct === 100) statusText.textContent = 'Processing...';
+        }
+    });
 
-            if (pct === 100) {
-                statusText.textContent = 'Processing & saving to database...';
+    xhr.addEventListener('load', () => {
+        try {
+            const res = JSON.parse(xhr.responseText);
+            if (res.status !== 'success') throw new Error(res.message || 'Upload failed.');
+
+            statusText.textContent = '✅ Uploaded successfully!';
+            bar.classList.remove('progress-bar-striped', 'progress-bar-animated');
+            bar.classList.add('bg-success');
+            bar.style.width      = '100%';
+            pctLabel.textContent = '100%';
+            btn.innerHTML        = '<i class="fas fa-check me-2"></i> Done';
+
+            // ── FIX: resolve the path returned by PHP ──
+            const newPath = resolveFilePath(res.file_path);
+
+            const listEl = document.getElementById(`resource-list-${courseId}`);
+            if (listEl) {
+                listEl.querySelector('.no-materials-msg')?.remove();
+                listEl.insertAdjacentHTML('beforeend', buildResourceItem({
+                    resource_id: res.resource_id,
+                    file_name:   res.file_name,
+                    file_path:   newPath,
+                    description: '',
+                }));
             }
-        },
-        (error) => {
-            // Handle unsuccessful uploads
-            statusText.textContent = '❌ Upload failed: ' + error.message;
+
+            setTimeout(() => {
+                bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
+                showAlert('File uploaded successfully.');
+            }, 900);
+
+        } catch (err) {
+            statusText.textContent = '❌ ' + err.message;
             bar.classList.replace('bg-primary', 'bg-danger');
             bar.classList.remove('progress-bar-striped', 'progress-bar-animated');
             btn.disabled  = false;
-            btn.innerHTML = '<i class="fas fa-upload me-2"></i> Try Again';
-        },
-        async () => {
-            // 3. Handle successful upload
-            try {
-                // Get the public Firebase URL
-                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-
-                // 4. Send the URL to PHP to save in the Database
-                const fd = new FormData();
-                fd.append('action',      'upload_resource');
-                fd.append('course_id',   courseId);
-                fd.append('custom_name', custName);
-                fd.append('file_desc',   desc);
-                fd.append('file_url',    downloadURL); // Sending URL instead of file
-
-                const response = await fetch(API_COURSES, {
-                    method: 'POST',
-                    body: fd
-                });
-
-                const res = await response.json();
-
-                if (res.status !== 'success') throw new Error(res.message || 'Database save failed.');
-
-                // UI Success Updates
-                statusText.textContent = '✅ Saved successfully!';
-                bar.classList.remove('progress-bar-striped', 'progress-bar-animated');
-                bar.classList.add('bg-success');
-                bar.style.width      = '100%';
-                pctLabel.textContent = '100%';
-                btn.innerHTML        = '<i class="fas fa-check me-2"></i> Done';
-
-                // Add item to DOM
-                const listEl = document.getElementById(`resource-list-${courseId}`);
-                if (listEl) {
-                    listEl.querySelector('.no-materials-msg')?.remove();
-                    listEl.insertAdjacentHTML('beforeend', buildResourceItem({
-                        resource_id: res.resource_id,
-                        file_name:   res.file_name,
-                        file_path:   res.file_path, // This is now the Firebase URL directly
-                        description: ''
-                    }));
-                }
-
-                setTimeout(() => {
-                    bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
-                    showAlert('File uploaded successfully.');
-                }, 900);
-
-            } catch (err) {
-                statusText.textContent = '❌ ' + err.message;
-                bar.classList.replace('bg-primary', 'bg-danger');
-                bar.classList.remove('progress-bar-striped', 'progress-bar-animated');
-                btn.disabled  = false;
-                btn.innerHTML = '<i class="fas fa-upload me-2"></i> Upload to Course';
-            }
+            btn.innerHTML = '<i class="fas fa-upload me-2"></i> Upload to Course';
         }
-    );
+    });
+
+    xhr.addEventListener('error', () => {
+        statusText.textContent = '❌ Network error. Please try again.';
+        bar.classList.replace('bg-primary', 'bg-danger');
+        btn.disabled  = false;
+        btn.innerHTML = '<i class="fas fa-upload me-2"></i> Upload to Course';
+    });
+
+    xhr.open('POST', API_COURSES);
+    xhr.send(fd);
 };
 
 window.deleteResource = function(resourceId, fileName, btn) {
-    if (!confirm(`Remove "${fileName}" from the database?`)) return;
+    if (!confirm(`Permanently delete "${fileName}"?\nThis will also remove the file from the server.`)) return;
 
     btn.disabled  = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Deleting...';

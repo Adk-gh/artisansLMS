@@ -51,22 +51,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && $action === 'get_courses') {
     json_response(['status' => 'success', 'data' => $courses]);
 }
 
-// ── POST: upload resource (Updated for Firebase) ─────────────────────────────
+// ── POST: upload resource ────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'upload_resource') {
     $course_id   = (int) ($_POST['course_id'] ?? 0);
     $custom_name = trim($_POST['custom_name'] ?? '');
     $file_desc   = trim($_POST['file_desc']   ?? '');
 
-    // NEW: The frontend must now send the Firebase Download URL
-    $file_url    = trim($_POST['file_url'] ?? '');
-
     if (!$course_id) json_response(['status' => 'error', 'message' => 'Invalid course ID.']);
-    if (empty($file_url)) json_response(['status' => 'error', 'message' => 'No Firebase URL received.']);
-    if (empty($custom_name)) json_response(['status' => 'error', 'message' => 'File name is required.']);
+    if (empty($_FILES['file_to_upload']['name'])) json_response(['status' => 'error', 'message' => 'No file received.']);
+
+    $upload_dir = __DIR__ . '/../../uploads/course_resources/';
+    if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+
+    $orig_name = basename($_FILES['file_to_upload']['name']);
+    $safe_name = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $orig_name);
+    $target    = $upload_dir . $safe_name;
+    $web_path  = 'uploads/course_resources/' . $safe_name;
+
+    if (!move_uploaded_file($_FILES['file_to_upload']['tmp_name'], $target)) {
+        json_response(['status' => 'error', 'message' => 'File move failed.']);
+    }
+
+    $display_name = $custom_name ?: $orig_name;
 
     // MySQLi Prepared Statement
     $stmt = $conn->prepare("INSERT INTO course_resources (course_id, file_name, file_path, description) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("isss", $course_id, $custom_name, $file_url, $file_desc);
+    $stmt->bind_param("isss", $course_id, $display_name, $web_path, $file_desc);
     $stmt->execute();
 
     if ($stmt->affected_rows > 0) {
@@ -75,8 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'upload_resource') {
         json_response([
             'status'      => 'success',
             'resource_id' => $new_id,
-            'file_name'   => $custom_name,
-            'file_path'   => $file_url, // Returning the Firebase URL
+            'file_name'   => $display_name,
+            'file_path'   => $web_path,
         ]);
     }
 
@@ -84,22 +94,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'upload_resource') {
     json_response(['status' => 'error', 'message' => 'DB insert failed.']);
 }
 
-// ── POST: delete resource (Updated for Firebase) ─────────────────────────────
+// ── POST: delete resource ────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'delete_resource') {
     $resource_id = (int) ($_POST['resource_id'] ?? 0);
     if (!$resource_id) json_response(['status' => 'error', 'message' => 'Invalid resource ID.']);
 
-    // NOTE: This deletes the database record, but it does NOT delete the physical file
-    // from Firebase Storage. To delete from Firebase, you would need to execute a
-    // delete request from your frontend JavaScript right before calling this endpoint.
+    $res = $conn->query("SELECT file_path FROM course_resources WHERE resource_id = $resource_id");
 
-    $conn->query("DELETE FROM course_resources WHERE resource_id = $resource_id");
+    if ($res && $res->num_rows > 0) {
+        $row = $res->fetch_assoc();
+        $file_abs = __DIR__ . '/../../' . $row['file_path'];
+        if (file_exists($file_abs)) unlink($file_abs);
 
-    if ($conn->affected_rows > 0) {
-        json_response(['status' => 'success', 'message' => 'Deleted from database.']);
-    } else {
-        json_response(['status' => 'error', 'message' => 'Resource not found.']);
+        $conn->query("DELETE FROM course_resources WHERE resource_id = $resource_id");
+        json_response(['status' => 'success', 'message' => 'Deleted.']);
     }
+    json_response(['status' => 'error', 'message' => 'Resource not found.']);
 }
 
 // ── POST: edit resource ──────────────────────────────────────────────────────
