@@ -22,15 +22,15 @@ if ($method === 'POST') {
 
     if (!$data) json_response(['status' => 'error', 'message' => 'Invalid JSON payload.'], 400);
 
-    // Verify Signature
-    $received_sig = $data['signature'] ?? '';
-    $payload      = $data;
-    unset($payload['signature']);
-    $expected_sig = hash_hmac('sha256', json_encode($payload, JSON_UNESCAPED_UNICODE), HRIS_WEBHOOK_SECRET);
+// ── Verify HMAC signature (Via Headers) ───────────────────────────────────────
+$received_sig = $_SERVER['HTTP_X_HRIS_SIGNATURE'] ?? '';
 
-    if (!hash_equals($expected_sig, $received_sig)) {
-        json_response(['status' => 'error', 'message' => 'Invalid signature.'], 401);
-    }
+// We hash the exact raw string ($raw) that arrived over the internet
+$expected_sig = hash_hmac('sha256', $raw, HRIS_WEBHOOK_SECRET);
+
+if (!hash_equals($expected_sig, $received_sig)) {
+    json_response(['status' => 'error', 'message' => 'Invalid signature.'], 401);
+}
 
     $action = $data['action'] ?? '';
 
