@@ -10,10 +10,10 @@
     <style>
         body { font-family: 'Sora', sans-serif; background-color: #f8fafc; }
         @media (min-width: 768px) { #content { margin-left: 260px !important; } }
-        
+
         .grade-card { border-radius: 16px; border: 1px solid #e2e8f0; background: white; transition: 0.2s; height: 100%; display: flex; flex-direction: column; }
         .grade-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.07); }
-        
+
         .score-ring {
             width: 64px; height: 64px; border-radius: 50%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -27,7 +27,7 @@
 
         .grade-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
         .grade-item:last-child { border-bottom: none; }
-        
+
         .summary-strip { background: linear-gradient(135deg, #0ea5e9, #0284c7); border-radius: 16px; padding: 24px; color: white; }
     </style>
 </head>
@@ -41,7 +41,7 @@
 
             <main class="container-fluid p-3 p-md-4 p-lg-5">
                 <div class="summary-strip d-flex flex-wrap justify-content-between align-items-center mb-5 shadow-sm">
-                   
+
                     <div class="d-flex gap-4 text-center">
                         <div>
                             <div class="fs-2 fw-800" id="overallAvg">0%</div>
@@ -84,7 +84,7 @@
 
             function fetchGrades() {
     console.log("Attempting to fetch grades...");
-    fetch('/artisansLMS/backend/endpoints/my_grades.php')
+    fetch('/backend/endpoints/my_grades.php')
         .then(res => {
             console.log("Response status:", res.status);
             return res.json();
@@ -122,7 +122,7 @@
                 grid.innerHTML = classes.map((c, idx) => {
                     const score = c.averages.combined;
                     const ring = getRingClass(score);
-                    
+
                     return `
                         <div class="col-12 col-xl-6">
                             <div class="grade-card shadow-sm p-4">
@@ -153,10 +153,10 @@
             window.viewDetails = (c) => {
                 document.getElementById('modalTitle').textContent = c.info.course_name;
                 const body = document.getElementById('modalBody');
-                
+
                 let html = `<div class="mb-4">
                     <h6 class="fw-bold mb-3"><i class="fas fa-file-alt text-info me-2"></i> Assignments</h6>`;
-                
+
                 if (c.assignments.length === 0) html += `<p class="text-muted small">No assignments yet.</p>`;
                 else {
                     html += c.assignments.map(a => `
@@ -171,7 +171,7 @@
                 }
 
                 html += `</div><div><h6 class="fw-bold mb-3"><i class="fas fa-brain text-primary me-2"></i> Quizzes</h6>`;
-                
+
                 if (c.quizzes.length === 0) html += `<p class="text-muted small">No quizzes yet.</p>`;
                 else {
                     html += c.quizzes.map(q => `

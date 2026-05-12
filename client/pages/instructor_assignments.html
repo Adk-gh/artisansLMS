@@ -7,11 +7,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/artisansLMS/client/assets/css/style.css">
+    <link rel="stylesheet" href="/client/assets/css/style.css">
     <style>
         /* ── Absolute Essentials Not Covered by Bootstrap ── */
         body { font-family: 'Sora', sans-serif; background-color: #f8fafc; }
-        
+
         /* Sidebar Offset */
         @media (min-width: 768px) { #content { margin-left: 260px !important; transition: margin-left .28s; } }
 
@@ -21,16 +21,16 @@
 
         /* ── Custom UI Components ── */
         .font-monospace-sm { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
-        
+
         /* Filter Pills */
         .filter-pill { transition: all 0.2s ease; cursor: pointer; white-space: nowrap; }
         .filter-pill.active { background-color: #0f172a !important; color: white !important; border-color: #0f172a !important; }
         .filter-pill.active .badge { background-color: rgba(255,255,255,0.2) !important; color: white !important; }
-        
+
         /* Modals Checkboxes & Radios */
         .type-radio-lbl { border: 2px solid #e9ecef; cursor: pointer; transition: all 0.2s ease; }
         .type-radio:checked + .type-radio-lbl { border-color: #0ea5e9; background-color: #f0f9ff; color: #0ea5e9 !important; }
-        
+
         .cls-item { border: 1px solid #e9ecef; cursor: pointer; transition: all 0.15s ease; }
         .cls-item:hover { background-color: #f8fafc; }
         .cls-item.chk { background-color: #f0f9ff; border-color: #bae6fd; }
@@ -43,17 +43,17 @@
     </style>
 </head>
 <body>
-    
+
     <div class="d-flex min-vh-100 overflow-hidden">
-        
+
         <div id="sidebar-container"></div>
-        
+
         <div id="content" class="flex-grow-1 d-flex flex-column h-100 min-vw-0">
-            
+
             <div id="header-container"></div>
 
             <main class="p-4 p-md-5 overflow-auto flex-grow-1">
-                
+
                 <div id="alertsContainer"></div>
 
                 <div class="d-flex justify-content-end align-items-start flex-wrap gap-3 mb-4">
@@ -70,9 +70,9 @@
                                 All Classes <span class="badge bg-secondary ms-1 rounded-pill" id="cnt-cls-all">0</span>
                             </button>
                         </div>
-                        
+
                         <hr class="text-muted opacity-25 my-3">
-                        
+
                         <div class="d-flex align-items-center gap-3 flex-wrap" id="typeFilters">
                             <span class="small fw-bold text-muted text-uppercase me-2">Type</span>
                             <button class="btn btn-outline-secondary rounded-pill filter-pill active" data-filter-type="type" data-val="all" title="Filter by All Types">
@@ -138,7 +138,7 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" title="Close Modal"></button>
                 </div>
                 <div class="modal-body p-4">
-                    
+
                     <label class="small fw-bold text-muted text-uppercase mb-2">Task Type</label>
                     <div class="row g-2 mb-4">
                         <div class="col-4 text-center">
@@ -252,9 +252,9 @@
 </div>
                             </div>
                         </div>
-                        
+
                         <div id="qlist"></div>
-                        
+
                         <div id="qhint" class="text-center py-4 text-muted small bg-white rounded-4 shadow-sm border border-light-subtle">
                             <i class="fas fa-plus-circle fs-3 opacity-25 mb-2 d-block"></i> Add questions.
                         </div>
@@ -291,7 +291,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <label class="small fw-bold text-muted text-uppercase mb-2">Select Target Class(es) *</label>
                     <div class="d-flex flex-column gap-2 scrollable-list" id="ri_classList"></div>
                 </div>
@@ -306,7 +306,7 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <script>
         $(document).ready(function() {
             $("#sidebar-container").load("../components/sidebar.html");
@@ -317,7 +317,7 @@
             });
         });
     </script>
-    
+
     <script src="/client/assets/js/app.js"></script>
     <script src="/client/assets/js/modules/instructor_assignments.js"></script>
 </body>
