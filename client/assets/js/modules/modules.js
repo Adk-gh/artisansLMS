@@ -111,13 +111,17 @@ $(document).ready(function() {
         $('#moduleLoadingState').remove();
 
         $container.html(files.map(file => {
-            const ext    = file.file_path.split('.').pop().toLowerCase();
-            const config = getFileIconConfig(ext);
+        const ext    = file.file_path.split('.').pop().toLowerCase();
+        const config = getFileIconConfig(ext);
 
-            // file_path is already an absolute path from PHP — use it directly
-            const filePath = file.file_path;
+        // FIX: Force the path to start from /backend/ regardless of what the DB saved
+        let filePath = file.file_path;
+        if (filePath.includes('/backend/')) {
+            // This strips anything before '/backend/' (like '/artisansLMS')
+            filePath = filePath.substring(filePath.indexOf('/backend/'));
+        }
 
-            return `
+        return `
                 <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-2">
                     <div class="card-body p-3 d-flex align-items-center justify-content-between">
                         <div class="d-flex align-items-center gap-3 overflow-hidden">
