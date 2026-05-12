@@ -47,7 +47,7 @@ switch ($action) {
         }
 
         json_response([
-            "status" => "success", 
+            "status" => "success",
             "profile" => $profile,
             "role" => $current_user_role,
             "is_teacher" => $is_teacher,
@@ -57,7 +57,7 @@ switch ($action) {
 
     case 'update_profile':
         $input = json_decode(file_get_contents('php://input'), true);
-        
+
         $fname = trim($input['first_name'] ?? '');
         $lname = trim($input['last_name'] ?? '');
         $email = trim($input['email'] ?? '');
@@ -68,7 +68,7 @@ switch ($action) {
 
         $stmt = $conn->prepare("UPDATE $table SET first_name=?, last_name=?, email=? WHERE $id_col=?");
         $stmt->bind_param("sssi", $fname, $lname, $email, $current_user_id);
-        
+
         if ($stmt->execute()) {
             $_SESSION['user_name'] = $fname . ' ' . $lname;
             json_response(["status" => "success", "message" => "Profile updated successfully.", "new_name" => $_SESSION['user_name']]);
@@ -77,41 +77,44 @@ switch ($action) {
         }
         break;
 
-    case 'change_password':
-        $input = json_decode(file_get_contents('php://input'), true);
-        
-        $current_pw = $input['current_password'] ?? '';
-        $new_pw = $input['new_password'] ?? '';
-        $confirm_pw = $input['confirm_password'] ?? '';
+case 'change_password':
+    $input = json_decode(file_get_contents('php://input'), true);
 
-        if (!$current_pw || !$new_pw || !$confirm_pw) {
-            json_response(["status" => "error", "message" => "All password fields are required."], 400);
-        }
+    $current_pw = $input['current_password'] ?? '';
+    $new_pw     = $input['new_password']     ?? '';
+    $confirm_pw = $input['confirm_password'] ?? '';
 
-        if ($new_pw !== $confirm_pw) {
-            json_response(["status" => "error", "message" => "New passwords do not match."], 400);
-        }
+    if (!$current_pw || !$new_pw || !$confirm_pw) {
+        json_response(["status" => "error", "message" => "All password fields are required."], 400);
+    }
 
-        $stmt = $conn->prepare("SELECT password FROM $table WHERE $id_col = ? LIMIT 1");
-        $stmt->bind_param("i", $current_user_id);
-        $stmt->execute();
-        $row = $stmt->get_result()->fetch_assoc();
+    if ($new_pw !== $confirm_pw) {
+        json_response(["status" => "error", "message" => "New passwords do not match."], 400);
+    }
 
-        if ($row && password_verify($current_pw, $row['password'])) {
-            $hashed = password_hash($new_pw, PASSWORD_DEFAULT);
-            
-            $update_stmt = $conn->prepare("UPDATE $table SET password=? WHERE $id_col=?");
-            $update_stmt->bind_param("si", $hashed, $current_user_id);
-            
-            if ($update_stmt->execute()) {
-                json_response(["status" => "success", "message" => "Password changed successfully."]);
-            } else {
-                json_response(["status" => "error", "message" => "Failed to update password in database."], 500);
-            }
+    // ✅ FIX: employees uses 'password_hash', students uses 'password'
+    $pw_col = $is_teacher ? 'password_hash' : 'password';
+
+    $stmt = $conn->prepare("SELECT $pw_col FROM $table WHERE $id_col = ? LIMIT 1");
+    $stmt->bind_param("i", $current_user_id);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+
+    if ($row && password_verify($current_pw, $row[$pw_col])) {
+        $hashed = password_hash($new_pw, PASSWORD_DEFAULT);
+
+        $update_stmt = $conn->prepare("UPDATE $table SET $pw_col = ? WHERE $id_col = ?");
+        $update_stmt->bind_param("si", $hashed, $current_user_id);
+
+        if ($update_stmt->execute()) {
+            json_response(["status" => "success", "message" => "Password changed successfully."]);
         } else {
-            json_response(["status" => "error", "message" => "Current password is incorrect."], 401);
+            json_response(["status" => "error", "message" => "Failed to update password in database."], 500);
         }
-        break;
+    } else {
+        json_response(["status" => "error", "message" => "Current password is incorrect."], 401);
+    }
+    break;
 
     default:
         json_response(["status" => "error", "message" => "Invalid action."], 400);
