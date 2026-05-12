@@ -4,9 +4,7 @@ import {
     set, onValue, onDisconnect
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-// ── ADDED: Import the room request module ────────────────────────────────────
-import { initRoomRequest, renderRoomSystemMessage } from './collaborations_room_request.js';
-// ─────────────────────────────────────────────────────────────────────────────
+
 
 const API = 'https://artisanslms.onrender.com/backend/index.php';
 
@@ -183,9 +181,9 @@ function initSelectionGrid() {
     })
         .then(async r => {
             // Grab the raw text FIRST before trying to read it as JSON
-            const text = await r.text(); 
+            const text = await r.text();
             try {
-                return JSON.parse(text); 
+                return JSON.parse(text);
             } catch (e) {
                 // If it fails, print the ugly HTML/PHP warning to the console
                 console.error("🚨 RAW PHP RESPONSE THAT CRASHED THE JSON:", text);
@@ -402,12 +400,6 @@ function initFirebase() {
         const m   = snap.val();
         const box = document.getElementById('chatMessages');
 
-        // ── ADDED: Render custom room request system messages ────────────────
-        if (m.is_system && (m.type === 'room_approved' || m.type === 'room_rejected')) {
-            renderRoomSystemMessage(m, box);
-            return;
-        }
-        // ─────────────────────────────────────────────────────────────────────
 
         if (m.is_system) {
             box.insertAdjacentHTML('beforeend', `

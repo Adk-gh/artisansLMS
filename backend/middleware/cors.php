@@ -5,12 +5,12 @@
  */
 
 // 1. Define who is allowed to talk to your API.
-// For local development, it's usually localhost:3000 or 5173. 
+// For local development, it's usually localhost:3000 or 5173.
 // For production, put your Vercel/Netlify URL here.
 $allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:5173',
-    'https://your-ui-site.vercel.app' 
+    'https://artisanslms.onrender.com'
 ];
 
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
