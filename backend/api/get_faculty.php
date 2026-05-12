@@ -8,7 +8,7 @@ error_reporting(0);
 ini_set('display_errors', 0);
 header('Content-Type: application/json; charset=utf-8');
 
-define('HRIS_WEBHOOK_SECRET', getenv('HRIS_WEBHOOK_SECRET') ?: 'local_hris_secret');
+define('HRIS_WEBHOOK_SECRET', getenv('HRIS_WEBHOOK_SECRET') ?: '81af90f1c04ba06b06bb79ac8c184794');
 
 require_once __DIR__ . '/../../server/config/db.php';
 require_once __DIR__ . '/../middleware/json_response.php';
@@ -22,31 +22,43 @@ if ($method === 'POST') {
 
     if (!$data) json_response(['status' => 'error', 'message' => 'Invalid JSON payload.'], 400);
 
-// ── Verify API Key ────────────────────────────────────────────────────────────
-$received_key = $_SERVER['HTTP_X_API_KEY'] ?? '';
+    // ── Verify API Key ────────────────────────────────────────────────────────────
+    $received_key = $_SERVER['HTTP_X_API_KEY'] ?? '';
 
-if ($received_key !== HRIS_WEBHOOK_SECRET) {
-    json_response([
-        'status' => 'error',
-        'message' => 'Invalid API Key.',
-        'debug_received' => $received_key,
-        'debug_expected' => HRIS_WEBHOOK_SECRET
-    ], 401);
-}
+    if ($received_key !== HRIS_WEBHOOK_SECRET) {
+        json_response([
+            'status'         => 'error',
+            'message'        => 'Invalid API Key.',
+            'debug_received' => $received_key,
+            'debug_expected' => HRIS_WEBHOOK_SECRET
+        ], 401);
+    }
 
     $action = $data['action'] ?? '';
 
-    // --- ARCHIVE FACULTY ---
+    // ── ARCHIVE FACULTY ───────────────────────────────────────────────────────────
     if ($action === 'archive_faculty') {
         $target_email = trim($data['email'] ?? '');
-        if (!$target_email) json_response(['status' => 'error', 'message' => 'No email provided for archiving.'], 400);
+        $hris_id      = (int)($data['hris_id'] ?? 0);
 
-        $safe_email = $conn->real_escape_string($target_email);
-        $conn->query("UPDATE employees SET is_archived = 1 WHERE email = '$safe_email'");
+        if (!$target_email && !$hris_id) {
+            json_response(['status' => 'error', 'message' => 'No identifier provided for archiving.'], 400);
+        }
+
+        // Match by hris_id first (most reliable), fall back to email
+        if ($hris_id > 0) {
+            $stmt = $conn->prepare("UPDATE employees SET is_archived = 1 WHERE hris_id = ?");
+            $stmt->bind_param("i", $hris_id);
+            $stmt->execute();
+        } else {
+            $safe_email = $conn->real_escape_string($target_email);
+            $conn->query("UPDATE employees SET is_archived = 1 WHERE email = '$safe_email'");
+        }
+
         json_response(['status' => 'success', 'message' => 'Faculty archived successfully.']);
     }
 
-    // --- SYNC FACULTY & MASTER DATA ---
+    // ── SYNC FACULTY & MASTER DATA ────────────────────────────────────────────────
     if ($action === 'sync_faculty') {
 
         // 1. SYNC DEPARTMENTS (Force exact ID match from HRIS)
@@ -80,41 +92,61 @@ if ($received_key !== HRIS_WEBHOOK_SECRET) {
         $created = $updated = $skipped = 0;
 
         foreach ($faculty_list as $f) {
-            $email      = trim($f['email']      ?? '');
-            $first_name = trim($f['first_name'] ?? '');
-            $last_name  = trim($f['last_name']  ?? '');
-            $gender     = in_array($f['gender'] ?? '', ['M','F','Other']) ? $f['gender'] : 'M';
+            $hris_id    = (int)($f['hris_id']     ?? 0);
+            $email      = trim($f['email']         ?? '');
+            $first_name = trim($f['first_name']    ?? '');
+            $last_name  = trim($f['last_name']     ?? '');
             $dept_id    = (int)($f['department_id'] ?? 0);
-            $pos_id     = (int)($f['position_id'] ?? 0);
+            $pos_id     = (int)($f['position_id']   ?? 0);
+
+            // Map HRIS gender values ("Male"/"Female") to LMS values ("M"/"F")
+            $gender_raw = $f['gender'] ?? '';
+            $gender = match($gender_raw) {
+                'Male'              => 'M',
+                'Female'            => 'F',
+                'M', 'F', 'Other'  => $gender_raw,
+                default             => 'M'
+            };
 
             if (!$email || !$first_name || !$last_name || !$dept_id || !$pos_id) {
                 $skipped++;
                 continue;
             }
 
-            $safe_email = $conn->real_escape_string($email);
-            $existing   = $conn->query("SELECT employee_id FROM employees WHERE email='$safe_email' LIMIT 1")->fetch_assoc();
+            // Match by hris_id first (most reliable), fall back to email
+            $existing = null;
+            if ($hris_id > 0) {
+                $existing = $conn->query("SELECT employee_id FROM employees WHERE hris_id=$hris_id LIMIT 1")->fetch_assoc();
+            }
+            if (!$existing) {
+                $safe_email = $conn->real_escape_string($email);
+                $existing   = $conn->query("SELECT employee_id FROM employees WHERE email='$safe_email' LIMIT 1")->fetch_assoc();
+            }
 
             if ($existing) {
-                $eid = (int)$existing['employee_id'];
-                $stmt = $conn->prepare("UPDATE employees SET first_name=?, last_name=?, gender=?, department_id=?, position_id=?, is_faculty=1, is_archived=0 WHERE employee_id=?");
-                $stmt->bind_param("sssiii", $first_name, $last_name, $gender, $dept_id, $pos_id, $eid);
+                // UPDATE existing faculty record
+                $eid  = (int)$existing['employee_id'];
+                $stmt = $conn->prepare("UPDATE employees SET hris_id=?, first_name=?, last_name=?, email=?, gender=?, department_id=?, position_id=?, is_faculty=1, is_archived=0 WHERE employee_id=?");
+                $stmt->bind_param("isssssii", $hris_id, $first_name, $last_name, $email, $gender, $dept_id, $pos_id, $eid);
                 $stmt->execute();
                 $updated++;
             } else {
-                $chars      = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-                $tmp_pass   = 'FAC-';
+                // INSERT new faculty record
+                $chars    = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+                $tmp_pass = 'FAC-';
                 for ($i = 0; $i < 6; $i++) $tmp_pass .= $chars[random_int(0, strlen($chars) - 1)];
-                $safe_hash  = $conn->real_escape_string(password_hash($tmp_pass, PASSWORD_DEFAULT));
+                $safe_hash = $conn->real_escape_string(password_hash($tmp_pass, PASSWORD_DEFAULT));
 
-                $stmt = $conn->prepare("INSERT INTO employees (first_name, last_name, email, password_hash, is_faculty, gender, department_id, position_id, is_archived) VALUES (?, ?, ?, ?, 1, ?, ?, ?, 0)");
-                $stmt->bind_param("sssssii", $first_name, $last_name, $email, $safe_hash, $gender, $dept_id, $pos_id);
+                $stmt = $conn->prepare("INSERT INTO employees (hris_id, first_name, last_name, email, password_hash, is_faculty, gender, department_id, position_id, is_archived) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, 0)");
+                $stmt->bind_param("isssssii", $hris_id, $first_name, $last_name, $email, $safe_hash, $gender, $dept_id, $pos_id);
                 $stmt->execute();
                 $stmt->affected_rows > 0 ? $created++ : $skipped++;
             }
         }
+
         json_response(['status' => 'success', 'created' => $created, 'updated' => $updated, 'skipped' => $skipped]);
     }
+
 } else {
     http_response_code(405);
     json_response(['status' => 'error', 'message' => 'Method not allowed. Use POST.']);
