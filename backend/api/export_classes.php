@@ -1,7 +1,7 @@
 <?php
 // C:\xampp\htdocs\artisansLMS\backend\api\export_classes.php
 
-require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../../server/config/db.php';
 require_once __DIR__ . '/../middleware/json_response.php';
 
 header('Access-Control-Allow-Origin: *');
