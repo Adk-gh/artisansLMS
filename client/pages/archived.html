@@ -79,6 +79,22 @@
         }
         #tableContainer tbody tr:hover { background: #f8fafc; }
 
+        /* ── Action Buttons (Matching Instructors Page) ── */
+        .btn-action {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 5px 12px; border-radius: 8px; font-size: .72rem; font-weight: 700;
+            cursor: pointer; transition: .15s; text-decoration: none; border: 1px solid transparent;
+            font-family: 'Sora', sans-serif;
+        }
+
+        /* Restore Style (Green) */
+        .btn-restore { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+        .btn-restore:hover { background: #dcfce7; color: #166534; }
+
+        /* Delete Style (Red) */
+        .btn-delete { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+        .btn-delete:hover { background: #fee2e2; color: #991b1b; }
+
         /* Mobile Adjustments */
         @media (max-width:576px) {
             .sf-bar { padding: 12px 14px; gap: 10px; }
@@ -146,6 +162,11 @@
                     <div class="spinner-border spinner-border-sm mb-3 text-primary" style="width: 1.5rem; height: 1.5rem;"></div><br>
                     <span style="font-size: .9rem;">Loading archives...</span>
                 </div>
+                <!-- NOTE FOR JS INJECTION:
+                     Use these classes for your action buttons:
+                     <button class="btn-action btn-restore"><i class="fas fa-undo"></i> Restore</button>
+                     <button class="btn-action btn-delete"><i class="fas fa-trash"></i> Delete</button>
+                -->
             </div>
 
         </main>

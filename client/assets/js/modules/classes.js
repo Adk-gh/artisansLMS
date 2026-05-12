@@ -214,15 +214,10 @@ $(document).ready(function() {
         $('#classTermFilter').html(sHtml);
     }
 
-    // ── Flat per-section render ──
-    // Each class section gets its own <tr> — no collapsible grouping.
-    // Filtering is now per row, so a "CS101 1st Sem 2026" and "CS101 2nd Sem 2026"
-    // are completely independent rows that can be shown/hidden individually.
     function renderTable(groupedData) {
         const $tbody = $('#classBody');
         $tbody.empty();
 
-        // Flatten all sections into one array
         const allSections = [];
         groupedData.forEach(group => {
             group.sections.forEach(sec => {
@@ -259,10 +254,6 @@ $(document).ready(function() {
                    </span>`
                 : '';
 
-            // data-name includes course name + code for search
-            // data-term for term filter
-            // data-dept for dept dropdown filter
-            // data-open / data-full for capacity filter
             const rowHtml = `
             <tr class="class-row-wrap"
                 data-name="${(sec.course_name + ' ' + sec.course_code).toLowerCase()}"
@@ -295,7 +286,7 @@ $(document).ready(function() {
                 </td>
                 <td class="text-end pe-4 py-3">
                     <div class="d-flex align-items-center justify-content-end gap-2">
-                        <button class="btn btn-sm btn-outline-primary border-0 edit-class-btn"
+                        <button class="btn-action btn-edit edit-class-btn"
                             data-bs-toggle="modal" data-bs-target="#editClassModal"
                             data-id="${sec.class_id}"
                             data-course="${sec.course_id}"
@@ -304,9 +295,9 @@ $(document).ready(function() {
                             data-year="${sec.year}"
                             data-capacity="${sec.max_enrollment}"
                             title="Edit Section">
-                            <i class="fas fa-edit"></i>
+                            <i class="fas fa-edit"></i> Edit
                         </button>
-                        <button type="button" class="btn-archive-sm" onclick="archiveClass(${sec.class_id})">
+                        <button type="button" class="btn-action btn-archive" onclick="archiveClass(${sec.class_id})">
                             <i class="fas fa-archive"></i> Archive
                         </button>
                     </div>
