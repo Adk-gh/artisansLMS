@@ -1,4 +1,6 @@
+
 <?php
+//C:\xampp\htdocs\artisansLMS\backend\api\export_classes.php
 require_once __DIR__ . '/../../server/config/db.php';
 require_once __DIR__ . '/../middleware/json_response.php';
 
@@ -17,7 +19,7 @@ $action = trim($_GET['action'] ?? '');
 
 if ($action === 'get_classes') {
     $sql = "SELECT c.class_id, c.semester, c.year, c.max_enrollment,
-                   co.course_id, co.course_code, co.name AS course_name, 
+                   co.course_id, co.course_code, co.name AS course_name,
                    co.credits AS units,
                    d.department_id, d.name AS department_name,
                    e.employee_id AS instructor_id,
@@ -30,7 +32,7 @@ if ($action === 'get_classes') {
             LEFT JOIN departments d ON d.department_id = co.department_id
             ORDER BY d.name ASC, co.name ASC, c.year DESC";
     $res = $conn->query($sql);
-   
+
     $sections = [];
     if ($res) {
         while ($row = $res->fetch_assoc()) {
@@ -59,7 +61,7 @@ if ($action === 'get_classes') {
     json_response(['status' => 'success', 'count' => count($rows), 'data' => $rows]);
 
 } elseif ($action === 'get_courses') {
-    $res  = $conn->query("SELECT co.course_id, co.course_code, co.name AS course_name, co.units, d.department_id, d.name AS department_name FROM courses co LEFT JOIN departments d ON d.department_id = co.department_id ORDER BY co.name ASC");
+    $res  = $conn->query("SELECT co.course_id, co.course_code, co.name AS course_name, co.credits as units, d.department_id, d.name AS department_name FROM courses co LEFT JOIN departments d ON d.department_id = co.department_id ORDER BY co.name ASC");
     $rows = [];
     while ($row = $res->fetch_assoc()) { $row['course_id'] = (int)$row['course_id']; $rows[] = $row; }
     json_response(['status' => 'success', 'count' => count($rows), 'data' => $rows]);

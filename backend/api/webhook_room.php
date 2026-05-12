@@ -126,14 +126,29 @@ if (!$updated || $conn->affected_rows === 0) {
     exit;
 }
 
-// ── 2. On approval: insert confirmed slot into schedule ───────────────────────
+// ── 2. On approval: Sync Room Data & insert confirmed slot into schedule ──────
 if ($status === 'approved' && $room && $confDate && $confStart && $confEnd) {
     $roomId    = (int)($room['room_id'] ?? 0);
+    $roomName  = $conn->real_escape_string($room['name'] ?? 'TBA');
+    $roomLoc   = $conn->real_escape_string($room['location'] ?? '');
+    $roomCap   = (int)($room['capacity'] ?? 0);
+
     $safeDate  = $conn->real_escape_string($confDate);
     $safeStart = $conn->real_escape_string($confStart);
     $safeEnd   = $conn->real_escape_string($confEnd);
 
     if ($roomId) {
+        // A. FORCE Master Data Sync for the Room (Prevents Foreign Key Error)
+        $conn->query("
+            INSERT INTO rooms (room_id, name, location, capacity)
+            VALUES ($roomId, '$roomName', '$roomLoc', $roomCap)
+            ON DUPLICATE KEY UPDATE
+                name = VALUES(name),
+                location = VALUES(location),
+                capacity = VALUES(capacity)
+        ");
+
+        // B. Insert the actual schedule
         $conn->query("
             INSERT INTO schedule (class_id, room_id, start_time, end_time)
             VALUES ($classId, $roomId, '$safeDate $safeStart', '$safeDate $safeEnd')
