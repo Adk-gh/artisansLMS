@@ -155,7 +155,7 @@ switch ($action) {
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
             $mail->Port       = 465;
 
-            
+
             $mail->Timeout    = 10;
 
             $mail->setFrom('no-reply@artisanslms.onrender.com', 'Artisans LMS');
@@ -182,9 +182,10 @@ switch ($action) {
             $mail->send();
             json_response(['status' => 'success', 'message' => 'Email sent via SMTP.']);
 
-        } catch (Exception $e) {
-            json_response(['status' => 'error', 'message' => "SMTP Error. Check Render environment variables."], 500);
-        }
+       } catch (Exception $e) {
+    
+    json_response(['status' => 'error', 'message' => "SMTP Error: " . $mail->ErrorInfo], 500);
+}
         break;
 
     // ── ARCHIVE ───────────────────────────────────────────────────────────────
