@@ -8,4 +8,5 @@ Todo:
 
 integrate with schedule.
 
-make the pages not scrollable only the content. (classes.
+make the pages not scrollable only the content. (classes. courses, instructors\
+make sure that the header is fixed&#x20;

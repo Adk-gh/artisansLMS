@@ -3,12 +3,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebas
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
 
 const firebaseConfig = {
-   apiKey: "AIzaSyDQfwNYptf-gWqIQVs0welvz86DwqPI6VQ",
-  authDomain: "artisans-lms.firebaseapp.com",
-     projectId: "artisans-lms",
-  storageBucket: "artisans-lms.firebasestorage.app",
-  messagingSenderId: "897938751816",
-  appId: "1:897938751816:web:9cbdeb9ae93020dfff737d",
+    apiKey: "AIzaSyDQfwNYptf-gWqIQVs0welvz86DwqPI6VQ",
+    authDomain: "artisans-lms.firebaseapp.com",
+    projectId: "artisans-lms",
+    storageBucket: "artisans-lms.firebasestorage.app",
+    messagingSenderId: "897938751816",
+    appId: "1:897938751816:web:9cbdeb9ae93020dfff737d",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -26,6 +26,12 @@ function resolveFilePath(path) {
     return '/artisansLMS/client/assets/uploads/resources/' + clean.replace(/^resources\//, '');
 }
 
+// ── GLOBAL PAGINATION STATE ──
+let _allCoursesRaw = [];
+let _filteredCourses = [];
+let _currentPage = 1;
+const _itemsPerPage = 50;
+
 $(document).ready(function() {
     const API_URL = '../../backend/endpoints/courses.php';
     let addModalObj = null;
@@ -42,7 +48,7 @@ $(document).ready(function() {
         $('#btnGrid').toggleClass('active', !isList);
         $('#btnList').toggleClass('active', isList);
         localStorage.setItem('courseViewPref', viewType);
-        if (typeof window.applyCourseFilters === 'function') window.applyCourseFilters();
+        filterCourses(); // Re-render to show correct empty states if needed
     };
 
     window.viewFile = function(path, name) {
@@ -189,15 +195,13 @@ $(document).ready(function() {
     if (editEl) editModalObj = new bootstrap.Modal(editEl);
 
     let savedView = localStorage.getItem('courseViewPref') || 'grid';
+    window.toggleView(savedView);
 
     fetchCourses();
-    window.toggleView(savedView);
 
     // ── EVENT LISTENERS ──
     $('#courseSearch').on('input', filterCourses);
-    $('#courseUnitsFilter').on('change', filterCourses);
-    $('#courseMaterialFilter').on('change', filterCourses);
-    $('#courseDeptFilter').on('change', filterCourses);
+    $('#courseUnitsFilter, #courseMaterialFilter, #courseDeptFilter').on('change', filterCourses);
 
     $('#addCourseForm').on('submit', handleAddSubmit);
     $('#editCourseForm').on('submit', handleEditSubmit);
@@ -269,7 +273,8 @@ $(document).ready(function() {
             success: function(json) {
                 if (json.status === 'success') {
                     populateFilters(json.units, json.departments);
-                    renderCourses(json.data);
+                    _allCoursesRaw = json.data || [];
+                    filterCourses(); // Automatically applies filters and renders page 1
                 } else {
                     showToast(json.message || "Failed to load courses.", "error");
                 }
@@ -277,6 +282,152 @@ $(document).ready(function() {
         });
     }
 
+    // ── FILTERING & PAGINATION ──
+    function filterCourses() {
+        const q = $('#courseSearch').val().toLowerCase().trim();
+        const unit = $('#courseUnitsFilter').val() ? $('#courseUnitsFilter').val().toString() : '';
+        const mat = $('#courseMaterialFilter').val();
+        const activeDept = $('#courseDeptFilter').val() ? $('#courseDeptFilter').val().toString() : '';
+
+        _filteredCourses = _allCoursesRaw.filter(c => {
+            const items = c.resources || c.materials || [];
+            const hasMats = items.length > 0 ? 'has' : 'none';
+
+            const nameAttr = (c.name || '').toLowerCase();
+            const codeAttr = (c.course_code || '').toLowerCase();
+            const deptNameAttr = (c.dept_name || '').toLowerCase();
+            const unitAttr = (c.credits || '').toString();
+            const deptAttr = (c.department_id || '').toString();
+
+            const matchesSearch = !q || nameAttr.includes(q) || codeAttr.includes(q) || deptNameAttr.includes(q);
+            const matchesUnit = !unit || unitAttr === unit;
+            const matchesMat = !mat || hasMats === mat;
+            const matchesDept = !activeDept || deptAttr === activeDept;
+
+            return matchesSearch && matchesUnit && matchesMat && matchesDept;
+        });
+
+        _currentPage = 1;
+        renderTablePage();
+    }
+
+    function renderTablePage() {
+        const $grid = $('#gridView');
+        const $list = $('#courseTableBody');
+        $grid.empty();
+        $list.empty();
+
+        const total = _filteredCourses.length;
+        $('#courseCountNum').text(total);
+
+        const currentView = localStorage.getItem('courseViewPref') || 'grid';
+        $('#noResultsGrid').toggleClass('show', total === 0 && currentView === 'grid');
+        $('#noResultsList').toggleClass('show', total === 0 && currentView === 'list');
+
+        if (total === 0) {
+            $list.html(`<tr><td colspan="4" class="text-center py-5 text-muted">No courses found.</td></tr>`);
+            updatePaginationUI(0);
+            return;
+        }
+
+        const start = (_currentPage - 1) * _itemsPerPage;
+        const pageData = _filteredCourses.slice(start, start + _itemsPerPage);
+
+        pageData.forEach(c => {
+            const items = c.resources || c.materials || [];
+            const safeName = (c.name || '').replace(/'/g, "&apos;");
+            const safeCode = (c.course_code || '').replace(/'/g, "&apos;");
+            const safeDesc = (c.description || '').replace(/'/g, "&apos;");
+            const deptId = (c.department_id || '').toString();
+            const deptName = c.dept_name || '';
+
+            let matHtmlList = '';
+            if (items.length > 0) {
+                items.forEach(f => {
+                    matHtmlList += `
+                    <div class="resource-item res-item-${f.resource_id} d-flex justify-content-between align-items-center py-1">
+                        <span onclick="viewFile('${f.file_path}', '${f.file_name.replace(/'/g, "\\'")}')" class="file-link flex-grow-1 pe-2" style="font-size:.75rem;">
+                            <i class="fas fa-file-alt me-1 text-danger"></i>${f.file_name}
+                        </span>
+                        <button class="btn btn-link text-danger p-0 ms-2" onclick="deleteResource(${f.resource_id}, '${f.file_name.replace(/'/g, "\\'")}', this)"><i class="fas fa-times-circle"></i></button>
+                    </div>`;
+                });
+            } else {
+                matHtmlList = `<div class="text-muted small fst-italic py-1">No materials yet.</div>`;
+            }
+
+            const deptBadge = deptName ? `<span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 mb-2 d-inline-flex align-items-center text-truncate" style="font-size:.65rem;max-width:100%;overflow:hidden;"><i class="fas fa-building me-1 flex-shrink-0"></i><span class="text-truncate" title="${deptName}">${deptName}</span></span>` : '';
+
+            $grid.append(`
+            <div class="col-md-6 col-xl-4 course-card-container">
+                <div class="stat-card border-top border-info border-4 shadow-sm h-100 d-flex flex-column bg-white rounded-3 p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge bg-info-subtle text-info rounded-pill px-3">${c.course_code}</span>
+                        <small class="fw-bold text-muted">${c.credits} Units</small>
+                    </div>
+                    ${deptBadge}
+                    <h5 class="fw-bold text-dark mt-1" style="min-height:3rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${c.name}</h5>
+                    <p class="text-muted small mb-3" style="min-height:2.5rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${c.description || 'No description available.'}</p>
+                    <div class="bg-light p-3 rounded-3 mb-4 flex-grow-1">
+                        <div class="list-group list-group-flush">${matHtmlList}</div>
+                    </div>
+                    <div class="mt-auto pt-3 border-top d-flex align-items-center justify-content-between gap-2">
+                        <button class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-bold upload-btn" data-course-id="${c.course_id}" data-course-name="${safeName}">Upload</button>
+                        <div class="d-flex gap-2">
+                            <button class="btn-edit-course edit-course-btn" data-id="${c.course_id}" data-code="${safeCode}" data-name="${safeName}" data-credits="${c.credits}" data-desc="${safeDesc}" data-dept="${deptId}"><i class="fas fa-edit"></i></button>
+                            <button class="btn-archive-course" onclick="archiveCourse(${c.course_id})"><i class="fas fa-archive"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>`);
+
+            $list.append(`
+            <tr class="course-table-row">
+                <td class="ps-4">
+                    <span class="badge bg-info-subtle text-info rounded-pill px-2 mb-1">${c.course_code}</span>
+                    <div class="fw-bold text-dark mt-1">${c.name}</div>
+                    ${deptName ? `<span class="badge bg-secondary-subtle text-secondary mt-1" style="font-size:.65rem;">${deptName}</span>` : ''}
+                </td>
+                <td><p class="text-muted mb-0 small" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">${c.description || 'No description.'}</p></td>
+                <td><div class="bg-light p-2 rounded-3 border">${matHtmlList}</div></td>
+                <td class="text-end pe-4 align-middle">
+                    <div class="d-flex flex-column gap-2 align-items-end">
+                        <button class="btn-edit-course edit-course-btn" data-id="${c.course_id}" data-code="${safeCode}" data-name="${safeName}" data-credits="${c.credits}" data-desc="${safeDesc}" data-dept="${deptId}"><i class="fas fa-edit me-1"></i> Edit</button>
+                        <button type="button" class="btn-archive-course" onclick="archiveCourse(${c.course_id})"><i class="fas fa-archive me-1"></i> Archive</button>
+                    </div>
+                </td>
+            </tr>`);
+        });
+
+        updatePaginationUI(total);
+    }
+
+    function updatePaginationUI(totalItems) {
+        const totalPages = Math.ceil(totalItems / _itemsPerPage) || 1;
+        $('#paginationInfo').text(`Page ${_currentPage} of ${totalPages}`);
+
+        let html = `<button class="page-btn" ${_currentPage === 1 ? 'disabled' : ''} onclick="changePage(${_currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
+
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= _currentPage - 1 && i <= _currentPage + 1)) {
+                html += `<button class="page-btn ${i === _currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+            } else if (i === _currentPage - 2 || i === _currentPage + 2) {
+                html += `<span class="px-2 text-muted">...</span>`;
+            }
+        }
+
+        html += `<button class="page-btn" ${_currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${_currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
+
+        $('#paginationControls').html(html);
+    }
+
+    window.changePage = function(p) {
+        _currentPage = p;
+        renderTablePage();
+        $('#gridView, .table-scroll-wrapper').scrollTop(0); // Scroll wrappers to top
+    };
+
+    // ── FORM SUBMISSIONS ──
     function handleAddSubmit(e) {
         e.preventDefault();
         const data = {
@@ -335,7 +486,6 @@ $(document).ready(function() {
         });
     }
 
-    // ── UI RENDERING & FILTERING ──
     function populateFilters(units, departments) {
         let uHtml = '<option value="">All Units</option>';
         (units || []).forEach(u => uHtml += `<option value="${u}">${u} Units</option>`);
@@ -355,131 +505,6 @@ $(document).ready(function() {
         $('#courseDeptFilter').html(filterHtml);
         if (currentSelection) $('#courseDeptFilter').val(currentSelection);
     }
-
-    function renderCourses(data) {
-        const $grid = $('#gridView');
-        const $list = $('#courseTableBody');
-        $grid.empty();
-        $list.empty();
-
-        data.forEach(c => {
-            const items = c.resources || c.materials || [];
-            const hasMats = items.length > 0 ? 'has' : 'none';
-
-            const safeName = (c.name || '').replace(/'/g, "&apos;");
-            const safeCode = (c.course_code || '').replace(/'/g, "&apos;");
-            const safeDesc = (c.description || '').replace(/'/g, "&apos;");
-            const deptId = (c.department_id || '').toString();
-            const deptName = c.dept_name || '';
-
-            let matHtmlList = '';
-            if (items.length > 0) {
-                items.forEach(f => {
-                    matHtmlList += `
-                    <div class="resource-item res-item-${f.resource_id} d-flex justify-content-between align-items-center py-1">
-                        <span onclick="viewFile('${f.file_path}', '${f.file_name.replace(/'/g, "\\'")}')" class="file-link flex-grow-1 pe-2" style="font-size:.75rem;">
-                            <i class="fas fa-file-alt me-1 text-danger"></i>${f.file_name}
-                        </span>
-                        <button class="btn btn-link text-danger p-0 ms-2" onclick="deleteResource(${f.resource_id}, '${f.file_name.replace(/'/g, "\\'")}', this)"><i class="fas fa-times-circle"></i></button>
-                    </div>`;
-                });
-            } else {
-                matHtmlList = `<div class="text-muted small fst-italic py-1">No materials yet.</div>`;
-            }
-
-            const deptBadge = deptName ? `<span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 mb-2 d-inline-flex align-items-center text-truncate" style="font-size:.65rem;max-width:100%;overflow:hidden;"><i class="fas fa-building me-1 flex-shrink-0"></i><span class="text-truncate" title="${deptName}">${deptName}</span></span>` : '';
-
-            const attrString = `
-                data-name="${c.name.toLowerCase()}"
-                data-code="${c.course_code.toLowerCase()}"
-                data-deptname="${deptName.toLowerCase()}"
-                data-units="${c.credits}"
-                data-materials="${hasMats}"
-                data-dept="${deptId}"
-            `;
-
-            $grid.append(`
-            <div class="col-md-6 col-xl-4 course-card-container" ${attrString}>
-                <div class="stat-card border-top border-info border-4 shadow-sm h-100 d-flex flex-column bg-white rounded-3 p-4">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <span class="badge bg-info-subtle text-info rounded-pill px-3">${c.course_code}</span>
-                        <small class="fw-bold text-muted">${c.credits} Units</small>
-                    </div>
-                    ${deptBadge}
-                    <h5 class="fw-bold text-dark mt-1" style="min-height:3rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${c.name}</h5>
-                    <p class="text-muted small mb-3" style="min-height:2.5rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${c.description || 'No description available.'}</p>
-                    <div class="bg-light p-3 rounded-3 mb-4 flex-grow-1">
-                        <div class="list-group list-group-flush">${matHtmlList}</div>
-                    </div>
-                    <div class="mt-auto pt-3 border-top d-flex align-items-center justify-content-between gap-2">
-                        <button class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-bold upload-btn" data-course-id="${c.course_id}" data-course-name="${safeName}">Upload</button>
-                        <div class="d-flex gap-2">
-                            <button class="btn-edit-course edit-course-btn" data-id="${c.course_id}" data-code="${safeCode}" data-name="${safeName}" data-credits="${c.credits}" data-desc="${safeDesc}" data-dept="${deptId}"><i class="fas fa-edit"></i></button>
-                            <button class="btn-archive-course" onclick="archiveCourse(${c.course_id})"><i class="fas fa-archive"></i></button>
-                        </div>
-                    </div>
-                </div>
-            </div>`);
-
-            $list.append(`
-            <tr class="course-table-row" ${attrString}>
-                <td class="ps-4">
-                    <span class="badge bg-info-subtle text-info rounded-pill px-2 mb-1">${c.course_code}</span>
-                    <div class="fw-bold text-dark mt-1">${c.name}</div>
-                    ${deptName ? `<span class="badge bg-secondary-subtle text-secondary mt-1" style="font-size:.65rem;">${deptName}</span>` : ''}
-                </td>
-                <td><p class="text-muted mb-0 small" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">${c.description || 'No description.'}</p></td>
-                <td><div class="bg-light p-2 rounded-3 border">${matHtmlList}</div></td>
-                <td class="text-end pe-4 align-middle">
-                    <div class="d-flex flex-column gap-2 align-items-end">
-                        <button class="btn-edit-course edit-course-btn" data-id="${c.course_id}" data-code="${safeCode}" data-name="${safeName}" data-credits="${c.credits}" data-desc="${safeDesc}" data-dept="${deptId}"><i class="fas fa-edit me-1"></i> Edit</button>
-                        <button type="button" class="btn-archive-course" onclick="archiveCourse(${c.course_id})"><i class="fas fa-archive me-1"></i> Archive</button>
-                    </div>
-                </td>
-            </tr>`);
-        });
-
-        filterCourses();
-    }
-
-    function filterCourses() {
-        const q = $('#courseSearch').val().toLowerCase().trim();
-        const unit = $('#courseUnitsFilter').val() ? $('#courseUnitsFilter').val().toString() : '';
-        const mat = $('#courseMaterialFilter').val();
-        const activeDept = $('#courseDeptFilter').val() ? $('#courseDeptFilter').val().toString() : '';
-
-        let visibleCount = 0;
-
-        $('.course-card-container, .course-table-row').each(function() {
-            const $el = $(this);
-
-            const nameAttr = $el.attr('data-name') || '';
-            const codeAttr = $el.attr('data-code') || '';
-            const deptNameAttr = $el.attr('data-deptname') || '';
-
-            const unitAttr = ($el.attr('data-units') || '').toString();
-            const matAttr = $el.attr('data-materials') || '';
-            const deptAttr = ($el.attr('data-dept') || '').toString();
-
-            const matchesSearch = !q || nameAttr.includes(q) || codeAttr.includes(q) || deptNameAttr.includes(q);
-            const matchesUnit = !unit || unitAttr === unit;
-            const matchesMat = !mat || matAttr === mat;
-            const matchesDept = !activeDept || deptAttr === activeDept;
-
-            const isVisible = matchesSearch && matchesUnit && matchesMat && matchesDept;
-            $el.toggleClass('hidden', !isVisible);
-
-            if (isVisible && $el.hasClass('course-card-container')) visibleCount++;
-        });
-
-        $('#courseCountNum').text(visibleCount);
-
-        const currentView = localStorage.getItem('courseViewPref') || 'grid';
-        $('#noResultsGrid').toggleClass('show', visibleCount === 0 && currentView === 'grid');
-        $('#noResultsList').toggleClass('show', visibleCount === 0 && currentView === 'list');
-    }
-
-    window.applyCourseFilters = filterCourses;
 
     function showToast(msg, type) {
         $('#toast').remove();

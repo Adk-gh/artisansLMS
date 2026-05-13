@@ -9,7 +9,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
-        body { font-family: 'Sora', sans-serif; background: #f0f2f7; overflow: hidden; /* Prevent body scroll */ }
+        /* ── Layout Constraint (Freezes the page) ── */
+        html, body { height: 100%; margin: 0; overflow: hidden; }
+        body { font-family: 'Sora', sans-serif; background: #f0f2f7; display: flex; flex-direction: column; }
+
+        #content { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 1.5rem !important; }
 
         .page-strip { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; gap:16px; flex-wrap:wrap; }
         .page-strip h4 { font-size:1.25rem; font-weight:800; color:#0f172a; margin:0; }
@@ -87,7 +92,6 @@
             letter-spacing: .9px;
             color: #94a3b8;
             padding: 14px 20px;
-            /* Box-shadow replaces border-bottom for sticky elements to avoid gaps */
             border-bottom: none !important;
             box-shadow: inset 0 -2px 0 #f1f5f9;
         }
@@ -112,6 +116,21 @@
         .empty-state { padding:60px 20px; text-align:center; }
         .empty-state i { font-size:2.5rem; color:#e2e8f0; margin-bottom:12px; }
         .empty-state p { color:#94a3b8; font-size:.85rem; margin:0; }
+
+        /* ── Pagination ── */
+        .pagination-bar {
+            background: #fff; border-top: 1px solid #e9ecef;
+            padding: 12px 20px; display: flex; align-items: center; justify-content: space-between;
+            flex-shrink: 0; margin-top: auto;
+        }
+        .page-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0;
+            background: #fff; font-size: .75rem; font-weight: 700; cursor: pointer; transition: .2s;
+        }
+        .page-btn.active { background: #1e293b; color: #fff; border-color: #1e293b; }
+        .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .page-btn:hover:not(.active):not(:disabled) { background: #f1f5f9; }
 
         /* Modal */
         .modal-content { border:none; border-radius:20px; overflow:hidden; font-family:'Sora',sans-serif; }
@@ -143,7 +162,7 @@
     <div id="header-placeholder"></div>
 
     <!-- MAIN WRAPPER: Flex layout to constrain height to viewport -->
-    <main class="p-4 p-md-5 d-flex flex-column" style="height: calc(100vh - 80px);">
+    <main class="p-4 p-md-5 d-flex flex-column">
 
         <!-- flex-shrink-0 prevents headers from compressing -->
         <div class="page-strip fade-up fd-1 flex-shrink-0" style="display:flex; justify-content:flex-end;">
@@ -209,6 +228,13 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Pagination Footer (Sticks to bottom of the card) -->
+            <div class="pagination-bar">
+                <div class="small fw-bold text-muted" id="paginationInfo">Page 1 of 1</div>
+                <div class="d-flex gap-1" id="paginationControls"></div>
+            </div>
+
         </div>
     </main>
 </div>

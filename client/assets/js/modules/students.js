@@ -11,6 +11,12 @@ $(document).ready(function() {
     let activeGender  = 'all';
     let activeDept    = '';          // '' = All Departments
 
+    // Global Data State for Pagination
+    let _allStudentsRaw = [];
+    let _filteredStudents = [];
+    let _currentPage = 1;
+    const _itemsPerPage = 50;
+
     // Avatar Colors array matching the PHP original
     const avatar_colors = ['#0ea5e9','#22c55e','#f59e0b','#f43f5e','#8b5cf6','#06b6d4','#ec4899','#14b8a6','#f97316','#6366f1'];
 
@@ -35,14 +41,12 @@ $(document).ready(function() {
         $('.filter-chip').removeClass('active');
         $(el).addClass('active');
         activeGender = gender;
-        applyFilters($('#studentSearch').val().toLowerCase().trim());
+        applyFilters();
     };
 
-    // Department dropdown filter
+    // Department dropdown filter (triggers backend query)
     $('#studentDeptFilter').on('change', function() {
         activeDept = $(this).val();
-        // Re-fetch with server-side dept filter for accuracy,
-        // then client-side gender/search still applies
         fetchStudents(activeDept);
     });
 
@@ -84,7 +88,8 @@ $(document).ready(function() {
                 if (json.status === 'success') {
                     renderStats(json.stats);
                     populateDeptFilter(json.departments);
-                    renderTable(json.data);
+                    _allStudentsRaw = json.data || [];
+                    applyFilters(); // Triggers renderTablePage
                 } else {
                     showToast(json.message || "Failed to load students.", "error");
                 }
@@ -184,13 +189,8 @@ $(document).ready(function() {
         $('#statNew').text(stats.new);
     }
 
-    /**
-     * Populate the department dropdown once on first load.
-     * Preserves the currently-selected value if the dropdown is already built.
-     */
     function populateDeptFilter(departments) {
         const $sel = $('#studentDeptFilter');
-        // Only rebuild if empty (first load) to avoid resetting user selection
         if ($sel.find('option').length > 1) return;
 
         let html = '<option value="">All Departments</option>';
@@ -198,132 +198,157 @@ $(document).ready(function() {
             html += `<option value="${d.department_id}">${d.name}</option>`;
         });
         $sel.html(html);
-        // Restore active selection
         if (activeDept) $sel.val(activeDept);
     }
 
-function renderTable(students) {
-    const $tbody = $('#studentBody');
-    $tbody.empty();
-
-    const isAdmin = (sessionStorage.getItem('sb_role') || '').toLowerCase() === 'admin';
-
-    if (students.length === 0) {
-        $tbody.html(`
-            <tr><td colspan="${isAdmin ? 7 : 6}">
-                <div class="empty-state">
-                    <i class="fas fa-user-graduate d-block mb-2"></i>
-                    <p>No students found.</p>
-                </div>
-            </td></tr>
-        `);
-        updateStudentCount(0);
-        return;
-    }
-
-    let html = '';
-    students.forEach((row, i) => {
-        const first    = row.first_name || '';
-        const last     = row.last_name  || '';
-        const initials = ((first.charAt(0) || '') + (last.charAt(0) || '')).toUpperCase();
-        const col      = avatar_colors[i % avatar_colors.length];
-
-        let g      = (row.gender || '').toLowerCase();
-        const gkey   = { m: 'm', male: 'm', f: 'f', female: 'f' }[(row.gender || '').toLowerCase()] || 'other';
-        const glabel = { m: 'Male', f: 'Female' }[gkey] || (row.gender ? row.gender.charAt(0).toUpperCase() + row.gender.slice(1) : '—');
-        const gbg    = { m: 'background:#dbeafe;color:#1d4ed8;', f: 'background:#fce7f3;color:#be185d;', other: 'background:#f1f5f9;color:#475569;' }[gkey];
-        const gstyle = `${gbg} display:inline-block; min-width:60px; text-align:center; padding:2px 8px; border-radius:999px;`;
-
-        const dateStr  = row.enrollment_date
-            ? new Date(row.enrollment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-            : '—';
-        const paddedId = String(row.student_id).padStart(4, '0');
-
-        // Department display
-        const deptLabel = row.dept_name || '—';
-       const deptHtml = row.dept_name
-    ? `<span class="badge bg-light text-dark border text-truncate d-inline-block" style="font-size:.72rem;max-width:220px;vertical-align:middle;" title="${deptLabel}">${deptLabel}</span>`
-    : `<span class="text-muted small">—</span>`;
-
-        let actionHtml = '';
-        if (isAdmin) {
-            const safeFname = first.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
-            const safeLname = last.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
-            const safeEmail = (row.email || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
-
-           // TO:
-actionHtml = `
-    <td class="text-end pe-4">
-        <div class="d-flex gap-2 justify-content-end">
-            <button class="btn-edit"
-                style="width:34px;height:34px;padding:0;justify-content:center;"
-                data-bs-toggle="modal" data-bs-target="#editStudentModal"
-                data-id="${row.student_id}" data-fname="${safeFname}"
-                data-lname="${safeLname}" data-email="${safeEmail}"
-                data-dob="${row.dob || ''}" data-gender="${row.gender || ''}"
-                title="Edit Student">
-                <i class="fas fa-edit"></i>
-            </button>
-            <button type="button" class="btn-archive"
-                style="width:34px;height:34px;padding:0;justify-content:center;"
-                onclick="archiveStudent(${row.student_id})"
-                title="Archive Student">
-                <i class="fas fa-archive"></i>
-            </button>
-        </div>
-    </td>
-`;
-        }
-
-        html += `
-        <tr data-gender="${gkey}" data-dept="${deptLabel.toLowerCase()}">
-            <td class="ps-4">
-                <div class="d-flex align-items-center">
-                    <div class="stu-avatar" style="background:${col};">${initials}</div>
-                    <div>
-                        <div class="stu-name">${first} ${last}</div>
-                        <div class="stu-id">STU-${paddedId}</div>
-                    </div>
-                </div>
-            </td>
-            <td><span class="stu-email">${row.email || '—'}</span></td>
-            <td>${deptHtml}</td>
-            <td>
-                <span style="font-size:.72rem;font-weight:600;padding:3px 9px;border-radius:6px;display:inline-block;min-width:60px;text-align:center;${gbg}">
-                    ${glabel}
-                </span>
-            </td>
-            <td><span class="stu-date">${dateStr}</span></td>
-            <td><span class="badge-active">Active</span></td>
-            ${actionHtml}
-        </tr>`;
-    });
-
-    $tbody.html(html);
-    applyFilters($('#studentSearch').val().toLowerCase().trim());
-}
-
+    // ── FILTERING & PAGINATION ──
     function applyFilters(q) {
-    let visible = 0;
-    $('#studentBody tr[data-gender]').each(function() {
-        const $row        = $(this);
-        const textMatch   = !q || $row.text().toLowerCase().includes(q);
-        const genderMatch = activeGender === 'all' || $row.attr('data-gender') === activeGender;
+        if (q === undefined) q = $('#studentSearch').val().toLowerCase().trim();
 
-        // Department is handled server-side by fetchStudents(deptId) — no client check needed
-        if (textMatch && genderMatch) {
-            $row.show();
-            visible++;
-        } else {
-            $row.hide();
-        }
-    });
-    updateStudentCount(visible);
-}
+        _filteredStudents = _allStudentsRaw.filter(row => {
+            const searchStr = `${row.first_name || ''} ${row.last_name || ''} ${row.email || ''} STU-${String(row.student_id).padStart(4, '0')} ${row.dept_name || ''}`.toLowerCase();
+            const textMatch = !q || searchStr.includes(q);
 
-    function updateStudentCount(n) {
-        $('#studentCountNum').text(n);
+            let g = (row.gender || '').toLowerCase();
+            let gkey = { m: 'm', male: 'm', f: 'f', female: 'f' }[g] || 'other';
+            const genderMatch = activeGender === 'all' || gkey === activeGender;
+
+            return textMatch && genderMatch;
+        });
+
+        _currentPage = 1;
+        renderTablePage();
     }
+
+    function renderTablePage() {
+        const $tbody = $('#studentBody');
+        $tbody.empty();
+
+        const isAdmin = (sessionStorage.getItem('sb_role') || '').toLowerCase() === 'admin';
+        const total = _filteredStudents.length;
+
+        $('#studentCountNum').text(total);
+
+        if (total === 0) {
+            $tbody.html(`
+                <tr><td colspan="${isAdmin ? 7 : 6}">
+                    <div class="empty-state">
+                        <i class="fas fa-user-graduate d-block mb-2"></i>
+                        <p>No students found.</p>
+                    </div>
+                </td></tr>
+            `);
+            updatePaginationUI(0);
+            return;
+        }
+
+        const start = (_currentPage - 1) * _itemsPerPage;
+        const pageData = _filteredStudents.slice(start, start + _itemsPerPage);
+
+        let html = '';
+        pageData.forEach((row, i) => {
+            const first    = row.first_name || '';
+            const last     = row.last_name  || '';
+            const initials = ((first.charAt(0) || '') + (last.charAt(0) || '')).toUpperCase();
+
+            // Generate stable colors based on full array index
+            const col = avatar_colors[(start + i) % avatar_colors.length];
+
+            let g      = (row.gender || '').toLowerCase();
+            const gkey   = { m: 'm', male: 'm', f: 'f', female: 'f' }[(row.gender || '').toLowerCase()] || 'other';
+            const glabel = { m: 'Male', f: 'Female' }[gkey] || (row.gender ? row.gender.charAt(0).toUpperCase() + row.gender.slice(1) : '—');
+            const gbg    = { m: 'background:#dbeafe;color:#1d4ed8;', f: 'background:#fce7f3;color:#be185d;', other: 'background:#f1f5f9;color:#475569;' }[gkey];
+
+            const dateStr  = row.enrollment_date
+                ? new Date(row.enrollment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : '—';
+            const paddedId = String(row.student_id).padStart(4, '0');
+
+            const deptLabel = row.dept_name || '—';
+            const deptHtml = row.dept_name
+                ? `<span class="badge bg-light text-dark border text-truncate d-inline-block" style="font-size:.72rem;max-width:220px;vertical-align:middle;" title="${deptLabel}">${deptLabel}</span>`
+                : `<span class="text-muted small">—</span>`;
+
+            let actionHtml = '';
+            if (isAdmin) {
+                const safeFname = first.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+                const safeLname = last.replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+                const safeEmail = (row.email || '').replace(/'/g, "&apos;").replace(/"/g, "&quot;");
+
+                actionHtml = `
+                <td class="text-end pe-4">
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button class="btn-edit"
+                            style="width:34px;height:34px;padding:0;justify-content:center;"
+                            data-bs-toggle="modal" data-bs-target="#editStudentModal"
+                            data-id="${row.student_id}" data-fname="${safeFname}"
+                            data-lname="${safeLname}" data-email="${safeEmail}"
+                            data-dob="${row.dob || ''}" data-gender="${row.gender || ''}"
+                            title="Edit Student">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn-archive"
+                            style="width:34px;height:34px;padding:0;justify-content:center;"
+                            onclick="archiveStudent(${row.student_id})"
+                            title="Archive Student">
+                            <i class="fas fa-archive"></i>
+                        </button>
+                    </div>
+                </td>`;
+            }
+
+            html += `
+            <tr>
+                <td class="ps-4">
+                    <div class="d-flex align-items-center">
+                        <div class="stu-avatar" style="background:${col};">${initials}</div>
+                        <div>
+                            <div class="stu-name">${first} ${last}</div>
+                            <div class="stu-id">STU-${paddedId}</div>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="stu-email">${row.email || '—'}</span></td>
+                <td>${deptHtml}</td>
+                <td>
+                    <span style="font-size:.72rem;font-weight:600;padding:3px 9px;border-radius:6px;display:inline-block;min-width:60px;text-align:center;${gbg}">
+                        ${glabel}
+                    </span>
+                </td>
+                <td><span class="stu-date">${dateStr}</span></td>
+                <td><span class="badge-active">Active</span></td>
+                ${actionHtml}
+            </tr>`;
+        });
+
+        $tbody.html(html);
+        updatePaginationUI(total);
+    }
+
+    function updatePaginationUI(totalItems) {
+        const totalPages = Math.ceil(totalItems / _itemsPerPage) || 1;
+        $('#paginationInfo').text(`Page ${_currentPage} of ${totalPages}`);
+
+        let html = `<button class="page-btn" ${_currentPage === 1 ? 'disabled' : ''} onclick="changePage(${_currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
+
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= _currentPage - 1 && i <= _currentPage + 1)) {
+                html += `<button class="page-btn ${i === _currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+            } else if (i === _currentPage - 2 || i === _currentPage + 2) {
+                html += `<span class="px-2 text-muted small">...</span>`;
+            }
+        }
+
+        html += `<button class="page-btn" ${_currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${_currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
+
+        $('#paginationControls').html(html);
+    }
+
+    window.changePage = function(p) {
+        _currentPage = p;
+        renderTablePage();
+        $('.table-scroll-wrapper').scrollTop(0); // Scroll table back to top
+    };
 
     function showToast(msg, type) {
         $('#toast').remove();

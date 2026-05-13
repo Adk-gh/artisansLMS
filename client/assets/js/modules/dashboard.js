@@ -4,11 +4,12 @@ const API = 'https://artisanslms.onrender.com/backend/index.php';
 
 $(document).ready(function () {
 
-    $("#sidebar-container").load("/client/components/sidebar.html", function (res, status, xhr) {
+    // Fix: Using the correct IDs from the updated HTML
+    $("#sidebar-placeholder").load("/client/components/sidebar.html", function (res, status, xhr) {
         if (status === 'error') console.error('Sidebar failed:', xhr.status, xhr.statusText);
     });
 
-    $("#header-container").load("/client/components/header.html", function (res, status, xhr) {
+    $("#header-placeholder").load("/client/components/header.html", function (res, status, xhr) {
         if (status === 'error') {
             console.error('Header failed:', xhr.status, xhr.statusText);
             return;

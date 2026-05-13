@@ -10,12 +10,16 @@ $(document).ready(function () {
 
     const API_URL = '../../backend/endpoints/instructors.php';
 
-    let instructorsData = [];
-    let currentView     = localStorage.getItem('instructorViewPref') || 'grid';
+    // ── Global Pagination State ──────────────────────────────────────────────
+    let _allInstructorsRaw = [];
+    let _filteredInstructors = [];
+    let _currentPage = 1;
+    const _itemsPerPage = 50;
+
+    let currentView = localStorage.getItem('instructorViewPref') || 'grid';
 
     // ── Initial load ────────────────────────────────────────────────────────
     fetchInstructors();
-    applyView(currentView);
 
     // ── Filter listeners ────────────────────────────────────────────────────
     $('#instSearch').on('input', filterInstructors);
@@ -23,9 +27,6 @@ $(document).ready(function () {
     $('#instClassFilter').on('change', filterInstructors);
 
     // ── Refresh button ──────────────────────────────────────────────────────
-    // ✅ FIX: The old 'sync_hris' action never existed on the backend.
-    //    This system is push-only — HRIS pushes to LMS automatically.
-    //    The button now simply refreshes the local view from the LMS database.
     $('#btnSyncHris').on('click', function () {
         const $btn        = $(this);
         const originalHtml = $btn.html();
@@ -43,10 +44,6 @@ $(document).ready(function () {
     // API CALLS
     // ════════════════════════════════════════════════════════════════════════
 
-    /**
-     * Fetches all instructors from the LMS database.
-     * @param {Function} [onComplete] - Optional callback after data is loaded.
-     */
     function fetchInstructors(onComplete) {
         $.ajax({
             url     : `${API_URL}?action=get_all`,
@@ -54,9 +51,12 @@ $(document).ready(function () {
             dataType: 'json',
             success : function (json) {
                 if (json.status === 'success') {
-                    instructorsData = json.data;
+                    _allInstructorsRaw = json.data || [];
                     populateSelects(json.departments);
-                    renderInstructors(json.data);
+
+                    // Automatically applies filters and renders page 1
+                    filterInstructors();
+
                     if (typeof onComplete === 'function') onComplete();
                 } else {
                     showToast(json.message || 'Failed to load instructors.', 'error');
@@ -134,67 +134,95 @@ $(document).ready(function () {
     // VIEW TOGGLE
     // ════════════════════════════════════════════════════════════════════════
 
-    function applyView(viewType) {
+    window.toggleView = function (viewType) {
         currentView = viewType;
         localStorage.setItem('instructorViewPref', viewType);
 
         if (viewType === 'list') {
             $('#gridView').hide();
-            $('#noResultsGrid').removeClass('show').hide();
             $('#tableView').show();
             $('#btnGrid').removeClass('active');
             $('#btnList').addClass('active');
         } else {
             $('#tableView').hide();
-            $('#noResultsList').removeClass('show').hide();
-            $('#gridView').css('display', 'flex');
+            $('#gridView').css('display', 'block'); // Must be block for padding wrapper
             $('#btnList').removeClass('active');
             $('#btnGrid').addClass('active');
         }
-    }
 
-    window.toggleView = function (viewType) {
-        applyView(viewType);
-        filterInstructors();
+        // Ensure empty state matches current view bounds
+        toggleEmptyState();
     };
 
-    // ════════════════════════════════════════════════════════════════════════
-    // DOM RENDERING
-    // ════════════════════════════════════════════════════════════════════════
-
-    function populateSelects(depts) {
-        let html = '<option value="">All Departments</option>';
-        depts.forEach(d => {
-            html += `<option value="${d.name.toLowerCase()}">${d.name}</option>`;
-        });
-        $('#instDeptFilter').html(html);
+    function toggleEmptyState() {
+        if (_filteredInstructors.length === 0) {
+            $('#noResultsMsg').show();
+            $('#gridView, #tableView').hide();
+        } else {
+            $('#noResultsMsg').hide();
+            window.toggleView(currentView); // Restores correct view display state
+        }
     }
 
-    function renderInstructors(data) {
-        const $grid  = $('#gridView');
-        const $tbody = $('#instTableBody');
-        $grid.empty();
+    // ════════════════════════════════════════════════════════════════════════
+    // FILTERING & PAGINATION
+    // ════════════════════════════════════════════════════════════════════════
+
+    function filterInstructors() {
+        const q     = $('#instSearch').val().toLowerCase().trim();
+        const dept  = $('#instDeptFilter').val().toLowerCase();
+        const clsF  = $('#instClassFilter').val();
+
+        _filteredInstructors = _allInstructorsRaw.filter(row => {
+            const name  = (`${row.first_name} ${row.last_name}`).toLowerCase();
+            const email = (row.email || '').toLowerCase();
+            const deptVal = (row.dept_name || '').toLowerCase();
+            const classes = parseInt(row.class_count) || 0;
+
+            const nameOk = !q || name.includes(q) || email.includes(q) || deptVal.includes(q);
+            const deptOk = !dept || deptVal === dept;
+            let   clsOk  = true;
+
+            if (clsF === '0') clsOk = classes === 0;
+            else if (clsF === '1') clsOk = classes >= 1;
+            else if (clsF === '3') clsOk = classes >= 3;
+
+            return nameOk && deptOk && clsOk;
+        });
+
+        _currentPage = 1;
+        renderTablePage();
+    }
+
+    function renderTablePage() {
+        const $gridContent = $('#gridContent');
+        const $tbody       = $('#instTableBody');
+
+        $gridContent.empty();
         $tbody.empty();
 
-        if (data.length === 0) {
-            $('#instCountNum').text(0);
-            filterInstructors();
+        const total = _filteredInstructors.length;
+        $('#instCountNum').text(total);
+
+        toggleEmptyState();
+
+        if (total === 0) {
+            updatePaginationUI(0);
             return;
         }
+
+        const start = (_currentPage - 1) * _itemsPerPage;
+        const pageData = _filteredInstructors.slice(start, start + _itemsPerPage);
 
         let gridHtml = '';
         let listHtml = '';
 
-        data.forEach(row => {
-            const nameLower  = `${row.first_name} ${row.last_name}`.toLowerCase();
-            const emailLower = (row.email    || '').toLowerCase();
-            const deptLower  = (row.dept_name || '').toLowerCase();
-
+        pageData.forEach(row => {
             const safeFname  = (row.first_name || '').replace(/'/g, '&apos;').replace(/"/g, '&quot;');
             const safeLname  = (row.last_name  || '').replace(/'/g, '&apos;').replace(/"/g, '&quot;');
             const avatarUrl  = `https://ui-avatars.com/api/?name=${encodeURIComponent(row.first_name + '+' + row.last_name)}&background=0ea5e9&color=fff&bold=true`;
 
-            // Normalise gender display (handle both 'M'/'F' and full strings)
+            // Normalise gender display
             let genderStr = '—';
             const g = (row.gender || '').toLowerCase();
             if (g === 'm' || g === 'male')   genderStr = 'Male';
@@ -207,11 +235,7 @@ $(document).ready(function () {
 
             // ── Grid card ──────────────────────────────────────────────────
             gridHtml += `
-            <div class="col-12 col-sm-6 col-xl-4 inst-card-col"
-                 data-name="${nameLower}"
-                 data-email="${emailLower}"
-                 data-dept="${deptLower}"
-                 data-classes="${row.class_count}">
+            <div class="col-12 col-sm-6 col-xl-4 inst-card-col">
                 <div class="faculty-card shadow-sm h-100 p-4 bg-white rounded-4 d-flex flex-column">
                     <div class="d-flex align-items-center mb-3">
                         <img src="${avatarUrl}&size=80"
@@ -267,11 +291,7 @@ $(document).ready(function () {
 
             // ── List row ───────────────────────────────────────────────────
             listHtml += `
-            <tr class="inst-table-row"
-                data-name="${nameLower}"
-                data-email="${emailLower}"
-                data-dept="${deptLower}"
-                data-classes="${row.class_count}">
+            <tr class="inst-table-row">
                 <td class="ps-4">
                     <div class="d-flex align-items-center gap-2">
                         <img src="${avatarUrl}&size=40"
@@ -305,56 +325,43 @@ $(document).ready(function () {
             </tr>`;
         });
 
-        $grid.html(gridHtml);
+        $gridContent.html(gridHtml);
         $tbody.html(listHtml);
 
-        applyView(currentView);
-        filterInstructors();
+        updatePaginationUI(total);
     }
 
-    // ════════════════════════════════════════════════════════════════════════
-    // FILTERING
-    // ════════════════════════════════════════════════════════════════════════
+    function updatePaginationUI(totalItems) {
+        const totalPages = Math.ceil(totalItems / _itemsPerPage) || 1;
+        $('#paginationInfo').text(`Page ${_currentPage} of ${totalPages}`);
 
-    function filterInstructors() {
-        const q     = $('#instSearch').val().toLowerCase().trim();
-        const dept  = $('#instDeptFilter').val().toLowerCase();
-        const clsF  = $('#instClassFilter').val();
-        let visible = 0;
+        let html = `<button class="page-btn" ${_currentPage === 1 ? 'disabled' : ''} onclick="changePage(${_currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
 
-        function matches($el) {
-            const name    = $el.attr('data-name')    || '';
-            const email   = $el.attr('data-email')   || '';
-            const deptVal = $el.attr('data-dept')    || '';
-            const classes = parseInt($el.attr('data-classes')) || 0;
-
-            const nameOk = !q    || name.includes(q) || email.includes(q) || deptVal.includes(q);
-            const deptOk = !dept || deptVal === dept;
-            let   clsOk  = true;
-            if      (clsF === '0') clsOk = classes === 0;
-            else if (clsF === '1') clsOk = classes >= 1;
-            else if (clsF === '3') clsOk = classes >= 3;
-
-            return nameOk && deptOk && clsOk;
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= _currentPage - 1 && i <= _currentPage + 1)) {
+                html += `<button class="page-btn ${i === _currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+            } else if (i === _currentPage - 2 || i === _currentPage + 2) {
+                html += `<span class="px-2 text-muted small">...</span>`;
+            }
         }
 
-        $('.inst-card-col').each(function () {
-            const show = matches($(this));
-            $(this).toggleClass('hidden', !show);
-            if (show) visible++;
+        html += `<button class="page-btn" ${_currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${_currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
+
+        $('#paginationControls').html(html);
+    }
+
+    window.changePage = function(p) {
+        _currentPage = p;
+        renderTablePage();
+        $('.faculty-container-wrapper').scrollTop(0);
+    };
+
+    function populateSelects(depts) {
+        let html = '<option value="">All Departments</option>';
+        (depts || []).forEach(d => {
+            html += `<option value="${d.name.toLowerCase()}">${d.name}</option>`;
         });
-
-        $('.inst-table-row').each(function () {
-            $(this).toggleClass('hidden', !matches($(this)));
-        });
-
-        $('#instCountNum').text(visible);
-
-        if (currentView === 'grid') {
-            $('#noResultsGrid').toggleClass('show', visible === 0).toggle(visible === 0);
-        } else {
-            $('#noResultsList').toggleClass('show', visible === 0).toggle(visible === 0);
-        }
+        $('#instDeptFilter').html(html);
     }
 
     // ════════════════════════════════════════════════════════════════════════
