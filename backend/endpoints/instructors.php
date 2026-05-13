@@ -1,24 +1,20 @@
 <?php
 /**
  * LMS — instructors.php  (backend/endpoints/instructors.php)
- * REST endpoint consumed by instructors.js on the admin panel.
- *
- * FIX LOG
- * -------
- * 1. Removed dead 'sync_hris' action (JS was calling it; it never existed).
- *    Now returns a clear 400 so the button failure is obvious during debugging.
- *    The JS btnSyncHris handler has been updated in instructors.js to simply
- *    call get_all (refresh), which is the correct behaviour for a push-only system.
- * 2. All queries use prepared statements throughout.
  */
 
 error_reporting(0);
 ini_set('display_errors', 0);
 
+// Safely load Composer dependencies (so it doesn't crash get_all if missing on Render)
+$autoload_path = __DIR__ . '/../../vendor/autoload.php';
+if (file_exists($autoload_path)) {
+    require_once $autoload_path;
+}
+
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../../server/config/db.php';
 require_once __DIR__ . '/../middleware/json_response.php';
 
@@ -33,7 +29,7 @@ $action = $_GET['action'] ?? '';
 
 switch ($action) {
 
-    // ── GET ALL ───────────────────────────────────────────────────────────────
+    // ── GET ALL (Reverted to your working version) ────────────────────────────
     case 'get_all':
         $depts_arr = [];
         $dq = $conn->query("SELECT * FROM departments ORDER BY name ASC");
@@ -50,7 +46,7 @@ switch ($action) {
             LEFT JOIN positions   p ON e.position_id   = p.position_id
             LEFT JOIN departments d ON e.department_id = d.department_id
             WHERE  e.is_faculty  = 1
-            AND  e.is_archived = 0
+              AND  e.is_archived = 0
             ORDER BY e.last_name ASC
         ";
         $res = $conn->query($sql);
@@ -79,7 +75,7 @@ switch ($action) {
         ]);
         break;
 
-    // ── CREATE / UPDATE — blocked (push-only from HRIS) ──────────────────────
+    // ── CREATE / UPDATE ───────────────────────────────────────────────────────
     case 'create':
     case 'update':
         json_response([
@@ -128,8 +124,13 @@ switch ($action) {
         }
         break;
 
+    // ── SEND CREDENTIALS EMAIL (PHPMailer + Render Secure) ────────────────────
+    case 'send_credentials_email':
+        // Check if PHPMailer loaded successfully earlier
+        if (!class_exists('PHPMailer\PHPMailer\PHPMailer')) {
+             json_response(['status' => 'error', 'message' => 'Email server is currently configuring. Please try again later.'], 500);
+        }
 
-        case 'send_credentials_email':
         $body  = json_decode(file_get_contents('php://input'), true);
         $email = filter_var(trim($body['email'] ?? ''), FILTER_VALIDATE_EMAIL);
         $name  = htmlspecialchars(trim($body['name'] ?? 'Instructor'));
@@ -143,24 +144,19 @@ switch ($action) {
         $mail = new PHPMailer(true);
 
         try {
-            // --- Server Settings (Update with your SMTP provider details) ---
             $mail->isSMTP();
             $mail->Host       = 'smtp.gmail.com';
             $mail->SMTPAuth   = true;
-            $mail->Username   = getenv('SMTP_USER');
-            $mail->Password = getenv('SMTP_PASS');
+            $mail->Username   = getenv('SMTP_USER') ?: $_ENV['SMTP_USER'] ?? '';
+            $mail->Password   = getenv('SMTP_PASS') ?: $_ENV['SMTP_PASS'] ?? '';
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
             $mail->Port       = 587;
 
-            // --- Recipients ---
             $mail->setFrom('no-reply@artisanslms.onrender.com', 'Artisans LMS');
             $mail->addAddress($email, $name);
 
-            // --- Content ---
             $mail->isHTML(true);
             $mail->Subject = 'Your Artisans LMS Login Credentials';
-
-            // Your existing HTML template (condensed for brevity)
             $mail->Body = "
             <html>
                 <body style='font-family: Arial; background: #f0f2f7; padding: 20px;'>
@@ -180,8 +176,7 @@ switch ($action) {
             json_response(['status' => 'success', 'message' => 'Email sent via SMTP.']);
 
         } catch (Exception $e) {
-            error_log("PHPMailer Error: {$mail->ErrorInfo}");
-            json_response(['status' => 'error', 'message' => "Mail failed: {$mail->ErrorInfo}"], 500);
+            json_response(['status' => 'error', 'message' => "SMTP Error. Check Render environment variables."], 500);
         }
         break;
 
