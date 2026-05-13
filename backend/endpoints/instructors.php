@@ -133,7 +133,7 @@ switch ($action) {
         $api_key = getenv('BREVO_API_KEY');
 
         $data = [
-            "sender" => ["name" => "Artisans LMS", "email" => "your-verified-gmail@gmail.com"],
+            "sender" => ["name" => "Artisans LMS", "email" => "artisanslms@gmail.com"],
             "to" => [["email" => $email, "name" => $name]],
             "subject" => "Your Artisans LMS Login Credentials",
             "htmlContent" => "<html><body><p>Hello {$name}, your temp password is: <b>{$pass}</b></p></body></html>"
