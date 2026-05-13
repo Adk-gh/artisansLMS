@@ -117,7 +117,7 @@ switch ($action) {
             'status'           => 'success',
             'message'          => 'Password generated.',
             'instructor_name'  => $instructor['first_name'] . ' ' . $instructor['last_name'],
-            'instructor_email' => $instructor['email'], 
+            'instructor_email' => $instructor['email'],
             'temp_password'    => $tmp_pass,
         ]);
         } else {
@@ -151,10 +151,16 @@ switch ($action) {
             $mail->Username   = getenv('SMTP_USER') ?: $_ENV['SMTP_USER'] ?? '';
             $mail->Password   = getenv('SMTP_PASS') ?: $_ENV['SMTP_PASS'] ?? '';
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;
+
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            $mail->Port       = 465;
+
+            
+            $mail->Timeout    = 10;
 
             $mail->setFrom('no-reply@artisanslms.onrender.com', 'Artisans LMS');
             $mail->addAddress($email, $name);
+
 
             $mail->isHTML(true);
             $mail->Subject = 'Your Artisans LMS Login Credentials';
