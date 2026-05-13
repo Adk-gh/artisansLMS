@@ -68,22 +68,35 @@ $(document).ready(function () {
         });
     }
 
-    // ── Generate Temporary Password ─────────────────────────────────────────
-    window.generatePassword = function (employeeId) {
-        if (!confirm('Generate a new temporary password for this instructor?')) return;
+  // ── Generate Temporary Password ─────────────────────────────────────────
+window.generatePassword = function (employeeId) {
+    // 1. Initial Confirmation Modal (Replacing native confirm)
+    Swal.fire({
+        title: 'Generate New Key?',
+        text: "This will override the instructor's current password with a new temporary one.",
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#1e293b',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Yes, generate'
+    }).then((result) => {
+        if (!result.isConfirmed) return;
 
+        // Perform AJAX to generate the password
         $.ajax({
-            url        : `${API_URL}?action=generate_password`,
-            method     : 'POST',
+            url: `${API_URL}?action=generate_password`,
+            method: 'POST',
             contentType: 'application/json',
-            data       : JSON.stringify({ employee_id: employeeId }),
-            dataType   : 'json',
-            success    : function (res) {
+            data: JSON.stringify({ employee_id: employeeId }),
+            dataType: 'json',
+            success: function (res) {
                 if (res.status === 'success') {
+                    // 2. Success Modal with Password and Email Button
                     Swal.fire({
-                        icon : 'success',
+                        icon: 'success',
                         title: 'Login Activated!',
-                        html : `
+                        allowOutsideClick: false, // Prevents closing without finishing
+                        html: `
                             <p>Give these credentials to <strong>${res.instructor_name}</strong>:</p>
                             <div class="p-3 bg-light border rounded mt-3 text-center"
                                  style="font-family:monospace;font-size:1.5rem;letter-spacing:3px;">
@@ -101,60 +114,59 @@ $(document).ready(function () {
                                     data-pass="${res.temp_password}">
                                 <i class="fas fa-envelope me-2"></i>Send Credentials via Email
                             </button>
-                            <div id="swalEmailStatus"></div>`,
+                            <div id="swalEmailStatus" class="mt-2"></div>`,
                         confirmButtonText: 'Done',
+                        confirmButtonColor: '#1e293b',
                         didOpen: () => {
-                            document.getElementById('swalSendEmailBtn').addEventListener('click', function () {
-                                const btn      = this;
-                                const email    = btn.dataset.email;
-                                const name     = btn.dataset.name;
-                                const password = btn.dataset.pass;
-                                const $status  = $('#swalEmailStatus');
+                            // 3. Disable the "Done" button immediately upon opening
+                            const doneBtn = Swal.getConfirmButton();
+                            doneBtn.disabled = true;
 
-                                btn.disabled   = true;
-                                btn.innerHTML  = '<i class="fas fa-spinner fa-spin me-2"></i>Sending…';
+                            // Email Sending Logic
+                            document.getElementById('swalSendEmailBtn').addEventListener('click', function () {
+                                const btn = this;
+                                const email = btn.dataset.email;
+                                const name = btn.dataset.name;
+                                const password = btn.dataset.pass;
+                                const $status = $('#swalEmailStatus');
+
+                                btn.disabled = true;
+                                btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending…';
 
                                 $.ajax({
-                                    url        : `${API_URL}?action=send_credentials_email`,
-                                    method     : 'POST',
+                                    url: `${API_URL}?action=send_credentials_email`,
+                                    method: 'POST',
                                     contentType: 'application/json',
-                                    data       : JSON.stringify({
-                                        employee_id  : employeeId,
-                                        email        : email,
-                                        name         : name,
+                                    data: JSON.stringify({
+                                        employee_id: employeeId,
+                                        email: email,
+                                        name: name,
                                         temp_password: password
                                     }),
                                     dataType: 'json',
-                                    success : function (emailRes) {
+                                    success: function (emailRes) {
                                         if (emailRes.status === 'success') {
                                             btn.innerHTML = '<i class="fas fa-check me-2"></i>Email Sent!';
                                             btn.classList.add('sent');
                                             $status.html(
-                                                `<span class="text-success">
+                                                `<span class="text-success small">
                                                     <i class="fas fa-check-circle me-1"></i>
                                                     Sent to <strong>${email}</strong>
                                                 </span>`
                                             );
+
+                                            // 4. ENABLE the "Done" button now that email is sent
+                                            doneBtn.disabled = false;
                                         } else {
-                                            btn.disabled  = false;
+                                            btn.disabled = false;
                                             btn.innerHTML = '<i class="fas fa-envelope me-2"></i>Send Credentials via Email';
-                                            $status.html(
-                                                `<span class="text-danger">
-                                                    <i class="fas fa-exclamation-circle me-1"></i>
-                                                    ${emailRes.message || 'Failed to send. Try again.'}
-                                                </span>`
-                                            );
+                                            $status.html(`<span class="text-danger small">${emailRes.message}</span>`);
                                         }
                                     },
                                     error: function () {
-                                        btn.disabled  = false;
+                                        btn.disabled = false;
                                         btn.innerHTML = '<i class="fas fa-envelope me-2"></i>Send Credentials via Email';
-                                        $status.html(
-                                            `<span class="text-danger">
-                                                <i class="fas fa-exclamation-circle me-1"></i>
-                                                Server error. Please try again.
-                                            </span>`
-                                        );
+                                        $status.html('<span class="text-danger small">Server error. Try again.</span>');
                                     }
                                 });
                             });
@@ -168,7 +180,8 @@ $(document).ready(function () {
                 Swal.fire('Error', 'Server error while generating password.', 'error');
             }
         });
-    };
+    });
+};
 
     // ── Archive Instructor ──────────────────────────────────────────────────
     window.archiveInstructor = function (id, name, classCount) {
