@@ -123,20 +123,47 @@ switch ($action) {
         break;
 
     // ── SEND CREDENTIALS EMAIL (Resend PHP SDK) ───────────────────────────────
-    case 'send_credentials_email':
+case 'send_credentials_email':
         $body  = json_decode(file_get_contents('php://input'), true);
         $email = filter_var(trim($body['email'] ?? ''), FILTER_VALIDATE_EMAIL);
         $name  = htmlspecialchars(trim($body['name'] ?? 'Instructor'));
         $pass  = htmlspecialchars(trim($body['temp_password'] ?? ''));
+        $link  = 'https://artisanslms.onrender.com';
+
+        if (!$email || !$pass) {
+            json_response(['status' => 'error', 'message' => 'Missing email or password.'], 400);
+        }
 
         // Use the BREVO_API_KEY saved in your Render Environment Variables
-        $api_key = getenv('BREVO_API_KEY');
+        $api_key = getenv('BREVO_API_KEY') ?: ($_ENV['BREVO_API_KEY'] ?? '');
+
+        if (!$api_key) {
+            json_response(['status' => 'error', 'message' => 'Email service configuration missing.'], 500);
+        }
 
         $data = [
-            "sender" => ["name" => "Artisans LMS", "email" => "artisanslms@gmail.com"],
+            "sender" => ["name" => "Artisans LMS", "email" => "artisanslms@gmail.com"], // Replace with your verified Gmail
             "to" => [["email" => $email, "name" => $name]],
             "subject" => "Your Artisans LMS Login Credentials",
-            "htmlContent" => "<html><body><p>Hello {$name}, your temp password is: <b>{$pass}</b></p></body></html>"
+            "htmlContent" => "
+            <html>
+                <body style='font-family: Arial, sans-serif; background: #f0f2f7; padding: 20px; margin: 0;'>
+                    <div style='max-width: 500px; margin: auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);'>
+                        <h2 style='color: #1e293b; margin-top: 0;'>Hello, {$name}!</h2>
+                        <p style='color: #475569; line-height: 1.6;'>Your faculty account is active. Please use the temporary credentials below to access the system:</p>
+                        <div style='background: #f8fafc; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; margin: 20px 0;'>
+                            <p style='margin: 0 0 10px 0;'><strong>Email:</strong> <span style='color: #1e293b;'>{$email}</span></p>
+                            <p style='margin: 0;'><strong>Temp Password:</strong> <span style='font-family: monospace; font-size: 1.2em; color: #1e293b; font-weight: bold;'>{$pass}</span></p>
+                        </div>
+                        <p style='text-align: center; margin-top: 30px;'>
+                            <a href='{$link}' style='display: inline-block; padding: 14px 28px; background: #1e293b; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: bold;'>Log In to Artisans LMS →</a>
+                        </p>
+                        <p style='color: #94a3b8; font-size: 0.85em; margin-top: 25px; border-top: 1px solid #f1f5f9; padding-top: 20px;'>
+                            This is an automated message. Please do not reply directly to this email.
+                        </p>
+                    </div>
+                </body>
+            </html>"
         ];
 
         $ch = curl_init('https://api.brevo.com/v3/smtp/email');
@@ -153,9 +180,11 @@ switch ($action) {
         curl_close($ch);
 
         if ($httpCode >= 200 && $httpCode < 300) {
-            json_response(['status' => 'success', 'message' => 'Email sent via Brevo API.']);
+            json_response(['status' => 'success', 'message' => 'Credentials emailed successfully via Brevo API.']);
         } else {
-            json_response(['status' => 'error', 'message' => 'Email failed.'], 500);
+            // Detailed error logging for your Render logs
+            error_log("Brevo API Error: " . $response);
+            json_response(['status' => 'error', 'message' => 'Email delivery failed. Please check server logs.'], 500);
         }
         break;
 
