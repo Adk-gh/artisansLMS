@@ -72,9 +72,7 @@ function applyPagination(matchedRows) {
 
     $('#classCountNum').text(total);
 
-    // No-results notice
-    if (total === 0) $('#classNoResults').addClass('show');
-    else             $('#classNoResults').removeClass('show');
+   $('#classNoResults').toggle(total === 0);
 
     // Pagination info text
     const showingFrom = total === 0 ? 0 : start + 1;
