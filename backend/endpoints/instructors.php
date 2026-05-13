@@ -45,17 +45,12 @@ switch ($action) {
 
         $instructors_arr = [];
         $sql = "
-            SELECT
-                e.*,
-                p.title AS pos_title,
-                d.name AS dept_name,
-                COUNT(c.class_id) AS class_count
-            FROM employees e
-            LEFT JOIN positions p ON e.position_id = p.position_id
+            SELECT e.*, p.title AS pos_title, d.name AS dept_name
+            FROM   employees   e
+            LEFT JOIN positions   p ON e.position_id   = p.position_id
             LEFT JOIN departments d ON e.department_id = d.department_id
-            LEFT JOIN classes c ON e.employee_id = c.instructor_id
-            WHERE e.is_faculty = 1 AND e.is_archived = 0
-            GROUP BY e.employee_id
+            WHERE  e.is_faculty  = 1
+            AND  e.is_archived = 0
             ORDER BY e.last_name ASC
         ";
         $res = $conn->query($sql);
@@ -152,8 +147,8 @@ switch ($action) {
             $mail->isSMTP();
             $mail->Host       = 'smtp.gmail.com';
             $mail->SMTPAuth   = true;
-            $mail->Username   = 'artisanslms@domain.com';
-            $mail->Password   = 'mibc ghzg lrke ewgw';
+            $mail->Username   = getenv('SMTP_USER');
+            $mail->Password = getenv('SMTP_PASS');
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
             $mail->Port       = 587;
 
