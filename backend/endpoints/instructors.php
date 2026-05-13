@@ -124,66 +124,38 @@ switch ($action) {
 
     // ── SEND CREDENTIALS EMAIL (Resend PHP SDK) ───────────────────────────────
     case 'send_credentials_email':
-
-        // Check SDK is available
-        if (!class_exists('Resend')) {
-            json_response(['status' => 'error', 'message' => 'Email SDK not loaded. Run: composer require resend/resend-php'], 500);
-        }
-
         $body  = json_decode(file_get_contents('php://input'), true);
-        $email = filter_var(trim($body['email']         ?? ''), FILTER_VALIDATE_EMAIL);
-        $name  = htmlspecialchars(trim($body['name']          ?? 'Instructor'));
+        $email = filter_var(trim($body['email'] ?? ''), FILTER_VALIDATE_EMAIL);
+        $name  = htmlspecialchars(trim($body['name'] ?? 'Instructor'));
         $pass  = htmlspecialchars(trim($body['temp_password'] ?? ''));
-        $link  = 'https://artisanslms.onrender.com';
 
-        if (!$email || !$pass) {
-            json_response(['status' => 'error', 'message' => 'Missing email or password.'], 400);
-        }
+        // Use the BREVO_API_KEY saved in your Render Environment Variables
+        $api_key = getenv('BREVO_API_KEY');
 
-        $api_key = getenv('RESEND_API_KEY') ?: ($_ENV['RESEND_API_KEY'] ?? '');
+        $data = [
+            "sender" => ["name" => "Artisans LMS", "email" => "your-verified-gmail@gmail.com"],
+            "to" => [["email" => $email, "name" => $name]],
+            "subject" => "Your Artisans LMS Login Credentials",
+            "htmlContent" => "<html><body><p>Hello {$name}, your temp password is: <b>{$pass}</b></p></body></html>"
+        ];
 
-        if (!$api_key) {
-            json_response(['status' => 'error', 'message' => 'Email service not configured. Add RESEND_API_KEY to environment variables.'], 500);
-        }
+        $ch = curl_init('https://api.brevo.com/v3/smtp/email');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'api-key: ' . $api_key,
+            'Content-Type: application/json'
+        ]);
 
-        $html_body = "
-        <html>
-            <body style='font-family: Arial, sans-serif; background: #f0f2f7; padding: 20px;'>
-                <div style='max-width: 500px; margin: auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);'>
-                    <h2 style='color: #1e293b; margin-top: 0;'>Hello, {$name}!</h2>
-                    <p style='color: #475569;'>Your faculty account on <strong>Artisans LMS</strong> is now active. Use the temporary credentials below to log in:</p>
-                    <div style='background: #f8fafc; padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px; margin: 20px 0;'>
-                        <p style='margin: 4px 0;'><strong>Email:</strong> {$email}</p>
-                        <p style='margin: 4px 0;'><strong>Temporary Password:</strong>
-                            <span style='font-family: monospace; font-size: 1.2em; color: #1e293b;'>{$pass}</span>
-                        </p>
-                    </div>
-                    <p style='color: #64748b; font-size: 0.9em;'>Please change your password after your first login.</p>
-                    <a href='{$link}' style='display: inline-block; padding: 12px 24px; background: #1e293b; color: #fff; text-decoration: none; border-radius: 8px; margin-top: 10px;'>
-                        Log In Now
-                    </a>
-                    <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;'>
-                    <p style='color: #94a3b8; font-size: 0.8em; margin: 0;'>
-                        This is an automated message from Artisans LMS. Please do not reply.
-                    </p>
-                </div>
-            </body>
-        </html>";
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
 
-        try {
-            $resend = Resend::client($api_key);
-
-            $resend->emails->send([
-                'from'    => 'Artisans LMS <onboarding@resend.dev>',
-                'to'      => [$email],
-                'subject' => 'Your Artisans LMS Login Credentials',
-                'html'    => $html_body,
-            ]);
-
-            json_response(['status' => 'success', 'message' => 'Credentials emailed successfully.']);
-
-        } catch (\Exception $e) {
-            json_response(['status' => 'error', 'message' => 'Email failed: ' . $e->getMessage()], 500);
+        if ($httpCode >= 200 && $httpCode < 300) {
+            json_response(['status' => 'success', 'message' => 'Email sent via Brevo API.']);
+        } else {
+            json_response(['status' => 'error', 'message' => 'Email failed.'], 500);
         }
         break;
 
