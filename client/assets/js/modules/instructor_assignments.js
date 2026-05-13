@@ -1,7 +1,13 @@
+// client/assets/js/modules/instructor_assignments.js
+
 $(document).ready(function() {
+
+    // ── Load UI Components ──
     $("#sidebar-container").load("../components/sidebar.html");
     $("#header-container").load("../components/header.html", function(res, status) {
-        if (status !== 'error') initHeader();
+        if (status !== 'error' && typeof initHeader === 'function') {
+            initHeader();
+        }
     });
 
     let allTasks = [];
@@ -9,7 +15,9 @@ $(document).ready(function() {
     let currentFilterClass = 'all';
     let currentFilterType = 'all';
 
-    function escHtml(s) { return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function escHtml(s) {
+        return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
 
     function fetchData() {
         $.ajax({
@@ -20,19 +28,23 @@ $(document).ready(function() {
             success: function(data) {
                 if (data.status === 'success') {
                     allClasses = data.classes;
-                    
+
                     const assigns = data.assignments.map(a => ({...a, real_type: a.category, is_quiz: false}));
                     const quizzes = data.quizzes.map(q => ({...q, real_type: 'quiz', is_quiz: true, assignment_id: q.quiz_id, category: 'quiz'}));
-                    
+
                     allTasks = [...assigns, ...quizzes];
                     allTasks.sort((a, b) => new Date(b.due_date) - new Date(a.due_date));
-                    
+
                     populateClassFilters();
                     populateModals();
                     renderTable();
-                } else { showAlert('danger', data.message || 'Error loading data.'); }
+                } else {
+                    showAlert('danger', data.message || 'Error loading data.');
+                }
             },
-            error: function() { showAlert('danger', 'Server connection failed.'); }
+            error: function() {
+                showAlert('danger', 'Server connection failed.');
+            }
         });
     }
 
@@ -41,7 +53,7 @@ $(document).ready(function() {
     function populateClassFilters() {
         let deskHtml = '';
         let mobHtml = '<option value="all">All Classes</option>';
-        
+
         allClasses.forEach(c => {
             deskHtml += `<button class="btn btn-outline-secondary rounded-pill filter-pill" data-filter-type="class" data-val="${c.class_id}">
                 <span class="badge bg-light text-dark border me-1">${c.course_code}</span> ${c.name}
@@ -49,7 +61,7 @@ $(document).ready(function() {
             </button>`;
             mobHtml += `<option value="${c.class_id}">${c.course_code} - ${c.name}</option>`;
         });
-        
+
         $('#classFilters').find('button:not([data-val="all"])').remove();
         $('#classFilters').append(deskHtml);
         $('#mobClassFilter').html(mobHtml);
@@ -64,8 +76,15 @@ $(document).ready(function() {
             renderTable();
         });
 
-        $('#mobClassFilter').off('change').on('change', function() { currentFilterClass = $(this).val(); $(`.filter-pill[data-filter-type="class"][data-val="${currentFilterClass}"]`).click(); });
-        $('#mobTypeFilter').off('change').on('change', function() { currentFilterType = $(this).val(); $(`.filter-pill[data-filter-type="type"][data-val="${currentFilterType}"]`).click(); });
+        $('#mobClassFilter').off('change').on('change', function() {
+            currentFilterClass = $(this).val();
+            $(`.filter-pill[data-filter-type="class"][data-val="${currentFilterClass}"]`).click();
+        });
+
+        $('#mobTypeFilter').off('change').on('change', function() {
+            currentFilterType = $(this).val();
+            $(`.filter-pill[data-filter-type="type"][data-val="${currentFilterType}"]`).click();
+        });
     }
 
     function renderTable() {
@@ -79,7 +98,7 @@ $(document).ready(function() {
         allTasks.forEach(t => {
             if (!classCounts[t.class_id]) classCounts[t.class_id] = 0;
             classCounts[t.class_id]++;
-            
+
             const matchClass = currentFilterClass === 'all' || t.class_id == currentFilterClass;
             const matchType = currentFilterType === 'all' || t.real_type === currentFilterType;
 
@@ -94,11 +113,15 @@ $(document).ready(function() {
                 visibleCount++;
                 const dueStr = t.due_date ? new Date(t.due_date).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric'}) : '—';
                 const past = t.due_date && new Date(t.due_date) < new Date(new Date().setHours(0,0,0,0));
-                
+
                 let icon, badgeCls, badgeText;
-                if (t.is_quiz) { icon='fa-brain'; badgeCls='bg-warning-subtle text-warning border border-warning-subtle'; badgeText='Quiz'; }
-                else if (t.category === 'activity') { icon='fa-running'; badgeCls='bg-info-subtle text-info border border-info-subtle'; badgeText='Activity'; }
-                else { icon='fa-file-alt'; badgeCls='bg-primary-subtle text-primary border border-primary-subtle'; badgeText='Assignment'; }
+                if (t.is_quiz) {
+                    icon='fa-brain'; badgeCls='bg-warning-subtle text-warning border border-warning-subtle'; badgeText='Quiz';
+                } else if (t.category === 'activity') {
+                    icon='fa-running'; badgeCls='bg-info-subtle text-info border border-info-subtle'; badgeText='Activity';
+                } else {
+                    icon='fa-file-alt'; badgeCls='bg-primary-subtle text-primary border border-primary-subtle'; badgeText='Assignment';
+                }
 
                 const responses = t.is_quiz ? `${t.attempt_count} attempted` : `${t.sub_count} submitted`;
 
@@ -187,13 +210,18 @@ $(document).ready(function() {
         const cids = [];
         $('input[name="new_class_ids[]"]:checked').each(function() { cids.push($(this).val()); });
         if(cids.length === 0) { alert('Select at least one class.'); return; }
-        
+
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Assigning...');
         $.post('/backend/endpoints/instructor_assignments.php', {
             action: 'reassign_task', reassign_id: $('#ri_id').val(), reassign_type: $('#ri_type').val(), new_class_ids: cids.join(',')
         }, function(res) {
-            if(res.status==='success') { $('#reassignModal').modal('hide'); showAlert('success', res.message); fetchData(); } 
-            else { alert(res.message); }
+            if(res.status==='success') {
+                $('#reassignModal').modal('hide');
+                showAlert('success', res.message);
+                fetchData();
+            } else {
+                alert(res.message);
+            }
             btn.prop('disabled', false).html('<i class="fas fa-share-nodes me-2"></i> Assign to Selected Classes');
         }, 'json');
     });
@@ -205,26 +233,27 @@ $(document).ready(function() {
     });
 
     let qs = [];
-   window.adjustCount = function(key, delta) {
-    const input = document.getElementById(key + '-count');
-    const next  = Math.min(50, Math.max(1, (parseInt(input.value) || 1) + delta));
-    input.value = next;
-};
+    window.adjustCount = function(key, delta) {
+        const input = document.getElementById(key + '-count');
+        const next  = Math.min(50, Math.max(1, (parseInt(input.value) || 1) + delta));
+        input.value = next;
+    };
 
-window.addQBulk = function(type, key) {
-    const count = Math.min(50, Math.max(1, parseInt(document.getElementById(key + '-count').value) || 1));
-    for (let i = 0; i < count; i++) {
-        qs.push({ type: type, text: '', choices: { A:'', B:'', C:'', D:'' }, correct: type === 'true_false' ? 'TRUE' : 'A', points: 1 });
-    }
-    document.getElementById(key + '-count').value = 1; // reset after adding
-    renderQs();
-};
+    window.addQBulk = function(type, key) {
+        const count = Math.min(50, Math.max(1, parseInt(document.getElementById(key + '-count').value) || 1));
+        for (let i = 0; i < count; i++) {
+            qs.push({ type: type, text: '', choices: { A:'', B:'', C:'', D:'' }, correct: type === 'true_false' ? 'TRUE' : 'A', points: 1 });
+        }
+        document.getElementById(key + '-count').value = 1; // reset after adding
+        renderQs();
+    };
+
     window.removeQ = function(i) { qs.splice(i, 1); renderQs(); };
     window.setQText = function(i,v) { qs[i].text=v; };
     window.setChoice = function(i,k,v) { qs[i].choices[k]=v; };
     window.setCorrect = function(i,v) { qs[i].correct=v; };
     window.setQPoints = function(i,v) { qs[i].points=parseInt(v)||1; };
-    
+
     function renderQs() {
         const list = $('#qlist'); list.empty();
         $('#qcnt').text(qs.length); $('#qhint').toggle(qs.length === 0);
@@ -232,7 +261,9 @@ window.addQBulk = function(type, key) {
         qs.forEach((q, i) => {
             let choicesHTML = '';
             if (q.type === 'multiple_choice') {
-                ['A','B','C','D'].forEach(k => { choicesHTML += `<div class="d-flex align-items-center gap-2 mb-2"><input type="radio" name="cor${i}" class="form-check-input mt-0" value="${k}" ${q.correct===k?'checked':''} onchange="setCorrect(${i},'${k}')"><span class="badge bg-secondary">${k}</span><input type="text" class="form-control form-control-sm border shadow-sm" placeholder="Choice ${k}" value="${escHtml(q.choices[k])}" oninput="setChoice(${i},'${k}',this.value)"></div>`; });
+                ['A','B','C','D'].forEach(k => {
+                    choicesHTML += `<div class="d-flex align-items-center gap-2 mb-2"><input type="radio" name="cor${i}" class="form-check-input mt-0" value="${k}" ${q.correct===k?'checked':''} onchange="setCorrect(${i},'${k}')"><span class="badge bg-secondary">${k}</span><input type="text" class="form-control form-control-sm border shadow-sm" placeholder="Choice ${k}" value="${escHtml(q.choices[k])}" oninput="setChoice(${i},'${k}',this.value)"></div>`;
+                });
             } else {
                 choicesHTML = `<div class="d-flex gap-3 mt-2"><label class="d-flex align-items-center gap-2 fw-bold cursor-pointer"><input type="radio" class="form-check-input mt-0" name="cor${i}" value="TRUE" ${q.correct==='TRUE'?'checked':''} onchange="setCorrect(${i},'TRUE')"><span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">✅ True</span></label><label class="d-flex align-items-center gap-2 fw-bold cursor-pointer"><input type="radio" class="form-check-input mt-0" name="cor${i}" value="FALSE" ${q.correct==='FALSE'?'checked':''} onchange="setCorrect(${i},'FALSE')"><span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-2 rounded-pill">❌ False</span></label></div>`;
             }
@@ -246,32 +277,46 @@ window.addQBulk = function(type, key) {
         const cids = [];
         $('input[name="class_ids[]"]:checked').each(function() { cids.push($(this).val()); });
         if(cids.length === 0) { alert('Select at least one class.'); return; }
-        
+
         if (isQuiz) {
             if (qs.length === 0) { alert('Add at least one question.'); return; }
             for (let i = 0; i < qs.length; i++) {
                 if (!qs[i].text.trim()) { alert(`Question ${i+1} has no text.`); return; }
-                if (qs[i].type==='multiple_choice') { for(const k of['A','B','C','D']){ if(!qs[i].choices[k].trim()){alert(`Question ${i+1}: Choice ${k} is empty.`);return;} } }
+                if (qs[i].type==='multiple_choice') {
+                    for(const k of['A','B','C','D']){
+                        if(!qs[i].choices[k].trim()){alert(`Question ${i+1}: Choice ${k} is empty.`);return;}
+                    }
+                }
             }
             $('#qjson').val(JSON.stringify(qs));
         }
-        
+
         const form = this;
         const formData = new FormData(form);
         formData.append('action', 'create_task');
         formData.append('class_ids', cids.join(','));
-        
+
         const btn = $('#createSubmitBtn');
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Creating...');
 
         $.ajax({
             url: '/backend/endpoints/instructor_assignments.php', type: 'POST', data: formData, contentType: false, processData: false, dataType: 'json',
             success: function(res) {
-                if(res.status==='success') { $('#createModal').modal('hide'); form.reset(); qs = []; renderQs(); showAlert('success', res.message); fetchData(); }
+                if(res.status==='success') {
+                    $('#createModal').modal('hide');
+                    form.reset();
+                    qs = [];
+                    renderQs();
+                    showAlert('success', res.message);
+                    fetchData();
+                }
                 else { alert(res.message); }
                 btn.prop('disabled', false).html('<i class="fas fa-paper-plane me-2"></i> Post to Selected Classes');
             },
-            error: function() { alert('Network Error'); btn.prop('disabled', false).html('<i class="fas fa-paper-plane me-2"></i> Post to Selected Classes'); }
+            error: function() {
+                alert('Network Error');
+                btn.prop('disabled', false).html('<i class="fas fa-paper-plane me-2"></i> Post to Selected Classes');
+            }
         });
     });
 
@@ -282,7 +327,7 @@ window.addQBulk = function(type, key) {
     }
 });
 
-// ─── Header ───────────────────────────────────────────────────────────────────
+// ─── Header & Session Logic ───────────────────────────────────────────────────
 const API = 'https://artisanslms.onrender.com/backend/index.php';
 
 function initHeader() {
@@ -326,10 +371,10 @@ function initHeader() {
                 const smAvt = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=e2e8f0&color=475569`;
                 const lgAvt = smAvt + '&size=128';
                 $('#headerUserName').text(u.name);
-                $('#headerUserRole').text(u.role || 'Student');
+                $('#headerUserRole').text(u.role || 'Teacher');
                 $('#headerAvatar').attr({ src: smAvt, alt: u.name });
                 $('#dropdownUserName').text(u.name);
-                $('#dropdownUserRole').text(u.role || 'Student');
+                $('#dropdownUserRole').text(u.role || 'Teacher');
                 $('#dropdownAvatar').attr({ src: lgAvt, alt: u.name });
                 $('#heroName').html(u.name + ' <span class="fs-3">👋</span>');
             } else {

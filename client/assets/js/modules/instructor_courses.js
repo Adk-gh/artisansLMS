@@ -1,15 +1,17 @@
+// client/assets/js/modules/instructor_courses.js
+
 // ── FIREBASE SETUP ────────────────────────────────────────────────────────────
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
-const firebaseConfig = {
-   apiKey: "AIzaSyDQfwNYptf-gWqIQVs0welvz86DwqPI6VQ",
-  authDomain: "artisans-lms.firebaseapp.com",
-     projectId: "artisans-lms",
-  storageBucket: "artisans-lms.firebasestorage.app",
-  messagingSenderId: "897938751816",
-  appId: "1:897938751816:web:9cbdeb9ae93020dfff737d",
-};
 
+const firebaseConfig = {
+    apiKey: "AIzaSyDQfwNYptf-gWqIQVs0welvz86DwqPI6VQ",
+    authDomain: "artisans-lms.firebaseapp.com",
+    projectId: "artisans-lms",
+    storageBucket: "artisans-lms.firebasestorage.app",
+    messagingSenderId: "897938751816",
+    appId: "1:897938751816:web:9cbdeb9ae93020dfff737d",
+};
 
 const app = initializeApp(firebaseConfig);
 const storage = getStorage(app);
@@ -19,9 +21,12 @@ const API_COURSES = 'https://artisanslms.onrender.com/backend/endpoints/instruct
 const API = 'https://artisanslms.onrender.com/backend/index.php';
 
 $(document).ready(function() {
+    // Moved load scripts into document ready to keep HTML clean
     $("#sidebar-container").load("../components/sidebar.html");
     $("#header-container").load("../components/header.html", function(res, status) {
-        if (status !== 'error') initHeader();
+        if (status !== 'error' && typeof initHeader === 'function') {
+            initHeader();
+        }
     });
 
     loadCourses();
@@ -37,7 +42,7 @@ function initHeader() {
         'courses.html':                { title: 'Course Materials',       subtitle: 'Upload and organize files, lectures, and resources.' }
     };
 
-    const currentPage = window.location.pathname.split('/').pop() || 'courses.html';
+    const currentPage = window.location.pathname.split('/').pop() || 'instructor_courses.html';
     const page        = PAGE_TITLES[currentPage] || { title: 'Artisans LMS', subtitle: 'Learning Management System' };
     $('#headerPageTitle').text(page.title);
     $('#headerPageSubtitle').text(page.subtitle);
@@ -65,10 +70,9 @@ function initHeader() {
     });
 }
 
-// ── PATH HELPER (Handles both old local files & new Firebase URLs) ───────────
+// ── PATH HELPER ───────────────────────────────────────────────────────────────
 function resolveFilePath(path) {
     if (!path) return '';
-    // If it's a Firebase URL (or any external link), return it directly
     if (path.startsWith('http://') || path.startsWith('https://')) return path;
     if (path.startsWith('/artisansLMS/client/assets/')) return path;
 
@@ -118,7 +122,7 @@ function buildCourseCard(course) {
         : `<small class="text-muted fst-italic no-materials-msg d-block py-2">No resources found.</small>`;
 
     return `
-    <div class="col-md-6 col-xl-4 course-card-container" data-course-title="${escHtml(course.name)}">
+    <div class="col-md-6 col-xl-4 course-card-container hover-lift" data-course-title="${escHtml(course.name)}">
         <div class="card border-0 shadow-sm rounded-4 h-100" style="border-top: 4px solid #0ea5e9 !important; transition: transform 0.2s ease;">
             <div class="card-body p-4 d-flex flex-column">
                 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -129,7 +133,9 @@ function buildCourseCard(course) {
                 <p class="text-muted small mb-4">${escHtml(course.description || 'No description available.')}</p>
                 <div class="bg-light p-3 rounded-3 mb-4 flex-grow-1 border border-light">
                     <h6 class="small fw-bold text-uppercase text-muted mb-3" style="font-size:.65rem;letter-spacing:.5px;">Active Materials</h6>
-                    <div class="list-group list-group-flush bg-transparent" id="resource-list-${cid}">${resourcesHtml}</div>
+                    <div class="resource-list-wrapper">
+                        <div class="list-group list-group-flush bg-transparent" id="resource-list-${cid}">${resourcesHtml}</div>
+                    </div>
                 </div>
                 <div class="mt-auto d-flex align-items-center justify-content-between pt-2">
                     <button class="btn btn-outline-primary btn-sm rounded-pill px-4 fw-bold shadow-sm" onclick="openUploadModal('${cid}')">

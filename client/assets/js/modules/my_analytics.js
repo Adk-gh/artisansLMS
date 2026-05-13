@@ -1,3 +1,5 @@
+// client/assets/js/modules/my_analytics.js
+
 $(document).ready(function() {
     // ── 1. Load sidebar & header components via jQuery ──────────────────
     $("#sidebar-container").load("../components/sidebar.html");

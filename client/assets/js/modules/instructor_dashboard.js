@@ -8,7 +8,12 @@ const API = 'https://artisanslms.onrender.com/backend/index.php';
 $(document).ready(function () {
 
     // ── Load Sidebar & Header ─────────────────────────────────────────────────
-    // (handled by inline script in HTML, same as courses.html)
+    $("#sidebar-container").load("../components/sidebar.html");
+    $("#header-container").load("../components/header.html", function (res, status) {
+        if (status !== 'error' && typeof initHeader === 'function') {
+            initHeader();
+        }
+    });
 
     // ── Greeting + Date ──────────────────────────────────────────────────────
     const hour = new Date().getHours();
@@ -40,7 +45,7 @@ $(document).ready(function () {
     });
 });
 
-// ── Header (mirrors instructor_courses.js pattern) ────────────────────────────
+// ── Header ────────────────────────────────────────────────────────────────────
 function initHeader() {
     const PAGE_TITLES = {
         'dashboard.html':              { title: 'Dashboard',              subtitle: 'Overview of your academic progress and activities.' },
@@ -292,4 +297,92 @@ function renderActivity(activity) {
             <div style="font-size:.68rem;color:#cbd5e1;margin-top:2px;">${fmtTime(a.submit_date)}</div>
         </div>
     </div>`).join(''));
+}
+
+// ─── Active Classes + Firebase Live Status ────────────────────────────────────
+
+// Badge HTML helpers
+function liveBadge() {
+    return `<span class="badge bg-success bg-opacity-10 text-success border border-success-subtle rounded-pill d-inline-flex align-items-center gap-1">
+                <span class="spinner-grow text-success" style="width:6px;height:6px;" role="status"></span> Live
+            </span>`;
+}
+
+function inactiveBadge() {
+    return `<span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle rounded-pill d-inline-flex align-items-center gap-1">
+                <span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;"></span> Inactive
+            </span>`;
+}
+
+function renderActiveClasses(classes) {
+    const container = $('#classSessionsBody');
+
+    if (!classes || classes.length === 0) {
+        container.html('<tr><td colspan="6" class="text-center py-4 text-muted small">No classes found.</td></tr>');
+        return;
+    }
+
+    container.html(classes.map(c => `
+        <tr>
+            <td>
+                <div class="fw-bold text-dark small text-truncate" style="max-width:200px;">${c.course_name}</div>
+                <div class="text-muted font-monospace" style="font-size:.7rem;">ID #${c.class_id}</div>
+            </td>
+            <td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle font-monospace">${c.course_code}</span></td>
+            <td>
+                <div class="fw-semibold text-dark small text-nowrap">${c.first_name} ${c.last_name}</div>
+                <div class="text-muted" style="font-size:.7rem;">Instructor</div>
+            </td>
+            <td><span class="badge bg-light text-secondary border font-monospace">${c.semester} ${c.year}</span></td>
+            <td>
+                <span class="fw-bold text-dark small font-monospace">${c.enrolled_count ?? 0}</span>
+                <span class="text-muted" style="font-size:.7rem;"> students</span>
+            </td>
+            <td class="text-end pe-4">
+                <span class="class-status-badge" data-class-id="${c.class_id}">
+                    ${inactiveBadge()}
+                </span>
+            </td>
+        </tr>`
+    ).join(''));
+
+    watchLiveStatuses(classes.map(c => c.class_id));
+}
+
+// ─── Firebase live status watcher ────────────────────────────────────────────
+
+function watchLiveStatuses(classIds) {
+    Promise.all([
+        import('https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js'),
+        import('https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js')
+    ]).then(([{ initializeApp, getApps }, { getDatabase, ref, onValue }]) => {
+
+        const app = getApps().length
+            ? getApps()[0]
+            : initializeApp({
+                apiKey:            "AIzaSyDQfwNYptf-gWqIQVs0welvz86DwqPI6VQ",
+                authDomain:        "artisans-lms.firebaseapp.com",
+                projectId:         "artisans-lms",
+                storageBucket:     "artisans-lms.firebasestorage.app",
+                messagingSenderId: "897938751816",
+                appId:             "1:897938751816:web:9cbdeb9ae93020dfff737d"
+            });
+
+        const db = getDatabase(app);
+
+        classIds.forEach(classId => {
+            const statusRef = ref(db, `lms_classes/${classId}/status`);
+
+            onValue(statusRef, snap => {
+                const isLive = snap.val()?.is_live === true;
+                const badge  = document.querySelector(`.class-status-badge[data-class-id="${classId}"]`);
+                if (badge) {
+                    badge.innerHTML = isLive ? liveBadge() : inactiveBadge();
+                }
+            });
+        });
+
+    }).catch(err => {
+        console.warn('Firebase live status watcher failed to load:', err);
+    });
 }

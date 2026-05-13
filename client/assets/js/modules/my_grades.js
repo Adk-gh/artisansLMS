@@ -1,3 +1,5 @@
+// client/assets/js/modules/my_grades.js
+
 $(document).ready(function() {
 
     // ── Load UI Components ──
@@ -21,40 +23,40 @@ $(document).ready(function() {
                     $('#totalClasses').text(data.summary.total_classes);
                     renderGrid(data.classes);
                 } else {
-                    $('#gradesGrid').html(`<div class="alert alert-warning">${data.message}</div>`);
+                    $('#gradesGrid').html(`<div class="col-12"><div class="alert alert-warning">${data.message}</div></div>`);
                 }
             },
             error: function(xhr, status, error) {
                 console.error('AJAX error:', error);
-                $('#gradesGrid').html(`<div class="alert alert-danger">Critical Error: ${error}</div>`);
+                $('#gradesGrid').html(`<div class="col-12"><div class="alert alert-danger">Critical Error: ${error}</div></div>`);
             }
         });
     }
 
     function getRingClass(score) {
         if (score === null) return 'ring-none';
-        if (score >= 90)   return 'ring-excellent';
-        if (score >= 75)   return 'ring-good';
-        if (score >= 60)   return 'ring-average';
+        if (score >= 90)    return 'ring-excellent';
+        if (score >= 75)    return 'ring-good';
+        if (score >= 60)    return 'ring-average';
         return 'ring-poor';
     }
 
     function renderGrid(classes) {
         const grid = document.getElementById('gradesGrid');
-        
+
         if (classes.length === 0) {
-            grid.innerHTML = '<div class="col-12 text-center py-5 text-muted">Not enrolled in any classes yet.</div>';
+            grid.innerHTML = '<div class="col-12 text-center py-5 text-muted fw-bold"><i class="fas fa-inbox fs-1 opacity-25 d-block mb-3"></i>Not enrolled in any classes yet.</div>';
             return;
         }
 
         grid.innerHTML = classes.map((c) => {
             const score   = c.averages.combined;
             const ring    = getRingClass(score);
-            const jsonStr = JSON.stringify(c).replace(/'/g, "&#39;");
-            
+            const jsonStr = JSON.stringify(c).replace(/'/g, "&#39;").replace(/"/g, '&quot;');
+
             return `
                 <div class="col-12 col-xl-6">
-                    <div class="grade-card shadow-sm p-4">
+                    <div class="grade-card shadow-sm p-4 hover-lift">
                         <div class="d-flex gap-3 align-items-center mb-3">
                             <div class="score-ring ${ring}">
                                 <span class="fs-5">${score ?? '—'}</span>
@@ -67,11 +69,11 @@ $(document).ready(function() {
                             </div>
                         </div>
                         <div class="mt-auto d-flex justify-content-between align-items-center pt-3 border-top">
-                            <div class="small text-muted">
+                            <div class="small text-muted fw-semibold">
                                 <i class="fas fa-file-alt me-1 text-info"></i> ${c.assignments.length} Tasks
                                 <i class="fas fa-brain ms-2 me-1 text-primary"></i> ${c.quizzes.length} Quizzes
                             </div>
-                            <button class="btn btn-sm btn-dark rounded-pill px-3 fw-bold" onclick='viewDetails(${jsonStr})'>Details</button>
+                            <button class="btn btn-sm btn-dark rounded-pill px-4 fw-bold shadow-sm" onclick='viewDetails(${jsonStr})'>Details</button>
                         </div>
                     </div>
                 </div>
@@ -164,7 +166,6 @@ $(document).ready(function() {
         const assignAvg = calcAvg(c.assignments, 'grade');
         const quizAvg   = calcAvg(c.quizzes, 'pct');
         const combined  = c.averages.combined;
-        const combCol   = getScoreColor(combined);
 
         // ── Modal Header override ──
         const headerEl = document.getElementById('modalTitle');
@@ -177,8 +178,8 @@ $(document).ready(function() {
                 ">${c.info.course_code}</span>
                 <span style="font-size:1rem;font-weight:700;color:#0f172a;">${c.info.course_name}</span>
             </div>
-            <div style="font-size:0.75rem;color:#64748b;font-weight:400;margin-top:2px;">
-                <i class="fas fa-chalkboard-teacher me-1"></i> Prof. ${c.info.last_name}
+            <div style="font-size:0.75rem;color:#64748b;font-weight:500;margin-top:4px;">
+                <i class="fas fa-chalkboard-teacher me-1 text-primary"></i> Prof. ${c.info.last_name}
             </div>
         `;
 
@@ -241,10 +242,9 @@ $(document).ready(function() {
 
         // ── Assemble Modal Body ──
         document.getElementById('modalBody').innerHTML = `
-            <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+            <div style="display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;">
                 ${summaryCards}
             </div>
-            <hr style="border-color:#f1f5f9;margin-bottom:20px;">
             ${assignSection}
             ${quizSection}
         `;
@@ -254,7 +254,7 @@ $(document).ready(function() {
 
 });
 
-// ─── Header ───────────────────────────────────────────────────────────────────
+// ─── Header & Session Logic ───────────────────────────────────────────────────
 const API = 'https://artisanslms.onrender.com/backend/index.php';
 
 function initHeader() {
