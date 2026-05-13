@@ -1,6 +1,7 @@
 {
     "require": {
         "php": ">=8.1",
-        "phpmailer/phpmailer": "^7.0"
+        "phpmailer/phpmailer": "^7.0",
+        "resend/resend-php": "^1.3"
     }
 }

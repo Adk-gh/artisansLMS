@@ -6,14 +6,11 @@
 error_reporting(0);
 ini_set('display_errors', 0);
 
-// Safely load Composer dependencies (so it doesn't crash get_all if missing on Render)
+// Load Composer dependencies (Resend PHP SDK)
 $autoload_path = __DIR__ . '/../../vendor/autoload.php';
 if (file_exists($autoload_path)) {
     require_once $autoload_path;
 }
-
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 
 require_once __DIR__ . '/../../server/config/db.php';
 require_once __DIR__ . '/../middleware/json_response.php';
@@ -29,7 +26,7 @@ $action = $_GET['action'] ?? '';
 
 switch ($action) {
 
-    // ── GET ALL (Reverted to your working version) ────────────────────────────
+    // ── GET ALL ───────────────────────────────────────────────────────────────
     case 'get_all':
         $depts_arr = [];
         $dq = $conn->query("SELECT * FROM departments ORDER BY name ASC");
@@ -112,29 +109,30 @@ switch ($action) {
         $upd = $conn->prepare("UPDATE employees SET password_hash = ? WHERE employee_id = ?");
         $upd->bind_param("si", $hashed, $eid);
 
-       if ($upd->execute()) {
-        json_response([
-            'status'           => 'success',
-            'message'          => 'Password generated.',
-            'instructor_name'  => $instructor['first_name'] . ' ' . $instructor['last_name'],
-            'instructor_email' => $instructor['email'],
-            'temp_password'    => $tmp_pass,
-        ]);
+        if ($upd->execute()) {
+            json_response([
+                'status'           => 'success',
+                'message'          => 'Password generated.',
+                'instructor_name'  => $instructor['first_name'] . ' ' . $instructor['last_name'],
+                'instructor_email' => $instructor['email'],
+                'temp_password'    => $tmp_pass,
+            ]);
         } else {
             json_response(['status' => 'error', 'message' => 'Failed to update password.'], 500);
         }
         break;
 
-    // ── SEND CREDENTIALS EMAIL (PHPMailer + Render Secure) ────────────────────
+    // ── SEND CREDENTIALS EMAIL (Resend PHP SDK) ───────────────────────────────
     case 'send_credentials_email':
-        // Check if PHPMailer loaded successfully earlier
-        if (!class_exists('PHPMailer\PHPMailer\PHPMailer')) {
-             json_response(['status' => 'error', 'message' => 'Email server is currently configuring. Please try again later.'], 500);
+
+        // Check SDK is available
+        if (!class_exists('Resend')) {
+            json_response(['status' => 'error', 'message' => 'Email SDK not loaded. Run: composer require resend/resend-php'], 500);
         }
 
         $body  = json_decode(file_get_contents('php://input'), true);
-        $email = filter_var(trim($body['email'] ?? ''), FILTER_VALIDATE_EMAIL);
-        $name  = htmlspecialchars(trim($body['name'] ?? 'Instructor'));
+        $email = filter_var(trim($body['email']         ?? ''), FILTER_VALIDATE_EMAIL);
+        $name  = htmlspecialchars(trim($body['name']          ?? 'Instructor'));
         $pass  = htmlspecialchars(trim($body['temp_password'] ?? ''));
         $link  = 'https://artisanslms.onrender.com';
 
@@ -142,50 +140,51 @@ switch ($action) {
             json_response(['status' => 'error', 'message' => 'Missing email or password.'], 400);
         }
 
-        $mail = new PHPMailer(true);
+        $api_key = getenv('RESEND_API_KEY') ?: ($_ENV['RESEND_API_KEY'] ?? '');
+
+        if (!$api_key) {
+            json_response(['status' => 'error', 'message' => 'Email service not configured. Add RESEND_API_KEY to environment variables.'], 500);
+        }
+
+        $html_body = "
+        <html>
+            <body style='font-family: Arial, sans-serif; background: #f0f2f7; padding: 20px;'>
+                <div style='max-width: 500px; margin: auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);'>
+                    <h2 style='color: #1e293b; margin-top: 0;'>Hello, {$name}!</h2>
+                    <p style='color: #475569;'>Your faculty account on <strong>Artisans LMS</strong> is now active. Use the temporary credentials below to log in:</p>
+                    <div style='background: #f8fafc; padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px; margin: 20px 0;'>
+                        <p style='margin: 4px 0;'><strong>Email:</strong> {$email}</p>
+                        <p style='margin: 4px 0;'><strong>Temporary Password:</strong>
+                            <span style='font-family: monospace; font-size: 1.2em; color: #1e293b;'>{$pass}</span>
+                        </p>
+                    </div>
+                    <p style='color: #64748b; font-size: 0.9em;'>Please change your password after your first login.</p>
+                    <a href='{$link}' style='display: inline-block; padding: 12px 24px; background: #1e293b; color: #fff; text-decoration: none; border-radius: 8px; margin-top: 10px;'>
+                        Log In Now
+                    </a>
+                    <hr style='border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;'>
+                    <p style='color: #94a3b8; font-size: 0.8em; margin: 0;'>
+                        This is an automated message from Artisans LMS. Please do not reply.
+                    </p>
+                </div>
+            </body>
+        </html>";
 
         try {
-            $mail->isSMTP();
-            $mail->Host       = 'smtp.gmail.com';
-            $mail->SMTPAuth   = true;
-            $mail->Username   = getenv('SMTP_USER') ?: $_ENV['SMTP_USER'] ?? '';
-            $mail->Password   = getenv('SMTP_PASS') ?: $_ENV['SMTP_PASS'] ?? '';
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $resend = Resend::client($api_key);
 
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-            $mail->Port       = 587;
+            $resend->emails->send([
+                'from'    => 'Artisans LMS <onboarding@resend.dev>',
+                'to'      => [$email],
+                'subject' => 'Your Artisans LMS Login Credentials',
+                'html'    => $html_body,
+            ]);
 
+            json_response(['status' => 'success', 'message' => 'Credentials emailed successfully.']);
 
-            $mail->Timeout    = 20;
-
-            $mail->setFrom('no-reply@artisanslms.onrender.com', 'Artisans LMS');
-            $mail->addAddress($email, $name);
-
-
-            $mail->isHTML(true);
-            $mail->Subject = 'Your Artisans LMS Login Credentials';
-            $mail->Body = "
-            <html>
-                <body style='font-family: Arial; background: #f0f2f7; padding: 20px;'>
-                    <div style='max-width: 500px; margin: auto; background: #fff; padding: 30px; border-radius: 12px;'>
-                        <h2 style='color: #1e293b;'>Hello, {$name}!</h2>
-                        <p>Your faculty account is active. Please use the temporary credentials below:</p>
-                        <div style='background: #f8fafc; padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px;'>
-                            <strong>Email:</strong> {$email}<br>
-                            <strong>Temp Password:</strong> <span style='font-family: monospace; font-size: 1.2em;'>{$pass}</span>
-                        </div>
-                        <p><a href='{$link}' style='display:inline-block; padding: 12px 24px; background: #1e293b; color: #fff; text-decoration: none; border-radius: 8px; margin-top: 15px;'>Log In Now</a></p>
-                    </div>
-                </body>
-            </html>";
-
-            $mail->send();
-            json_response(['status' => 'success', 'message' => 'Email sent via SMTP.']);
-
-       } catch (Exception $e) {
-
-    json_response(['status' => 'error', 'message' => "SMTP Error: " . $mail->ErrorInfo], 500);
-}
+        } catch (\Exception $e) {
+            json_response(['status' => 'error', 'message' => 'Email failed: ' . $e->getMessage()], 500);
+        }
         break;
 
     // ── ARCHIVE ───────────────────────────────────────────────────────────────
