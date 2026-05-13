@@ -9,7 +9,20 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/client/assets/css/style.css">
     <style>
-        body { font-family: 'Sora', sans-serif; background: #f0f2f7; overflow: hidden; /* Prevent body scroll */ }
+        html, body { height: 100%; margin: 0; overflow: hidden; }
+        body { font-family: 'Sora', sans-serif; background: #f0f2f7; display: flex; flex-direction: column; }
+
+        #content { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* ── Main layout: fixed height, flex column ── */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 1.5rem !important;
+            min-height: 0;
+        }
 
         /* ── File Viewer ── */
         .file-link { cursor: pointer; color: #334155; text-decoration: none; word-break: break-all; font-size: .85rem; }
@@ -39,11 +52,79 @@
         .toast-arch { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
         @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
-        /* ── Table View & Scroll Wrapping ── */
-        .course-table-container { background: #fff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; display: none; }
+        /* ── View Toggle ── */
+        .view-toggle .btn { font-size: .8rem; font-weight: 600; border-color: #cbd5e1; color: #64748b; padding: 6px 14px; }
+        .view-toggle .btn.active { background: #1e293b; color: #fff; border-color: #1e293b; }
+        .view-toggle .btn:not(.active):hover { background: #f1f5f9; }
+
+        /* ── Add Course Button ── */
+        .btn-course { display: inline-flex; align-items: center; gap: 8px; background: #1e293b; color: #fff; border: none; border-radius: 10px; padding: 10px 20px; font-size: .82rem; font-weight: 600; font-family: 'Sora', sans-serif; transition: .2s; cursor: pointer; }
+        .btn-course:hover { background: #0f172a; color: #fff; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(15,23,42,.2); }
+
+        /* ── Search & Filter Bar ── */
+        .sf-bar { background: #fff; border: 1px solid #e9ecef; border-radius: 16px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; box-shadow: 0 2px 10px rgba(0,0,0,0.02); flex-shrink: 0; }
+        .sf-search-wrap { position: relative; flex: 1; min-width: 250px; }
+        .sf-search-wrap i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: .9rem; pointer-events: none; }
+        .sf-input { width: 100%; padding: 10px 14px 10px 42px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: .85rem; font-family: 'Sora', sans-serif; color: #1e293b; background: #f8fafc; outline: none; transition: .2s; }
+        .sf-input:focus { border-color: #0ea5e9; background: #fff; box-shadow: 0 0 0 3px rgba(14,165,233,.08); }
+        .sf-select { padding: 10px 36px 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: .82rem; font-family: 'Sora', sans-serif; font-weight: 600; color: #475569; background: #f8fafc; outline: none; cursor: pointer; transition: .2s; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; max-width: 200px; }
+        .sf-select:focus { border-color: #0ea5e9; background-color: #fff; box-shadow: 0 0 0 3px rgba(14,165,233,.08); }
+        .sf-count { font-size: .75rem; font-weight: 700; color: #94a3b8; white-space: nowrap; margin-left: auto; }
+        .sf-count span { color: #0ea5e9; font-size: .85rem; }
+
+        /* ── Shared scrollable view wrapper ── */
+        /* Both grid and list live inside this single growing wrapper */
+        #viewWrapper {
+            flex: 1;
+            min-height: 0;      /* critical: lets flex child shrink below content size */
+            overflow: hidden;   /* clipping container; children handle their own scroll */
+            position: relative;
+        }
+
+        /* ── GRID VIEW ── */
+        #gridView {
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 1.5rem;        /* replaces Bootstrap g-4 */
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 4px 2px 20px 2px;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+        #gridView::-webkit-scrollbar { width: 6px; }
+        #gridView::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+
+        /* grid card widths — mirrors Bootstrap col-md-6 col-xl-4 */
+        .course-card-container {
+            flex: 0 0 calc(33.333% - 1rem);
+            min-width: 260px;
+            box-sizing: border-box;
+        }
+        @media (max-width: 1199px) {
+            .course-card-container { flex: 0 0 calc(50% - 0.75rem); }
+        }
+        @media (max-width: 767px) {
+            .course-card-container { flex: 0 0 100%; }
+        }
+
+        /* ── TABLE VIEW ── */
+        #tableView {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            background: #fff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
 
         .table-scroll-wrapper {
+            flex: 1;
             overflow-y: auto;
+            overflow-x: hidden;
             scrollbar-width: thin;
             scrollbar-color: #cbd5e1 transparent;
         }
@@ -62,48 +143,30 @@
             font-weight: 700;
             padding: 14px 20px;
             border-bottom: none !important;
-            box-shadow: inset 0 -2px 0 #f1f5f9; /* Fake bottom border to prevent gap */
+            box-shadow: inset 0 -2px 0 #f1f5f9;
         }
-
         .course-table tbody td { padding: 14px 20px; vertical-align: top; border-bottom: 1px solid #f1f5f9; font-size: .85rem; }
         .course-table tbody tr:hover { background: #f8fafc; }
 
-        /* ── Grid View Scrolling ── */
-        #gridView {
-            overflow-y: auto;
-            overflow-x: hidden;
-            align-content: flex-start; /* Stops grid cards from stretching vertically */
-            scrollbar-width: thin;
-            scrollbar-color: #cbd5e1 transparent;
-            padding-bottom: 20px;
-        }
-        #gridView::-webkit-scrollbar { width: 6px; }
-        #gridView::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
-
-        /* ── View Toggle ── */
-        .view-toggle .btn { font-size: .8rem; font-weight: 600; border-color: #cbd5e1; color: #64748b; padding: 6px 14px; }
-        .view-toggle .btn.active { background: #1e293b; color: #fff; border-color: #1e293b; }
-        .view-toggle .btn:not(.active):hover { background: #f1f5f9; }
-
-        /* ── Add Course Button ── */
-        .btn-course { display: inline-flex; align-items: center; gap: 8px; background: #1e293b; color: #fff; border: none; border-radius: 10px; padding: 10px 20px; font-size: .82rem; font-weight: 600; font-family: 'Sora', sans-serif; transition: .2s; cursor: pointer; }
-        .btn-course:hover { background: #0f172a; color: #fff; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(15,23,42,.2); }
-
-        /* ── Search & Filter Bar ── */
-        .sf-bar { background: #fff; border: 1px solid #e9ecef; border-radius: 16px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
-        .sf-search-wrap { position: relative; flex: 1; min-width: 250px; }
-        .sf-search-wrap i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: .9rem; pointer-events: none; }
-        .sf-input { width: 100%; padding: 10px 14px 10px 42px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: .85rem; font-family: 'Sora', sans-serif; color: #1e293b; background: #f8fafc; outline: none; transition: .2s; }
-        .sf-input:focus { border-color: #0ea5e9; background: #fff; box-shadow: 0 0 0 3px rgba(14,165,233,.08); }
-        .sf-select { padding: 10px 36px 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: .82rem; font-family: 'Sora', sans-serif; font-weight: 600; color: #475569; background: #f8fafc; outline: none; cursor: pointer; transition: .2s; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; max-width: 200px; }
-        .sf-select:focus { border-color: #0ea5e9; background-color: #fff; box-shadow: 0 0 0 3px rgba(14,165,233,.08); }
-        .sf-count { font-size: .75rem; font-weight: 700; color: #94a3b8; white-space: nowrap; margin-left: auto; }
-        .sf-count span { color: #0ea5e9; font-size: .85rem;}
-
         /* ── No Results ── */
-        .course-card-container.hidden, .course-table-row.hidden { display: none !important; }
         #noResultsGrid, #noResultsList { display: none; }
         #noResultsGrid.show, #noResultsList.show { display: block; }
+
+        /* ── Pagination ── */
+        .pagination-bar {
+            background: #fff; border: 1px solid #e9ecef;
+            border-radius: 14px;
+            padding: 10px 20px; display: flex; align-items: center; justify-content: space-between;
+            flex-shrink: 0; margin-top: 12px;
+        }
+        .page-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0;
+            background: #fff; font-size: .75rem; font-weight: 700; cursor: pointer; transition: .2s;
+        }
+        .page-btn.active { background: #1e293b; color: #fff; border-color: #1e293b; }
+        .page-btn:hover:not(.active):not(:disabled) { background: #f1f5f9; }
+        .page-btn:disabled { opacity: .4; cursor: default; }
     </style>
 </head>
 <body>
@@ -112,11 +175,9 @@
 <div id="content">
     <div id="header-placeholder"></div>
 
-    <!-- MAIN WRAPPER: Flex layout to constrain height to viewport -->
-    <main class="p-4 p-md-5 d-flex flex-column" style="height: calc(100vh - 80px);">
-
-        <!-- flex-shrink-0 prevents headers from compressing -->
-        <div class="module-header d-flex flex-wrap justify-content-end align-items-center mb-4 gap-3 flex-shrink-0">
+    <main>
+        <!-- Top bar: view toggle + add course -->
+        <div class="d-flex flex-wrap justify-content-end align-items-center mb-3 gap-3 flex-shrink-0">
             <div class="d-flex gap-3 align-items-center flex-wrap">
                 <div class="btn-group view-toggle shadow-sm" role="group">
                     <button type="button" class="btn active" id="btnGrid" onclick="toggleView('grid')"><i class="fas fa-th-large me-1"></i> Grid</button>
@@ -128,7 +189,8 @@
             </div>
         </div>
 
-        <div class="sf-bar mb-4 flex-shrink-0">
+        <!-- Filter Bar -->
+        <div class="sf-bar mb-3">
             <div class="sf-search-wrap">
                 <i class="fas fa-search"></i>
                 <input type="text" class="sf-input" id="courseSearch" placeholder="Search course name, code, or dept…">
@@ -147,43 +209,58 @@
             <div class="sf-count" id="courseCount">Showing <span id="courseCountNum">0</span> courses</div>
         </div>
 
-        <!-- GRID VIEW: flex-grow-1 takes remaining space and makes the grid scrollable -->
-        <div class="row g-4 flex-grow-1" id="gridView" style="min-height: 0;"></div>
+        <!-- Single growing wrapper that holds both views -->
+        <div id="viewWrapper">
 
-        <div id="noResultsGrid" class="text-center py-5 flex-shrink-0">
-            <i class="fas fa-search d-block fs-2 text-muted opacity-25 mb-3"></i>
-            <div class="fw-bold text-muted">No courses match your search</div>
-            <div class="text-muted small">Try a different name, department, units, or material filter</div>
-        </div>
-
-        <!-- TABLE VIEW: flex-grow-1 takes remaining space and makes the table body scrollable -->
-        <div class="course-table-container shadow-sm flex-grow-1 d-flex flex-column" id="tableView" style="min-height: 0;">
-            <div class="table-responsive table-scroll-wrapper flex-grow-1 h-100">
-                <table class="table course-table mb-0">
-                    <thead>
-                        <tr>
-                            <th class="ps-4" style="width:25%;">Course Details</th>
-                            <th style="width:25%;">Description</th>
-                            <th style="width:30%;">Learning Materials</th>
-                            <th class="text-end pe-4" style="width:20%;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="courseTableBody">
-                        <tr><td colspan="4" class="text-center py-5 text-muted">Loading Courses...</td></tr>
-                    </tbody>
-                </table>
+            <!-- GRID VIEW -->
+            <div id="gridView">
+                <!-- cards injected here by JS -->
             </div>
-            <div id="noResultsList" class="text-center py-5 flex-shrink-0">
+
+            <!-- No results: grid -->
+            <div id="noResultsGrid" class="text-center py-5">
                 <i class="fas fa-search d-block fs-2 text-muted opacity-25 mb-3"></i>
                 <div class="fw-bold text-muted">No courses match your search</div>
                 <div class="text-muted small">Try a different name, department, units, or material filter</div>
             </div>
+
+            <!-- TABLE VIEW -->
+            <div id="tableView">
+                <div class="table-scroll-wrapper">
+                    <table class="table course-table mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4" style="width:25%;">Course Details</th>
+                                <th style="width:25%;">Description</th>
+                                <th style="width:30%;">Learning Materials</th>
+                                <th class="text-end pe-4" style="width:20%;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="courseTableBody">
+                            <tr><td colspan="4" class="text-center py-5 text-muted">Loading Courses...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- No results: list -->
+                <div id="noResultsList" class="text-center py-5 flex-shrink-0">
+                    <i class="fas fa-search d-block fs-2 text-muted opacity-25 mb-3"></i>
+                    <div class="fw-bold text-muted">No courses match your search</div>
+                    <div class="text-muted small">Try a different name, department, units, or material filter</div>
+                </div>
+            </div>
+
+        </div><!-- /viewWrapper -->
+
+        <!-- Pagination -->
+        <div class="pagination-bar shadow-sm">
+            <div class="small fw-bold text-muted" id="paginationInfo">Page 1 of 1</div>
+            <div class="d-flex gap-1" id="paginationControls"></div>
         </div>
 
     </main>
 </div>
 
-<!-- Modals -->
+<!-- ── Modals ── -->
 <div class="modal fade" id="viewFileModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content border-0 shadow">

@@ -14,7 +14,7 @@
         body { font-family:'Sora',sans-serif; background:#f0f2f7; display: flex; flex-direction: column; }
 
         #content { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 1.5rem !important; }
+        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 1.5rem !important; min-height: 0; }
 
         /* ── Action buttons ── */
         .btn-archive-inst {
@@ -67,34 +67,83 @@
             background-repeat:no-repeat; background-position:right 10px center;
         }
 
-        /* ── Scrollable Area ── */
-        .faculty-container-wrapper {
+        /* ── Shared view wrapper (mirrors courses #viewWrapper) ── */
+        #viewWrapper {
             flex: 1;
-            overflow-y: auto;
-            overflow-x: hidden; /* FIX: prevent horizontal scroll */
-            border-radius: 16px;
-            background: #fff;
-            border: 1px solid #e2e8f0;
+            min-height: 0;       /* critical: lets flex child shrink below content size */
+            overflow: hidden;
             position: relative;
         }
 
-        /* FIX: ensure grid view doesn't overflow */
+        /* ── GRID VIEW (mirrors courses #gridView) ── */
         #gridView {
-            min-width: 0;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 1.5rem;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 4px 2px 20px 2px;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+        #gridView::-webkit-scrollbar { width: 6px; }
+        #gridView::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+
+        /* Instructor card widths — mirrors .course-card-container */
+        .instructor-card-container {
+            flex: 0 0 calc(33.333% - 1rem);
+            min-width: 260px;
+            box-sizing: border-box;
+        }
+        @media (max-width: 1199px) {
+            .instructor-card-container { flex: 0 0 calc(50% - 0.75rem); }
+        }
+        @media (max-width: 767px) {
+            .instructor-card-container { flex: 0 0 100%; }
+        }
+
+        /* ── TABLE VIEW (mirrors courses #tableView) ── */
+        #tableView {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            background: #fff;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
             overflow: hidden;
         }
 
+        .table-scroll-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+        .table-scroll-wrapper::-webkit-scrollbar { width: 6px; }
+        .table-scroll-wrapper::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+
         .faculty-table thead th {
             position: sticky; top: 0; background: #f8fafc; z-index: 10;
-            font-size:.7rem; text-transform:uppercase; color:#64748b; font-weight:700; padding:14px 20px; border-bottom:2px solid #f1f5f9;
+            font-size:.7rem; text-transform:uppercase; color:#64748b; font-weight:700;
+            padding:14px 20px; border-bottom: none !important;
+            box-shadow: inset 0 -2px 0 #f1f5f9;
         }
+        .faculty-table tbody td { padding: 14px 20px; vertical-align: middle; border-bottom: 1px solid #f1f5f9; font-size: .85rem; }
+        .faculty-table tbody tr:hover { background: #f8fafc; }
+
+        /* ── No Results ── */
+        #noResultsMsg { display: none; }
+        #noResultsMsg.show { display: block; }
 
         /* ── Pagination ── */
         .pagination-bar {
-            background: #fff; border: 1px solid #e9ecef; border-top: none;
-            border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
-            padding: 12px 20px; display: flex; align-items: center; justify-content: space-between;
-            flex-shrink: 0;
+            background: #fff; border: 1px solid #e9ecef;
+            border-radius: 14px;
+            padding: 10px 20px; display: flex; align-items: center; justify-content: space-between;
+            flex-shrink: 0; margin-top: 12px;
         }
         .page-btn {
             display: inline-flex; align-items: center; justify-content: center;
@@ -102,9 +151,10 @@
             background: #fff; font-size: .75rem; font-weight: 700; cursor: pointer; transition: .2s;
         }
         .page-btn.active { background: #1e293b; color: #fff; border-color: #1e293b; }
-        .page-btn:hover:not(.active) { background: #f1f5f9; }
+        .page-btn:hover:not(.active):not(:disabled) { background: #f1f5f9; }
+        .page-btn:disabled { opacity: .4; cursor: default; }
 
-        /* Hide classes for views */
+        /* ── View Toggle ── */
         .view-toggle .btn.active { background:#1e293b; color:#fff; border-color:#1e293b; }
     </style>
 </head>
@@ -116,7 +166,7 @@
 
     <main>
         <!-- Page Header Actions -->
-        <div class="d-flex flex-wrap justify-content-end align-items-center mb-3 gap-3">
+        <div class="d-flex flex-wrap justify-content-end align-items-center mb-3 gap-3 flex-shrink-0">
             <div class="d-flex gap-2 align-items-center flex-wrap">
                 <div class="btn-group view-toggle shadow-sm" role="group">
                     <button type="button" class="btn active btn-sm" id="btnGrid" onclick="toggleView('grid')">
@@ -149,18 +199,24 @@
             </div>
         </div>
 
-        <!-- Main Scrollable Card -->
-        <div class="faculty-container-wrapper shadow-sm">
-            <!-- Grid View -->
-            <!-- FIX: added overflow-hidden to #gridView wrapper -->
-            <div class="p-4 overflow-hidden" id="gridView">
-                <!-- FIX: mx-0 neutralizes Bootstrap row's negative horizontal margins from g-4 -->
-                <div class="row g-4 mx-0" id="gridContent"></div>
+        <!-- Single growing wrapper (mirrors courses #viewWrapper) -->
+        <div id="viewWrapper">
+
+            <!-- GRID VIEW: vertical-scrolling flex-wrap (mirrors courses #gridView) -->
+            <div id="gridView">
+                <!-- Instructor cards injected here by JS.
+                     Each card must be wrapped in <div class="instructor-card-container">…</div> -->
             </div>
 
-            <!-- List View -->
-            <div id="tableView" style="display:none;">
-                <div class="table-responsive">
+            <!-- No Results -->
+            <div id="noResultsMsg" class="text-center py-5">
+                <i class="fas fa-search d-block fs-2 text-muted opacity-25 mb-3"></i>
+                <div class="fw-bold text-muted">No instructors match your search</div>
+            </div>
+
+            <!-- LIST / TABLE VIEW -->
+            <div id="tableView">
+                <div class="table-scroll-wrapper">
                     <table class="table faculty-table mb-0 align-middle">
                         <thead>
                             <tr>
@@ -176,14 +232,9 @@
                 </div>
             </div>
 
-            <!-- No Results -->
-            <div class="no-results-block text-center py-5" id="noResultsMsg" style="display:none;">
-                <i class="fas fa-search d-block fs-2 text-muted opacity-25 mb-3"></i>
-                <div class="fw-bold text-muted">No instructors match your search</div>
-            </div>
-        </div>
+        </div><!-- /viewWrapper -->
 
-        <!-- Pagination Footer (Sticks to bottom of the card) -->
+        <!-- Pagination Footer -->
         <div class="pagination-bar shadow-sm">
             <div class="small fw-bold text-muted" id="paginationInfo">Page 1 of 1</div>
             <div class="d-flex gap-1" id="paginationControls">

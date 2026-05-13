@@ -145,7 +145,7 @@ $(document).ready(function () {
             $('#btnList').addClass('active');
         } else {
             $('#tableView').hide();
-            $('#gridView').css('display', 'block'); // Must be block for padding wrapper
+           $('#gridView').css('display', 'flex');  // Must be block for padding wrapper
             $('#btnList').removeClass('active');
             $('#btnGrid').addClass('active');
         }
@@ -353,7 +353,7 @@ $(document).ready(function () {
     window.changePage = function(p) {
         _currentPage = p;
         renderTablePage();
-        $('.faculty-container-wrapper').scrollTop(0);
+        $('#gridView, .table-scroll-wrapper').scrollTop(0);
     };
 
     function populateSelects(depts) {
