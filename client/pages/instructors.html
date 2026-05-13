@@ -71,10 +71,17 @@
         .faculty-container-wrapper {
             flex: 1;
             overflow-y: auto;
+            overflow-x: hidden; /* FIX: prevent horizontal scroll */
             border-radius: 16px;
             background: #fff;
             border: 1px solid #e2e8f0;
             position: relative;
+        }
+
+        /* FIX: ensure grid view doesn't overflow */
+        #gridView {
+            min-width: 0;
+            overflow: hidden;
         }
 
         .faculty-table thead th {
@@ -145,8 +152,10 @@
         <!-- Main Scrollable Card -->
         <div class="faculty-container-wrapper shadow-sm">
             <!-- Grid View -->
-            <div class="p-4" id="gridView">
-                <div class="row g-4" id="gridContent"></div>
+            <!-- FIX: added overflow-hidden to #gridView wrapper -->
+            <div class="p-4 overflow-hidden" id="gridView">
+                <!-- FIX: mx-0 neutralizes Bootstrap row's negative horizontal margins from g-4 -->
+                <div class="row g-4 mx-0" id="gridContent"></div>
             </div>
 
             <!-- List View -->
