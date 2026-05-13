@@ -31,6 +31,19 @@
         .filter-pill.active { background-color: #0f172a !important; color: white !important; border-color: #0f172a !important; }
         .filter-pill.active .badge { background-color: rgba(255,255,255,0.2) !important; color: white !important; }
 
+        /* Dropdown Filter matches sf-select style */
+        .sf-select {
+            padding: 8px 32px 8px 14px;
+            border: 1.5px solid #e2e8f0; border-radius: 50rem; /* pill shape to match buttons */
+            font-size: .85rem; font-family: 'Sora', sans-serif; font-weight: 600;
+            color: #475569; background: #f8fafc; outline: none; cursor: pointer; transition: .2s;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 12px center;
+            min-width: 200px;
+        }
+        .sf-select:focus { border-color: #0ea5e9; background-color: #fff; box-shadow: 0 0 0 3px rgba(14,165,233,.08); }
+
         /* ── Scrollable Table Wrapper ── */
         .table-scroll-wrapper {
             flex: 1;
@@ -45,10 +58,10 @@
         .table-scroll-wrapper table thead th {
             position: sticky;
             top: 0;
-            background: #f8fafc; /* Match bg-light */
+            background: #f8fafc;
             z-index: 10;
             border-bottom: none !important;
-            box-shadow: inset 0 -2px 0 #e9ecef; /* Fake bottom border to prevent scrolling gaps */
+            box-shadow: inset 0 -2px 0 #e9ecef;
         }
 
         /* Modals Checkboxes & Radios */
@@ -74,55 +87,52 @@
 
         <div id="content" class="flex-grow-1 w-100">
 
-            <!-- Header is fixed inside the flex-column #content wrapper via flex-shrink-0 -->
             <div id="header-container" class="flex-shrink-0"></div>
 
             <main class="container-fluid p-3 p-md-4 p-lg-5 d-flex flex-column">
 
-                <!-- Alerts -->
                 <div id="alertsContainer" class="flex-shrink-0"></div>
 
-                <!-- Create Button -->
                 <div class="d-flex justify-content-end align-items-start flex-wrap gap-3 mb-3 flex-shrink-0">
                     <button class="btn btn-dark fw-bold rounded-pill px-4 py-2 shadow-sm d-flex align-items-center gap-2 hover-lift" data-bs-toggle="modal" data-bs-target="#createModal" title="Create New Task">
                         <i class="fas fa-plus text-info"></i> Create New Task
                     </button>
                 </div>
 
-                <!-- Desktop Filters -->
+                <!-- Desktop Filters (Integrated) -->
                 <div class="card border-0 shadow-sm rounded-4 mb-3 d-none d-md-flex bg-white flex-shrink-0">
                     <div class="card-body p-4">
-                        <div class="d-flex align-items-center gap-3 flex-wrap mb-3" id="classFilters">
-                            <span class="small fw-bold text-muted text-uppercase me-2">Class</span>
-                            <button class="btn btn-outline-secondary rounded-pill filter-pill active" data-filter-type="class" data-val="all" title="Filter by All Classes">
-                                All Classes <span class="badge bg-secondary ms-1 rounded-pill" id="cnt-cls-all">0</span>
-                            </button>
-                        </div>
-
-                        <hr class="text-muted opacity-25 my-3">
-
-                        <div class="d-flex align-items-center gap-3 flex-wrap" id="typeFilters">
+                        <div class="d-flex align-items-center gap-3 flex-wrap w-100" id="typeFilters">
                             <span class="small fw-bold text-muted text-uppercase me-2">Type</span>
-                            <button class="btn btn-outline-secondary rounded-pill filter-pill active" data-filter-type="type" data-val="all" title="Filter by All Types">
+                            <button class="btn btn-outline-secondary rounded-pill filter-pill active" data-filter-type="type" data-val="all">
                                 All <span class="badge bg-secondary ms-1 rounded-pill" id="cnt-type-all">0</span>
                             </button>
-                            <button class="btn btn-outline-secondary rounded-pill filter-pill" data-filter-type="type" data-val="assignment" title="Filter by Assignments">
+                            <button class="btn btn-outline-secondary rounded-pill filter-pill" data-filter-type="type" data-val="assignment">
                                 <i class="fas fa-file-alt text-primary me-1"></i> Assignments <span class="badge bg-secondary ms-1 rounded-pill" id="cnt-type-assignment">0</span>
                             </button>
-                            <button class="btn btn-outline-secondary rounded-pill filter-pill" data-filter-type="type" data-val="activity" title="Filter by Activities">
+                            <button class="btn btn-outline-secondary rounded-pill filter-pill" data-filter-type="type" data-val="activity">
                                 <i class="fas fa-running text-success me-1"></i> Activities <span class="badge bg-secondary ms-1 rounded-pill" id="cnt-type-activity">0</span>
                             </button>
-                            <button class="btn btn-outline-secondary rounded-pill filter-pill" data-filter-type="type" data-val="quiz" title="Filter by Quizzes">
+                            <button class="btn btn-outline-secondary rounded-pill filter-pill" data-filter-type="type" data-val="quiz">
                                 <i class="fas fa-brain text-warning me-1"></i> Quizzes <span class="badge bg-secondary ms-1 rounded-pill" id="cnt-type-quiz">0</span>
                             </button>
+
+                            <!-- Class Filter Dropdown (Pushed to Far Right via ms-auto) -->
+                            <div class="ms-auto d-flex align-items-center gap-2">
+                                <span class="small fw-bold text-muted text-uppercase">Class:</span>
+                                <select class="sf-select" id="deskClassFilter">
+                                    <option value="all">All Classes</option>
+                                    <!-- Populated via JS -->
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Mobile Filters -->
                 <div class="d-flex d-md-none gap-2 mb-3 flex-shrink-0">
-                    <select class="form-select border-0 shadow-sm rounded-3 fw-semibold text-dark bg-white" id="mobClassFilter" title="Filter by Class"></select>
-                    <select class="form-select border-0 shadow-sm rounded-3 fw-semibold text-dark bg-white" id="mobTypeFilter" title="Filter by Task Type">
+                    <select class="form-select border-0 shadow-sm rounded-3 fw-semibold text-dark bg-white" id="mobClassFilter"></select>
+                    <select class="form-select border-0 shadow-sm rounded-3 fw-semibold text-dark bg-white" id="mobTypeFilter">
                         <option value="all">All Types</option>
                         <option value="assignment">Assignments</option>
                         <option value="activity">Activities</option>

@@ -51,36 +51,45 @@ $(document).ready(function() {
     fetchData();
 
     function populateClassFilters() {
-        let deskHtml = '';
+        let deskHtml = '<option value="all">All Classes</option>';
         let mobHtml = '<option value="all">All Classes</option>';
 
         allClasses.forEach(c => {
-            deskHtml += `<button class="btn btn-outline-secondary rounded-pill filter-pill" data-filter-type="class" data-val="${c.class_id}">
-                <span class="badge bg-light text-dark border me-1">${c.course_code}</span> ${c.name}
-                <span class="badge bg-secondary ms-1 rounded-pill" id="cnt-cls-${c.class_id}">0</span>
-            </button>`;
-            mobHtml += `<option value="${c.class_id}">${c.course_code} - ${c.name}</option>`;
+            const label = `${c.course_code} - Section #${c.class_id}`;
+            deskHtml += `<option value="${c.class_id}">${label}</option>`;
+            mobHtml += `<option value="${c.class_id}">${label}</option>`;
         });
 
-        $('#classFilters').find('button:not([data-val="all"])').remove();
-        $('#classFilters').append(deskHtml);
+        // Apply to both desktop dropdown and mobile dropdown
+        $('#deskClassFilter').html(deskHtml);
         $('#mobClassFilter').html(mobHtml);
 
-        $('.filter-pill').off('click').on('click', function() {
-            const ftype = $(this).data('filter-type');
+        // Type Pill Click Listener
+        $('.filter-pill[data-filter-type="type"]').off('click').on('click', function() {
             const val = $(this).data('val');
-            $(`.filter-pill[data-filter-type="${ftype}"]`).removeClass('active btn-dark text-white').addClass('btn-outline-secondary');
+            $('.filter-pill[data-filter-type="type"]').removeClass('active btn-dark text-white').addClass('btn-outline-secondary');
             $(this).removeClass('btn-outline-secondary').addClass('active btn-dark text-white');
-            if (ftype === 'class') { currentFilterClass = val; $('#mobClassFilter').val(val); }
-            if (ftype === 'type') { currentFilterType = val; $('#mobTypeFilter').val(val); }
+
+            currentFilterType = val;
+            $('#mobTypeFilter').val(val);
             renderTable();
         });
 
-        $('#mobClassFilter').off('change').on('change', function() {
+        // Desktop Class Dropdown Listener
+        $('#deskClassFilter').off('change').on('change', function() {
             currentFilterClass = $(this).val();
-            $(`.filter-pill[data-filter-type="class"][data-val="${currentFilterClass}"]`).click();
+            $('#mobClassFilter').val(currentFilterClass); // Sync mobile
+            renderTable();
         });
 
+        // Mobile Class Dropdown Listener
+        $('#mobClassFilter').off('change').on('change', function() {
+            currentFilterClass = $(this).val();
+            $('#deskClassFilter').val(currentFilterClass); // Sync desktop
+            renderTable();
+        });
+
+        // Mobile Type Dropdown Listener
         $('#mobTypeFilter').off('change').on('change', function() {
             currentFilterType = $(this).val();
             $(`.filter-pill[data-filter-type="type"][data-val="${currentFilterType}"]`).click();
@@ -93,15 +102,12 @@ $(document).ready(function() {
         let visibleCount = 0;
 
         let cntTypeAll=0, cntAssign=0, cntAct=0, cntQuiz=0;
-        let classCounts = { 'all': allTasks.length };
 
         allTasks.forEach(t => {
-            if (!classCounts[t.class_id]) classCounts[t.class_id] = 0;
-            classCounts[t.class_id]++;
-
             const matchClass = currentFilterClass === 'all' || t.class_id == currentFilterClass;
             const matchType = currentFilterType === 'all' || t.real_type === currentFilterType;
 
+            // Only count types if the class matches the current filter
             if (matchClass) {
                 cntTypeAll++;
                 if (t.real_type === 'assignment') cntAssign++;
@@ -157,18 +163,17 @@ $(document).ready(function() {
         $('#cnt-type-assignment').text(cntAssign);
         $('#cnt-type-activity').text(cntAct);
         $('#cnt-type-quiz').text(cntQuiz);
-        $('#cnt-cls-all').text(classCounts['all'] || 0);
-        allClasses.forEach(c => { $(`#cnt-cls-${c.class_id}`).text(classCounts[c.class_id] || 0); });
     }
 
     function populateModals() {
         let clsHtml = '';
         allClasses.forEach(c => {
+            // Using class_id as Section Number
             clsHtml += `
             <label class="cls-item d-flex align-items-center gap-3 p-3 rounded-3 bg-white" id="cb_lbl_${c.class_id}">
                 <input type="checkbox" name="class_ids[]" value="${c.class_id}" class="form-check-input mt-0" onchange="$(this).closest('.cls-item').toggleClass('chk', this.checked)">
                 <div>
-                    <div class="fw-bold text-dark small">${c.course_code} — ${c.name}</div>
+                    <div class="fw-bold text-dark small">${c.course_code} — Section #${c.class_id}</div>
                     <div class="small text-muted font-monospace-sm">${c.semester} ${c.year}</div>
                 </div>
             </label>`;
