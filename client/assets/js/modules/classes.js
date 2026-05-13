@@ -1,5 +1,19 @@
 // classes.js
 
+// ─── Avatar Colors (matches students.js) ─────────────────────────────────────
+const AVATAR_COLORS = [
+    '#0ea5e9','#22c55e','#f59e0b','#f43f5e',
+    '#8b5cf6','#06b6d4','#ec4899','#14b8a6',
+    '#f97316','#6366f1'
+];
+
+// Derive a stable color index from a string (instructor name / id)
+function avatarColor(seed) {
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
 // ─── Pagination State ─────────────────────────────────────────────────────────
 const PAGE_SIZE = 50;
 let currentPage = 1;
@@ -356,13 +370,21 @@ $(document).ready(function() {
             const statusColor = isFull ? 'text-danger' : 'text-success';
             const barColor    = isFull ? 'bg-danger'   : 'bg-success';
             const pct         = Math.min((cur / Math.max(1, max)) * 100, 100);
-            const avatar      = `https://ui-avatars.com/api/?name=${encodeURIComponent(sec.first_name+'+'+sec.last_name)}&background=f1f5f9&color=0ea5e9&bold=true`;
             const termStr     = `${sec.semester} ${sec.year}`;
             const deptBadge   = sec.dept_name
                 ? `<span class="badge bg-secondary-subtle text-secondary border mt-1" style="font-size:.65rem;">
                        <i class="fas fa-building me-1"></i>${sec.dept_name}
                    </span>`
                 : '';
+
+            // ── Colorful square initials avatar (same system as students) ──
+            const firstName  = sec.first_name || '';
+            const lastName   = sec.last_name  || '';
+            const initials   = ((firstName.charAt(0) || '') + (lastName.charAt(0) || '')).toUpperCase();
+            const seed       = `${firstName} ${lastName}`.trim() || String(sec.instructor_id);
+            const bgColor    = avatarColor(seed);
+
+            const avatarHtml = `<div class="instructor-avatar" style="background:${bgColor};">${initials}</div>`;
 
             const rowHtml = `
             <tr class="class-row-wrap hidden"
@@ -383,9 +405,9 @@ $(document).ready(function() {
                     <span class="small text-muted fw-medium">${termStr}</span>
                 </td>
                 <td class="py-3">
-                    <div class="d-flex align-items-center">
-                        <img src="${avatar}" class="rounded-circle me-2 avatar-sm" alt="avatar">
-                        <span class="small fw-bold text-dark">Prof. ${sec.last_name}</span>
+                    <div class="d-flex align-items-center gap-2">
+                        ${avatarHtml}
+                        <span class="small fw-bold text-dark">Prof. ${lastName}</span>
                     </div>
                 </td>
                 <td class="py-3">

@@ -118,6 +118,22 @@
         .page-btn.active { background: #1e293b; color: #fff; border-color: #1e293b; }
         .page-btn:disabled { cursor: not-allowed; }
 
+        /* ── Instructor Avatar — colorful square initials (matches student style) ── */
+        .instructor-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;          /* square with soft corners, same as .stu-avatar */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .72rem;
+            font-weight: 800;
+            color: #fff;
+            flex-shrink: 0;
+            font-family: 'Sora', sans-serif;
+            letter-spacing: .5px;
+        }
+
         /* Utility */
         .class-row-wrap.hidden { display: none; }
     </style>
@@ -227,6 +243,58 @@
             <div class="modal-footer border-0 p-4 pt-0">
                 <button type="submit" class="btn btn-dark w-100 py-2 fw-bold rounded-3 shadow-sm">
                     Open Class Section
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Class Modal -->
+<div class="modal fade" id="editClassModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <form id="editClassForm" class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white border-0 py-3 px-4">
+                <h5 class="modal-title fw-bold" style="font-size: 1rem;">
+                    <i class="fas fa-edit me-2 text-info"></i>Edit Class Section
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="edit_class_id">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Course Catalog</label>
+                    <select id="edit_course_id" class="sf-select w-100" style="appearance: auto;" required>
+                        <option value="">Loading Courses...</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Assign Instructor</label>
+                    <select id="edit_instructor_id" class="sf-select w-100" style="appearance: auto;" required>
+                        <option value="">Loading Faculty...</option>
+                    </select>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Semester</label>
+                        <select id="edit_semester" class="sf-select w-100" style="appearance: auto;" required>
+                            <option value="1st Semester">1st Semester</option>
+                            <option value="2nd Semester">2nd Semester</option>
+                            <option value="Summer">Summer</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Academic Year</label>
+                        <input type="number" id="edit_year" class="sf-input" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-muted text-uppercase">Max Student Capacity</label>
+                    <input type="number" id="edit_capacity" class="sf-input" required>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0">
+                <button type="submit" class="btn btn-dark w-100 py-2 fw-bold rounded-3 shadow-sm">
+                    Save Changes
                 </button>
             </div>
         </form>
