@@ -153,10 +153,10 @@ switch ($action) {
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
 
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-            $mail->Port       = 465;
+            $mail->Port       = 587;
 
 
-            $mail->Timeout    = 10;
+            $mail->Timeout    = 20;
 
             $mail->setFrom('no-reply@artisanslms.onrender.com', 'Artisans LMS');
             $mail->addAddress($email, $name);
@@ -183,7 +183,7 @@ switch ($action) {
             json_response(['status' => 'success', 'message' => 'Email sent via SMTP.']);
 
        } catch (Exception $e) {
-    
+
     json_response(['status' => 'error', 'message' => "SMTP Error: " . $mail->ErrorInfo], 500);
 }
         break;
