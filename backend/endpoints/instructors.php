@@ -112,13 +112,14 @@ switch ($action) {
         $upd = $conn->prepare("UPDATE employees SET password_hash = ? WHERE employee_id = ?");
         $upd->bind_param("si", $hashed, $eid);
 
-        if ($upd->execute()) {
-            json_response([
-                'status'          => 'success',
-                'message'         => 'Password generated.',
-                'instructor_name' => $instructor['first_name'] . ' ' . $instructor['last_name'],
-                'temp_password'   => $tmp_pass,
-            ]);
+       if ($upd->execute()) {
+        json_response([
+            'status'           => 'success',
+            'message'          => 'Password generated.',
+            'instructor_name'  => $instructor['first_name'] . ' ' . $instructor['last_name'],
+            'instructor_email' => $instructor['email'], 
+            'temp_password'    => $tmp_pass,
+        ]);
         } else {
             json_response(['status' => 'error', 'message' => 'Failed to update password.'], 500);
         }
