@@ -15,6 +15,10 @@
 error_reporting(0);
 ini_set('display_errors', 0);
 
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../../server/config/db.php';
 require_once __DIR__ . '/../middleware/json_response.php';
 
@@ -41,12 +45,17 @@ switch ($action) {
 
         $instructors_arr = [];
         $sql = "
-            SELECT e.*, p.title AS pos_title, d.name AS dept_name
-            FROM   employees   e
-            LEFT JOIN positions   p ON e.position_id   = p.position_id
+            SELECT
+                e.*,
+                p.title AS pos_title,
+                d.name AS dept_name,
+                COUNT(c.class_id) AS class_count
+            FROM employees e
+            LEFT JOIN positions p ON e.position_id = p.position_id
             LEFT JOIN departments d ON e.department_id = d.department_id
-            WHERE  e.is_faculty  = 1
-              AND  e.is_archived = 0
+            LEFT JOIN classes c ON e.employee_id = c.instructor_id
+            WHERE e.is_faculty = 1 AND e.is_archived = 0
+            GROUP BY e.employee_id
             ORDER BY e.last_name ASC
         ";
         $res = $conn->query($sql);
@@ -121,6 +130,63 @@ switch ($action) {
             ]);
         } else {
             json_response(['status' => 'error', 'message' => 'Failed to update password.'], 500);
+        }
+        break;
+
+
+        case 'send_credentials_email':
+        $body  = json_decode(file_get_contents('php://input'), true);
+        $email = filter_var(trim($body['email'] ?? ''), FILTER_VALIDATE_EMAIL);
+        $name  = htmlspecialchars(trim($body['name'] ?? 'Instructor'));
+        $pass  = htmlspecialchars(trim($body['temp_password'] ?? ''));
+        $link  = 'https://artisanslms.onrender.com';
+
+        if (!$email || !$pass) {
+            json_response(['status' => 'error', 'message' => 'Missing email or password.'], 400);
+        }
+
+        $mail = new PHPMailer(true);
+
+        try {
+            // --- Server Settings (Update with your SMTP provider details) ---
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.gmail.com';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = 'artisanslms@domain.com';
+            $mail->Password   = 'mibc ghzg lrke ewgw';
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
+
+            // --- Recipients ---
+            $mail->setFrom('no-reply@artisanslms.onrender.com', 'Artisans LMS');
+            $mail->addAddress($email, $name);
+
+            // --- Content ---
+            $mail->isHTML(true);
+            $mail->Subject = 'Your Artisans LMS Login Credentials';
+
+            // Your existing HTML template (condensed for brevity)
+            $mail->Body = "
+            <html>
+                <body style='font-family: Arial; background: #f0f2f7; padding: 20px;'>
+                    <div style='max-width: 500px; margin: auto; background: #fff; padding: 30px; border-radius: 12px;'>
+                        <h2 style='color: #1e293b;'>Hello, {$name}!</h2>
+                        <p>Your faculty account is active. Please use the temporary credentials below:</p>
+                        <div style='background: #f8fafc; padding: 15px; border: 1px solid #e2e8f0; border-radius: 8px;'>
+                            <strong>Email:</strong> {$email}<br>
+                            <strong>Temp Password:</strong> <span style='font-family: monospace; font-size: 1.2em;'>{$pass}</span>
+                        </div>
+                        <p><a href='{$link}' style='display:inline-block; padding: 12px 24px; background: #1e293b; color: #fff; text-decoration: none; border-radius: 8px; margin-top: 15px;'>Log In Now</a></p>
+                    </div>
+                </body>
+            </html>";
+
+            $mail->send();
+            json_response(['status' => 'success', 'message' => 'Email sent via SMTP.']);
+
+        } catch (Exception $e) {
+            error_log("PHPMailer Error: {$mail->ErrorInfo}");
+            json_response(['status' => 'error', 'message' => "Mail failed: {$mail->ErrorInfo}"], 500);
         }
         break;
 

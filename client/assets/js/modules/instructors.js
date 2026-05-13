@@ -11,10 +11,10 @@ $(document).ready(function () {
     const API_URL = '../../backend/endpoints/instructors.php';
 
     // ── Global Pagination State ──────────────────────────────────────────────
-    let _allInstructorsRaw = [];
+    let _allInstructorsRaw   = [];
     let _filteredInstructors = [];
-    let _currentPage = 1;
-    const _itemsPerPage = 50;
+    let _currentPage         = 1;
+    const _itemsPerPage      = 50;
 
     let currentView = localStorage.getItem('instructorViewPref') || 'grid';
 
@@ -28,7 +28,7 @@ $(document).ready(function () {
 
     // ── Refresh button ──────────────────────────────────────────────────────
     $('#btnSyncHris').on('click', function () {
-        const $btn        = $(this);
+        const $btn         = $(this);
         const originalHtml = $btn.html();
 
         $btn.html('<i class="fas fa-spinner fa-spin me-1 me-md-2"></i><span class="d-none d-sm-inline">Refreshing...</span>')
@@ -53,17 +53,14 @@ $(document).ready(function () {
                 if (json.status === 'success') {
                     _allInstructorsRaw = json.data || [];
                     populateSelects(json.departments);
-
-                    // Automatically applies filters and renders page 1
                     filterInstructors();
-
                     if (typeof onComplete === 'function') onComplete();
                 } else {
                     showToast(json.message || 'Failed to load instructors.', 'error');
                     if (typeof onComplete === 'function') onComplete();
                 }
             },
-            error   : function (xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error('AJAX Error:', xhr.responseText || error);
                 showToast('Server error loading instructors.', 'error');
                 if (typeof onComplete === 'function') onComplete();
@@ -84,9 +81,9 @@ $(document).ready(function () {
             success    : function (res) {
                 if (res.status === 'success') {
                     Swal.fire({
-                        icon           : 'success',
-                        title          : 'Login Activated!',
-                        html           : `
+                        icon : 'success',
+                        title: 'Login Activated!',
+                        html : `
                             <p>Give these credentials to <strong>${res.instructor_name}</strong>:</p>
                             <div class="p-3 bg-light border rounded mt-3 text-center"
                                  style="font-family:monospace;font-size:1.5rem;letter-spacing:3px;">
@@ -94,8 +91,74 @@ $(document).ready(function () {
                             </div>
                             <p class="text-muted small mt-3">
                                 They will use their official email and this password to log in.
-                            </p>`,
+                            </p>
+                            <hr class="swal-divider">
+                            <p class="swal-email-hint">Want to send the credentials directly to their inbox?</p>
+                            <button id="swalSendEmailBtn"
+                                    class="swal-email-btn"
+                                    data-email="${res.instructor_email}"
+                                    data-name="${res.instructor_name}"
+                                    data-pass="${res.temp_password}">
+                                <i class="fas fa-envelope me-2"></i>Send Credentials via Email
+                            </button>
+                            <div id="swalEmailStatus"></div>`,
                         confirmButtonText: 'Done',
+                        didOpen: () => {
+                            document.getElementById('swalSendEmailBtn').addEventListener('click', function () {
+                                const btn      = this;
+                                const email    = btn.dataset.email;
+                                const name     = btn.dataset.name;
+                                const password = btn.dataset.pass;
+                                const $status  = $('#swalEmailStatus');
+
+                                btn.disabled   = true;
+                                btn.innerHTML  = '<i class="fas fa-spinner fa-spin me-2"></i>Sending…';
+
+                                $.ajax({
+                                    url        : `${API_URL}?action=send_credentials_email`,
+                                    method     : 'POST',
+                                    contentType: 'application/json',
+                                    data       : JSON.stringify({
+                                        employee_id  : employeeId,
+                                        email        : email,
+                                        name         : name,
+                                        temp_password: password
+                                    }),
+                                    dataType: 'json',
+                                    success : function (emailRes) {
+                                        if (emailRes.status === 'success') {
+                                            btn.innerHTML = '<i class="fas fa-check me-2"></i>Email Sent!';
+                                            btn.classList.add('sent');
+                                            $status.html(
+                                                `<span class="text-success">
+                                                    <i class="fas fa-check-circle me-1"></i>
+                                                    Sent to <strong>${email}</strong>
+                                                </span>`
+                                            );
+                                        } else {
+                                            btn.disabled  = false;
+                                            btn.innerHTML = '<i class="fas fa-envelope me-2"></i>Send Credentials via Email';
+                                            $status.html(
+                                                `<span class="text-danger">
+                                                    <i class="fas fa-exclamation-circle me-1"></i>
+                                                    ${emailRes.message || 'Failed to send. Try again.'}
+                                                </span>`
+                                            );
+                                        }
+                                    },
+                                    error: function () {
+                                        btn.disabled  = false;
+                                        btn.innerHTML = '<i class="fas fa-envelope me-2"></i>Send Credentials via Email';
+                                        $status.html(
+                                            `<span class="text-danger">
+                                                <i class="fas fa-exclamation-circle me-1"></i>
+                                                Server error. Please try again.
+                                            </span>`
+                                        );
+                                    }
+                                });
+                            });
+                        }
                     });
                 } else {
                     Swal.fire('Error', res.message, 'error');
@@ -145,42 +208,40 @@ $(document).ready(function () {
             $('#btnList').addClass('active');
         } else {
             $('#tableView').hide();
-           $('#gridView').css('display', 'flex');  // Must be block for padding wrapper
+            $('#gridView').css('display', 'flex');
             $('#btnList').removeClass('active');
             $('#btnGrid').addClass('active');
         }
-
     };
 
     function toggleEmptyState() {
-    if (_filteredInstructors.length === 0) {
-        $('#noResultsMsg').show();
-        $('#gridView, #tableView').hide();
-    } else {
-        $('#noResultsMsg').hide();
-        // Directly restore the correct view without calling toggleView()
-        if (currentView === 'list') {
-            $('#gridView').hide();
-            $('#tableView').css('display', 'flex');
+        if (_filteredInstructors.length === 0) {
+            $('#noResultsMsg').show();
+            $('#gridView, #tableView').hide();
         } else {
-            $('#tableView').hide();
-            $('#gridView').css('display', 'flex');
+            $('#noResultsMsg').hide();
+            if (currentView === 'list') {
+                $('#gridView').hide();
+                $('#tableView').css('display', 'flex');
+            } else {
+                $('#tableView').hide();
+                $('#gridView').css('display', 'flex');
+            }
         }
     }
-}
 
     // ════════════════════════════════════════════════════════════════════════
     // FILTERING & PAGINATION
     // ════════════════════════════════════════════════════════════════════════
 
     function filterInstructors() {
-        const q     = $('#instSearch').val().toLowerCase().trim();
-        const dept  = $('#instDeptFilter').val().toLowerCase();
-        const clsF  = $('#instClassFilter').val();
+        const q    = $('#instSearch').val().toLowerCase().trim();
+        const dept = $('#instDeptFilter').val().toLowerCase();
+        const clsF = $('#instClassFilter').val();
 
         _filteredInstructors = _allInstructorsRaw.filter(row => {
-            const name  = (`${row.first_name} ${row.last_name}`).toLowerCase();
-            const email = (row.email || '').toLowerCase();
+            const name    = (`${row.first_name} ${row.last_name}`).toLowerCase();
+            const email   = (row.email || '').toLowerCase();
             const deptVal = (row.dept_name || '').toLowerCase();
             const classes = parseInt(row.class_count) || 0;
 
@@ -216,18 +277,17 @@ $(document).ready(function () {
             return;
         }
 
-        const start = (_currentPage - 1) * _itemsPerPage;
+        const start    = (_currentPage - 1) * _itemsPerPage;
         const pageData = _filteredInstructors.slice(start, start + _itemsPerPage);
 
         let gridHtml = '';
         let listHtml = '';
 
         pageData.forEach(row => {
-            const safeFname  = (row.first_name || '').replace(/'/g, '&apos;').replace(/"/g, '&quot;');
-            const safeLname  = (row.last_name  || '').replace(/'/g, '&apos;').replace(/"/g, '&quot;');
-            const avatarUrl  = `https://ui-avatars.com/api/?name=${encodeURIComponent(row.first_name + '+' + row.last_name)}&background=0ea5e9&color=fff&bold=true`;
+            const safeFname = (row.first_name || '').replace(/'/g, '&apos;').replace(/"/g, '&quot;');
+            const safeLname = (row.last_name  || '').replace(/'/g, '&apos;').replace(/"/g, '&quot;');
+            const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(row.first_name + '+' + row.last_name)}&background=0ea5e9&color=fff&bold=true`;
 
-            // Normalise gender display
             let genderStr = '—';
             const g = (row.gender || '').toLowerCase();
             if (g === 'm' || g === 'male')   genderStr = 'Male';
@@ -355,7 +415,7 @@ $(document).ready(function () {
         $('#paginationControls').html(html);
     }
 
-    window.changePage = function(p) {
+    window.changePage = function (p) {
         _currentPage = p;
         renderTablePage();
         $('#gridView, .table-scroll-wrapper').scrollTop(0);
