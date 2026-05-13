@@ -195,7 +195,7 @@ $(document).ready(function () {
     }
 
     function renderTablePage() {
-        const $gridContent = $('#gridContent');
+        const $gridContent = $('#gridView');
         const $tbody       = $('#instTableBody');
 
         $gridContent.empty();
@@ -234,8 +234,8 @@ $(document).ready(function () {
                 : 'bg-secondary-subtle text-secondary';
 
             // ── Grid card ──────────────────────────────────────────────────
-            gridHtml += `
-            <div class="col-12 col-sm-6 col-xl-4 inst-card-col">
+            gridHtml +=
+            `<div class="instructor-card-container">
                 <div class="faculty-card shadow-sm h-100 p-4 bg-white rounded-4 d-flex flex-column">
                     <div class="d-flex align-items-center mb-3">
                         <img src="${avatarUrl}&size=80"
