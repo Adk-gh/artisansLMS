@@ -150,19 +150,24 @@ $(document).ready(function () {
             $('#btnGrid').addClass('active');
         }
 
-        // Ensure empty state matches current view bounds
-        toggleEmptyState();
     };
 
     function toggleEmptyState() {
-        if (_filteredInstructors.length === 0) {
-            $('#noResultsMsg').show();
-            $('#gridView, #tableView').hide();
+    if (_filteredInstructors.length === 0) {
+        $('#noResultsMsg').show();
+        $('#gridView, #tableView').hide();
+    } else {
+        $('#noResultsMsg').hide();
+        // Directly restore the correct view without calling toggleView()
+        if (currentView === 'list') {
+            $('#gridView').hide();
+            $('#tableView').css('display', 'flex');
         } else {
-            $('#noResultsMsg').hide();
-            window.toggleView(currentView); // Restores correct view display state
+            $('#tableView').hide();
+            $('#gridView').css('display', 'flex');
         }
     }
+}
 
     // ════════════════════════════════════════════════════════════════════════
     // FILTERING & PAGINATION
