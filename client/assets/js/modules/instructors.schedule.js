@@ -13,13 +13,13 @@ window.initHeader = function() {
         'instructor_assignments.html': { title: 'Task Manager',           subtitle: 'Create and manage assignments for your assigned classes.' },
         'students.html':               { title: 'Manage Students',        subtitle: 'Manage student profiles, accounts, and records.' },
         'instructors.html':            { title: 'Master Instructors',     subtitle: 'Manage faculty accounts, profiles, and subject loads.' },
-        'instructors.schedule.html':   { title: 'My Schedule',            subtitle: 'View your weekly timetable and teaching loads.' },
+        'instructors.schedule.html':   { title: 'My Schedule',            subtitle: 'View your weekly timetable.' },
         'reports.html':                { title: 'System Reports',         subtitle: 'Generate insights and analytics on system activity.' },
         'profile.html':                { title: 'My Profile',             subtitle: 'Manage your personal information and account settings.' },
     };
 
     const currentPage = window.location.pathname.split('/').pop() || 'instructors.schedule.html';
-    const page        = PAGE_TITLES[currentPage] || { title: 'My Schedule', subtitle: 'View your weekly timetable and teaching loads.' };
+    const page        = PAGE_TITLES[currentPage] || { title: 'My Schedule', subtitle: 'View your weekly timetable.' };
 
     $('#headerPageTitle').text(page.title);
     $('#headerPageSubtitle').text(page.subtitle);
