@@ -288,7 +288,7 @@ function initChatView() {
             if (data.status === 'success') {
                 populateRoomInfo(data);
 
-               
+
                 // ─────────────────────────────────────────────────────────────
 
                 initFirebase();
@@ -354,12 +354,9 @@ function populateRoomInfo(data) {
 
 // ─── Input bar: emoji + attach + enter-to-send ────────────────────────────────
 function initInputBar() {
-    const picker    = document.getElementById('emojiPicker');
-    const emojiBtn  = document.getElementById('emojiBtn');
-    const attachBtn = document.getElementById('attachBtn');
-    const fileInput = document.getElementById('fileUploadInput');
+    const picker   = document.getElementById('emojiPicker');
+    const emojiBtn = document.getElementById('emojiBtn');
 
-    // Emoji toggle
     emojiBtn.addEventListener('click', e => {
         e.stopPropagation();
         picker.style.display = picker.style.display === 'block' ? 'none' : 'block';
@@ -370,13 +367,6 @@ function initInputBar() {
         document.getElementById('msgInput').focus();
     });
     document.addEventListener('click', () => { picker.style.display = 'none'; });
-
-    // Attach
-    attachBtn.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', function () {
-        // TODO: implement file upload to your storage endpoint
-        alert('File upload: map this to your storage endpoint.');
-    });
 }
 
 // ─── Firebase: chat + lecture ─────────────────────────────────────────────────
