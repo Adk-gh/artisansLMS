@@ -15,20 +15,63 @@
 
         /* Scrollbar hide */
         .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
 
         /* ── Filter pills ── */
         .filter-pill { transition: 0.2s; cursor: pointer; white-space: nowrap; }
         .filter-pill.active { background-color: #0f172a !important; color: white !important; border-color: #0f172a !important; }
 
-        /* ── Top tab nav (Chat / Modules / Tasks+Quizzes) ── */
+        /* ── FIX: header must not clip dropdown ── */
+        #header-container {
+            flex-shrink: 0;
+            overflow: visible;
+            position: relative;
+            z-index: 200;
+        }
+
+        /* ── Collab-style chat header (back btn + course code + actions) ── */
+        .collab-header {
+            background: #fff;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            gap: .5rem;
+            flex-shrink: 0;
+            min-height: 52px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        /* ── Collab-style tab nav ── */
+        .collab-nav {
+            display: flex;
+            align-items: center;
+            flex-nowrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            background: #fff;
+            border-bottom: 1px solid #e9ecef;
+            flex-shrink: 0;
+            padding: 0 8px;
+            position: sticky;
+            top: 52px;
+            z-index: 99;
+        }
+
+        .collab-nav::-webkit-scrollbar { display: none; }
+        .collab-nav { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* ── Nav Tabs (matching collaborations.html .chat-tab) ── */
         .page-tab {
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 0.75rem 1rem;
+            padding: 0.75rem 0.75rem;
             font-weight: 600;
-            font-size: 0.85rem;
+            font-size: clamp(.75rem, 3vw, .875rem);
             color: #64748b;
             text-decoration: none;
             border-bottom: 3px solid transparent;
@@ -36,7 +79,7 @@
             transition: color .15s, border-color .15s;
         }
         .page-tab:hover { color: #0f172a; }
-        .page-tab.active { color: #0d6efd; border-bottom-color: #0d6efd; }
+        .page-tab.active { color: #0d6efd !important; border-bottom-color: #0d6efd; }
 
         /* ── Inner sub-tabs (Tasks | Quizzes) ── */
         .sub-tab {
@@ -56,11 +99,7 @@
             text-decoration: none;
         }
         .sub-tab:hover { color: #0f172a; border-color: #94a3b8; }
-        .sub-tab.active {
-            background: #0f172a;
-            color: #fff;
-            border-color: #0f172a;
-        }
+        .sub-tab.active { background: #0f172a; color: #fff; border-color: #0f172a; }
 
         /* ── Panel visibility ── */
         .tab-panel { display: none; }
@@ -105,6 +144,12 @@
         .cls-item:hover { background-color: #f8fafc; }
         .cls-item.chk { background-color: #f0f9ff; border-color: #bae6fd; }
         .cls-item.disabled-cls { opacity: 0.5; pointer-events: none; background: #f8fafc; }
+
+        /* ── Mobile tweaks ── */
+        @media (max-width: 575.98px) {
+            .collab-header { padding: 6px 10px; }
+            .modal-dialog { margin: .5rem; }
+        }
     </style>
 </head>
 <body>
@@ -112,26 +157,30 @@
 <div class="d-flex min-vh-100">
     <div id="sidebar-container"></div>
 
-    <div id="content" class="flex-grow-1 w-100">
+    <div id="content" class="flex-grow-1 w-100 d-flex flex-column">
         <div id="header-container"></div>
 
-        <header class="sticky-top bg-white border-bottom d-flex align-items-center px-3 py-2 shadow-sm">
-            <div class="d-flex align-items-center gap-3 w-100">
-                <a href="collaborations.html" class="btn btn-sm btn-light border text-dark d-flex align-items-center gap-2 fw-bold" id="topBackBtn">
-                    <i class="fas fa-arrow-left text-muted"></i>
-                    <span class="d-none d-sm-inline">Back</span>
-                </a>
-                <div class="overflow-hidden">
-                    <div class="fw-bold fs-6 lh-1 text-truncate text-dark" id="courseCodeLabel"></div>
-                    <div class="small text-muted d-none d-sm-block text-truncate fw-semibold mt-1" id="courseNameLabel"></div>
-                </div>
-            </div>
-        </header>
+        <!-- ── Collab-style back + course code header ── -->
+        <div class="collab-header shadow-sm">
+            <a href="collaborations.html" id="topBackBtn"
+               class="btn btn-sm btn-light border text-dark fw-bold d-flex align-items-center gap-1 flex-shrink-0">
+                <i class="fas fa-arrow-left text-muted"></i>
+                <span class="d-none d-sm-inline">Back</span>
+            </a>
 
-        <nav class="nav bg-white border-bottom flex-nowrap hide-scroll sticky-top px-2">
-            <a href="#" id="tabChat"    class="page-tab"><i class="fas fa-comments d-none d-sm-inline"></i> Live Chat</a>
-            <a href="#" id="tabModules" class="page-tab"><i class="fas fa-book-open d-none d-sm-inline"></i> Modules</a>
-            <a href="#" id="tabTasks"   class="page-tab active"><i class="fas fa-list-check d-none d-sm-inline"></i> Tasks</a>
+            <h6 class="mb-0 fw-bold text-dark flex-grow-1 px-1 text-truncate" id="courseCodeLabel"
+                style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+                       font-size:clamp(.75rem,3.5vw,1rem);"></h6>
+
+            <!-- placeholder so layout matches collaborations (no action btns here) -->
+            <div class="flex-shrink-0"></div>
+        </div>
+
+        <!-- ── Collab-style tab nav ── -->
+        <nav class="collab-nav">
+            <a href="#" id="tabChat"    class="page-tab"><i class="fas fa-comments me-1"></i>Live Chat</a>
+            <a href="#" id="tabModules" class="page-tab"><i class="fas fa-book-open me-1"></i>Modules</a>
+            <a href="#" id="tabTasks"   class="page-tab active"><i class="fas fa-list-check me-1"></i>Tasks</a>
         </nav>
 
         <main class="container-fluid p-3 p-md-4 p-lg-5">
@@ -143,9 +192,9 @@
                 </h5>
                 <div class="d-flex gap-2" id="teacherActions">
                     <a id="btnCreateTask" href="/client/pages/instructor_assignments.html"
-   class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm fw-bold d-none">
-    <i class="fas fa-plus me-1"></i> Create Task
-</a>
+                       class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm fw-bold d-none">
+                        <i class="fas fa-plus me-1"></i> Create Task
+                    </a>
                     <button id="btnCreateQuiz" class="btn btn-purple btn-sm rounded-pill px-4 shadow-sm fw-bold d-none"
                             data-bs-toggle="modal" data-bs-target="#createQuizModal">
                         <i class="fas fa-plus me-1"></i> Create Quiz
@@ -176,7 +225,7 @@
                                 <i class="fas fa-file-alt text-primary me-1"></i> Assignments
                             </button>
                             <button class="btn btn-sm btn-outline-secondary rounded-pill filter-pill" data-filter-type="cat" data-val="activity">
-                                <i class="fas fa-running me-1" ></i> Activities
+                                <i class="fas fa-running me-1"></i> Activities
                             </button>
                         </div>
                     </div>
@@ -213,7 +262,9 @@
                     <h6 class="fw-bold">No tasks match filter</h6>
                 </div>
 
-            </div><div id="panelQuizzes" class="tab-panel">
+            </div>
+
+            <div id="panelQuizzes" class="tab-panel">
 
                 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
                     <div class="d-flex gap-2 flex-wrap" id="dynamicQuizFilters"></div>
@@ -242,9 +293,12 @@
                     <h6 class="fw-bold">No quizzes match filter</h6>
                 </div>
 
-            </div></main>
-    </div></div>
+            </div>
+        </main>
+    </div>
+</div>
 
+<!-- ── Quiz Overlay ── -->
 <div id="quizOverlay">
     <div class="bg-dark p-3 d-flex justify-content-between align-items-center border-bottom border-secondary">
         <span class="text-light fw-bold fs-5" id="quizOverlayTitle">Quiz</span>
@@ -258,7 +312,7 @@
     <div class="bg-dark w-100">
         <div class="bg-primary h-100" id="quizProgressBar"></div>
     </div>
-    <div class="flex-grow-1 overflow-auto p-4 w-100 mx-auto"id="quizBody"></div>
+    <div class="flex-grow-1 overflow-auto p-4 w-100 mx-auto" id="quizBody"></div>
     <div id="quizResultScreen" class="flex-column align-items-center justify-content-center flex-grow-1 p-4 text-center">
         <div class="result-circle mb-4 shadow-lg" id="resultCircle">
             <span class="result-score-text text-white display-4 fw-bold" id="resultScoreText">0%</span>
@@ -279,12 +333,13 @@
 
 <div id="modalsPortal"></div>
 
+<!-- Submit Task Modal -->
 <div class="modal fade" id="submitTaskModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <form id="studentSubmitForm" class="modal-content border-0 shadow-lg rounded-4 bg-light">
             <div class="modal-header bg-primary text-white border-0 py-3">
                 <h6 class="modal-title fw-bold" id="submitTaskTitle">Turn In Work</h6>
-                <button type="button" title="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" title="Close" data-bs-dismiss="modal" class="btn-close btn-close-white"></button>
             </div>
             <div class="modal-body p-4">
                 <input type="hidden" name="assignment_id" id="submit_aid">
@@ -303,6 +358,7 @@
     </div>
 </div>
 
+<!-- Grade Task Modal -->
 <div class="modal fade" id="gradeTaskModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg rounded-4 bg-light">
@@ -320,6 +376,7 @@
     </div>
 </div>
 
+<!-- Create Task Modal -->
 <div class="modal fade" id="createModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
         <form id="createTaskForm" class="modal-content border-0 shadow-lg rounded-4 bg-light">
@@ -330,7 +387,6 @@
                 <button type="button" title="Close" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
-
                 <label class="small fw-bold text-muted text-uppercase mb-2">Task Type</label>
                 <div class="row g-2 mb-4">
                     <div class="col-6 text-center">
@@ -369,7 +425,6 @@
                     <label class="small fw-bold text-muted text-uppercase mb-1">Reference File (optional)</label>
                     <input type="file" title="Reference File" class="form-control border-0 shadow-sm bg-white">
                 </div>
-
             </div>
             <div class="modal-footer border-0 p-3 bg-white rounded-bottom-4">
                 <button type="submit" class="btn btn-dark w-100 fw-bold py-2 rounded-pill shadow-sm" id="createSubmitBtn">
@@ -380,6 +435,7 @@
     </div>
 </div>
 
+<!-- Reassign Modal -->
 <div class="modal fade" id="reassignModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <form id="reassignForm" class="modal-content border-0 shadow-lg rounded-4 bg-light">
@@ -417,6 +473,7 @@
     </div>
 </div>
 
+<!-- Quiz Results Modal -->
 <div class="modal fade" id="quizResultsModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg rounded-4">
@@ -433,6 +490,7 @@
     </div>
 </div>
 
+<!-- Create Quiz Modal -->
 <div class="modal fade" id="createQuizModal" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg rounded-4">
@@ -443,7 +501,6 @@
                 <button type="button" title="Close" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4 bg-light">
-
                 <label class="small fw-bold text-muted text-uppercase mb-2">Assign to Class(es) *</label>
                 <div class="d-flex flex-column gap-2 mb-4" id="quizClassList"></div>
 
@@ -491,7 +548,6 @@
                     <i class="fas fa-plus-circle fa-2x mb-2 d-block opacity-50"></i>
                     Click "Multiple Choice" or "True/False" above to add your first question.
                 </div>
-
             </div>
             <div class="modal-footer border-0 p-3 bg-white rounded-bottom-4">
                 <button class="btn btn-dark w-100 fw-bold py-2 shadow-sm rounded-pill" onclick="saveQuiz()">
@@ -507,28 +563,17 @@
 <script src="/client/assets/js/app.js"></script>
 
 <script>
-    /* ─────────────────────────────────────────────────────
-       Sub-tab switcher (Tasks <-> Quizzes)
-       Called by onclick on the sub-tab buttons, and also
-       by JS modules when they need to pre-select a tab.
-    ───────────────────────────────────────────────────── */
     function switchSubTab(tab) {
         const panels  = { tasks: 'panelTasks',   quizzes: 'panelQuizzes'  };
         const btns    = { tasks: 'subTabTasks',  quizzes: 'subTabQuizzes' };
-        const creates = { tasks: 'btnCreateTask', quizzes: 'btnCreateQuiz' };
 
-        // Panels
         Object.keys(panels).forEach(k => {
             document.getElementById(panels[k]).classList.toggle('visible', k === tab);
         });
-
-        // Sub-tab buttons
         Object.keys(btns).forEach(k => {
             document.getElementById(btns[k]).classList.toggle('active', k === tab);
         });
 
-        // Teacher create buttons — only show the relevant one
-        // (the d-none guard is set by the JS modules; we just toggle between them)
         const taskBtn  = document.getElementById('btnCreateTask');
         const quizBtn  = document.getElementById('btnCreateQuiz');
         if (!taskBtn.classList.contains('d-none-perm')) {
@@ -538,30 +583,23 @@
             quizBtn.style.display  = tab === 'quizzes' ? '' : 'none';
         }
 
-        // Persist choice
         const classId = new URLSearchParams(window.location.search).get('class_id');
         if (classId) {
             history.replaceState(null, '', `?class_id=${classId}&tab=${tab}`);
         }
     }
 
-    /* ─────────────────────────────────────────────────────
-       On load: restore tab from URL param
-    ───────────────────────────────────────────────────── */
     document.addEventListener('DOMContentLoaded', function () {
         const params  = new URLSearchParams(window.location.search);
         const initTab = params.get('tab') || 'tasks';
         switchSubTab(initTab);
 
-        // Wire top nav tabs with class_id
         const classId = params.get('class_id') || '';
         const base    = classId ? `?class_id=${classId}` : '';
         document.getElementById('tabChat').href    = `collaborations.html${base}`;
         document.getElementById('tabModules').href = `modules.html${base}`;
-        // tabTasks stays on this page — prevent navigation
         document.getElementById('tabTasks').addEventListener('click', e => e.preventDefault());
 
-        // Back button gets class_id too
         const backBtn = document.getElementById('topBackBtn');
         if (backBtn && classId) backBtn.href = `collaborations.html?class_id=${classId}`;
     });

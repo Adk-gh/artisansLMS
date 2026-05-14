@@ -185,17 +185,24 @@
             #jitsiContainer { min-height: 300px; }
         }
 
-        /* ── General spacing for header container on mobile ── */
+        /* ── FIX: header must sit above everything and not clip dropdowns ── */
         #header-container {
             flex-shrink: 0;
-            /* Ensure header doesn't overflow on narrow viewports */
-            overflow: hidden;
+            overflow: visible;      /* was: hidden — clipped the profile dropdown */
+            position: relative;
+            z-index: 200;           /* above sidebar z-index and page content */
         }
 
         /* ── Content area fills viewport correctly on all sizes ── */
         #content {
             min-width: 0;      /* prevent flex child overflow */
             overflow-x: hidden;
+        }
+
+        /* ── appShell must sit below the header ── */
+        #appShell {
+            position: relative;
+            z-index: 1;
         }
     </style>
 </head>

@@ -114,7 +114,7 @@
         .legend-dot  { width:10px;height:10px;border-radius:3px;flex-shrink:0; }
 
         /* ════════════════════════════════════════════
-           MOBILE RESPONSIVE
+            MOBILE RESPONSIVE (UPDATED)
         ════════════════════════════════════════════ */
 
         /* ── Stats: 2-col then 1-col ── */
@@ -134,21 +134,29 @@
             .sf-bar { padding: 10px 12px; gap: 8px; border-radius: 12px; }
             .sf-select { font-size: .75rem; padding: 7px 26px 7px 10px; }
 
-            /* day pills: smaller text, compact */
-            .day-pill { padding: 5px 10px; font-size: .68rem; }
+            /* App-like horizontally scrollable day pills */
+            .day-pill-wrap {
+                margin-left: 0 !important;
+                margin-top: 4px;
+                width: 100%;
+                flex-wrap: nowrap; /* Prevent wrapping to multiple lines */
+                overflow-x: auto;  /* Enable horizontal scroll */
+                padding-bottom: 4px; /* Space for scrollbar if visible */
+                -ms-overflow-style: none; /* IE/Edge hide scrollbar */
+                scrollbar-width: none; /* Firefox hide scrollbar */
+            }
+            .day-pill-wrap::-webkit-scrollbar { display: none; /* Chrome/Safari hide scrollbar */ }
 
-            /* day-pill-wrap takes full row */
-            .day-pill-wrap { margin-left: 0 !important; margin-top: 4px; width: 100%; }
-
-            /* print button: icon only */
+            .day-pill { padding: 5px 12px; font-size: .68rem; flex-shrink: 0; }
             .btn-print-label { display: none; }
         }
 
         @media (max-width: 400px) {
-            /* Semester + year selects side-by-side, full width */
-            .sf-bar { flex-direction: column; align-items: stretch; }
-            .sf-select { width: 100%; }
-            .btn-print { width: 100%; justify-content: center; }
+            /* Keep selects side-by-side to save vertical space instead of stacking */
+            .sf-bar { flex-direction: row; flex-wrap: wrap; }
+            .sf-select { flex: 1 1 calc(50% - 4px); min-width: 0; }
+            .day-pill-wrap { width: 100%; }
+            .btn-print { width: 100%; justify-content: center; margin-top: 4px; }
         }
 
         /* ── Main padding ── */
@@ -159,13 +167,24 @@
         /* ── Timetable: ensure horizontal scroll works on mobile ── */
         .timetable-scroll { -webkit-overflow-scrolling: touch; }
 
-        /* Smaller time column on mobile */
+        /* Smaller time column on mobile & better session text wrapping */
         @media (max-width: 575.98px) {
-            .sched-grid { grid-template-columns: 52px repeat(var(--day-count,7),minmax(120px,1fr)); min-width: calc(52px + var(--day-count,7) * 120px); }
+            /* Increased minmax from 120px to 140px to give text slightly more room */
+            .sched-grid { grid-template-columns: 52px repeat(var(--day-count,7),minmax(140px,1fr)); min-width: calc(52px + var(--day-count,7) * 140px); }
             .sched-time-cell { padding: 4px 6px 0; font-size: .6rem; }
             .sched-time-cell.on-hour { font-size: .64rem; }
-            .sched-session { padding: 5px 7px; font-size: .66rem; }
+            .sched-session { padding: 6px 8px; font-size: .66rem; }
             .sess-code { font-size: .7rem; }
+
+            /* Allow session names to span 2 lines before truncating */
+            .sess-name {
+                white-space: normal;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+            }
+            /* Keep other metadata on one line */
+            .sess-row, .sess-section { white-space: nowrap; }
         }
 
         /* ── Legend wraps on mobile ── */
