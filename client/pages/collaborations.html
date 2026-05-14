@@ -11,70 +11,192 @@
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
 
     <style>
-        /* ── Absolute Essentials Not Covered by Bootstrap ── */
+        /* ── Base ── */
         body { font-family: 'Sora', sans-serif; background-color: #f8fafc; }
 
-        /* Sidebar offset */
-        @media (min-width: 768px) { #content { margin-left: 260px !important; transition: margin-left .28s; } }
+        /* ── Sidebar offset — desktop only ── */
+        @media (min-width: 768px) {
+            #content { margin-left: 260px !important; transition: margin-left .28s; }
+        }
 
-        /* Scrollbar Hiding & Styling */
+        /* ── Scrollbar Helpers ── */
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
-        /* JS Visibility Toggles */
+        /* ── View Toggles ── */
         #selectionView { display: none; }
         #selectionView.visible { display: block; }
         #chatView { display: none; }
         #chatView.visible { display: flex; }
 
-        /* ── Full-screen Call UI (like messages.js) ── */
+        /* ── Full-screen Call UI ── */
         #callUI { display: none; }
         #callUI.active {
             display: flex;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
             z-index: 9999;
-            background: rgba(0, 0, 0, 0.92);
+            background: rgba(0,0,0,.92);
             flex-direction: column;
             padding: 1rem;
         }
 
-        /* Nav Tabs Custom Underline */
-        .chat-tab { border-bottom: 3px solid transparent; transition: color .15s, border-color .15s; }
+        /* ── Nav Tabs ── */
+        .chat-tab { border-bottom: 3px solid transparent; transition: color .15s, border-color .15s; white-space: nowrap; }
         .chat-tab:hover { color: #0f172a !important; }
         .chat-tab.active { color: #0d6efd !important; border-bottom-color: #0d6efd; }
 
-        /* Emoji Picker Placement */
-       emoji-picker { position: absolute; bottom: 100%; left: 0; z-index: 1050; display: none; max-width: min(350px, 90vw); margin-bottom: 8px; }
+        /* ── Emoji Picker ── */
+        emoji-picker {
+            position: absolute;
+            bottom: 100%; left: 0;
+            z-index: 1050; display: none;
+            max-width: min(350px, 90vw);
+            margin-bottom: 8px;
+        }
 
-        /* Call Pulse Animation */
+        /* ── Pulse ── */
         .pulse-shadow { animation: pulseGlow 2s infinite; }
         @keyframes pulseGlow {
             0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.4); }
             50%      { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
         }
 
-        /* Hover Lift for Cards */
+        /* ── Cards ── */
         .hover-lift { transition: transform .15s, box-shadow .2s; }
         .hover-lift:hover { box-shadow: 0 .5rem 1rem rgba(0,0,0,.1) !important; transform: translateY(-2px); }
-
-        /* Text Truncation Helper */
         .min-w-0 { min-width: 0; }
 
         /* ── Request Modal Tabs ── */
         .rr-tab-btn { background: transparent; color: #64748b; transition: background .15s, color .15s; }
         .rr-tab-btn:hover { background: #f1f5f9; color: #0f172a; }
         .rr-tab-btn.active { background: #fff; color: #0d6efd; box-shadow: 0 -2px 0 #0d6efd inset; }
-        /* Resource dropdown item */
         .rr-res-item { transition: background .1s; cursor: pointer; }
         .rr-res-item:hover { background: #f0f7ff; }
-        /* Basket item */
         .rr-basket-item { background: #fff; border: 1px solid #e2e8f0; border-radius: .5rem; padding: .5rem .75rem; }
+
+        /* ════════════════════════════════════════════
+           MOBILE-FIRST RESPONSIVE ADDITIONS
+        ════════════════════════════════════════════ */
+
+        /* ── Selection View grid card mobile ── */
+        @media (max-width: 575.98px) {
+            #selectionView { padding: 1rem !important; }
+
+            /* View toggle bar right-align on small screens */
+            .view-toggle-bar { justify-content: flex-end !important; }
+
+            /* Cards fill full width */
+            #gridViewContainer .col-md-6,
+            #gridViewContainer .col-lg-4 { width: 100%; }
+
+            /* Shrink card padding */
+            .collab-card .card-body { padding: 1rem !important; }
+        }
+
+        /* ── Chat header responsive ── */
+        #chatView header {
+            flex-wrap: nowrap;
+            gap: .5rem;
+            padding: .5rem .75rem !important;
+            min-height: 52px;
+        }
+
+        /* Course code truncates cleanly */
+        #chatCourseCode {
+            flex: 1 1 0;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: clamp(.75rem, 3.5vw, 1rem);
+        }
+
+        /* Right-side action buttons: shrink text on very small screens */
+        @media (max-width: 399.98px) {
+            #actionLectureBtn .d-none { display: none !important; }
+            #actionLectureBtn { padding: .3rem .5rem !important; }
+        }
+
+        /* Back button text hidden on tiny screens */
+        @media (max-width: 359.98px) {
+            #backBtn .back-label { display: none !important; }
+        }
+
+        /* ── Nav tab bar scrollable on mobile ── */
+        #chatView nav {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .chat-tab {
+            font-size: clamp(.75rem, 3vw, .875rem);
+            padding: .65rem .75rem !important;
+        }
+
+        /* ── Chat input bar ── */
+        #chatInputBar {
+            padding: .5rem .75rem .75rem !important;
+        }
+        #msgInput { font-size: .875rem; }
+
+        /* Emoji picker on mobile: cap width and shift right if needed */
+        @media (max-width: 575.98px) {
+            emoji-picker {
+                left: 0;
+                right: auto;
+                max-width: calc(100vw - 1.5rem);
+            }
+        }
+
+        /* ── Offcanvas — full-width on mobile ── */
+        @media (max-width: 575.98px) {
+            #roomInfoOffcanvas { width: 100vw !important; }
+        }
+
+        /* ── Modal responsive tweaks ── */
+        @media (max-width: 575.98px) {
+            .modal-dialog { margin: .5rem; }
+
+            /* Tab buttons wrap gracefully */
+            #rrTabBar { flex-wrap: wrap; gap: .25rem; }
+            .rr-tab-btn { flex: 1 1 auto; text-align: center; font-size: .8rem; padding: .5rem .75rem !important; }
+
+            /* Resource basket height */
+            #rrResBasket { max-height: 140px; overflow-y: auto; }
+
+            /* Date/time row — stack fully */
+            #rrTabRoom .row.g-3 .col-md-6,
+            #rrTabRoom .row.g-3 .col-md-3,
+            #rrTabResource .row.g-3 .col-md-6,
+            #rrTabResource .row.g-3 .col-md-3 { width: 100%; }
+        }
+
+        /* ── List view table — horizontal scroll on mobile ── */
+        @media (max-width: 767.98px) {
+            #listViewContainer .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            #listViewContainer table { min-width: 540px; }
+        }
+
+        /* ── Jitsi container mobile height ── */
+        @media (max-width: 575.98px) {
+            #jitsiContainer { min-height: 300px; }
+        }
+
+        /* ── General spacing for header container on mobile ── */
+        #header-container {
+            flex-shrink: 0;
+            /* Ensure header doesn't overflow on narrow viewports */
+            overflow: hidden;
+        }
+
+        /* ── Content area fills viewport correctly on all sizes ── */
+        #content {
+            min-width: 0;      /* prevent flex child overflow */
+            overflow-x: hidden;
+        }
     </style>
 </head>
 <body>
@@ -89,9 +211,10 @@
 
         <div id="appShell" class="d-flex flex-column h-100 overflow-hidden">
 
-            <main id="selectionView" class="flex-grow-1 overflow-auto p-4 p-md-5">
+            <!-- ── Selection View ── -->
+            <main id="selectionView" class="flex-grow-1 overflow-auto p-3 p-md-4 p-lg-5">
 
-                <div class="d-flex flex-wrap justify-content-end align-items-center mb-4 gap-3">
+                <div class="view-toggle-bar d-flex flex-wrap justify-content-end align-items-center mb-4 gap-3">
                     <div class="btn-group shadow-sm border rounded-2 p-1 bg-white" role="group">
                         <button type="button" class="btn btn-sm btn-dark rounded-2 fw-bold" id="btnGrid" onclick="window.toggleView('grid')">
                             <i class="fas fa-th-large me-1"></i> Grid
@@ -127,17 +250,21 @@
 
             </main>
 
+            <!-- ── Chat View ── -->
             <div id="chatView" class="flex-column flex-grow-1 overflow-hidden h-100">
 
-                <header class="bg-white border-bottom d-flex align-items-center justify-content-between px-3 py-2 shadow-sm flex-shrink-0 z-3">
-                    <a href="collaborations.html" class="btn btn-sm btn-light border text-dark fw-bold d-flex align-items-center gap-2">
+                <!-- Responsive Header -->
+                <header class="bg-white border-bottom d-flex align-items-center justify-content-between px-3 py-2 shadow-sm flex-shrink-0 z-3" style="gap:.5rem;">
+                    <a href="collaborations.html" id="backBtn" class="btn btn-sm btn-light border text-dark fw-bold d-flex align-items-center gap-1 flex-shrink-0">
                         <i class="fas fa-arrow-left text-muted"></i>
-                        <span class="d-none d-sm-inline">Back</span>
+                        <span class="back-label d-none d-sm-inline">Back</span>
                     </a>
-                    <h6 class="mb-0 fw-bold text-dark text-truncate px-2" id="chatCourseCode"></h6>
-                    <div class="d-flex align-items-center gap-2">
 
-                        <button class="btn btn-sm btn-danger fw-bold d-flex align-items-center gap-2 pulse-shadow" id="actionLectureBtn" disabled>
+                    <h6 class="mb-0 fw-bold text-dark flex-grow-1 px-1" id="chatCourseCode"
+                        style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;"></h6>
+
+                    <div class="d-flex align-items-center gap-1 gap-sm-2 flex-shrink-0">
+                        <button class="btn btn-sm btn-danger fw-bold d-flex align-items-center gap-1 pulse-shadow" id="actionLectureBtn" disabled>
                             <i class="fas fa-video-slash" id="lectureIcon"></i>
                             <span class="d-none d-sm-inline" id="lectureText">Waiting</span>
                         </button>
@@ -148,15 +275,16 @@
                     </div>
                 </header>
 
+                <!-- Scrollable Tab Nav -->
                 <nav class="d-flex align-items-center flex-nowrap overflow-x-auto hide-scroll bg-white border-bottom flex-shrink-0 px-2">
                     <a href="#" class="chat-tab text-secondary fw-semibold py-3 px-3 text-nowrap text-decoration-none active" id="tabChatLink">
-                        <i class="fas fa-comments"></i> Chat
+                        <i class="fas fa-comments me-1"></i><span class="d-none d-sm-inline">Chat</span><span class="d-sm-none">Chat</span>
                     </a>
                     <a href="#" class="chat-tab text-secondary fw-semibold py-3 px-3 text-nowrap text-decoration-none" id="tabModulesLink">
-                        <i class="fas fa-book-open"></i> Modules
+                        <i class="fas fa-book-open me-1"></i><span class="d-none d-sm-inline">Modules</span><span class="d-sm-none">Modules</span>
                     </a>
                     <a href="#" class="chat-tab text-secondary fw-semibold py-3 px-3 text-nowrap text-decoration-none" id="tabTasksLink">
-                        <i class="fas fa-list-check"></i> Tasks
+                        <i class="fas fa-list-check me-1"></i><span class="d-none d-sm-inline">Tasks</span><span class="d-sm-none">Tasks</span>
                     </a>
                 </nav>
 
@@ -170,27 +298,28 @@
                         </div>
                     </div>
 
-                    <div id="chatInputBar" class="flex-shrink-0 bg-white border-top p-2 p-md-3 position-relative pb-4">
+                    <!-- Input Bar -->
+                    <div id="chatInputBar" class="flex-shrink-0 bg-white border-top p-2 p-md-3 position-relative pb-3">
                         <emoji-picker id="emojiPicker"></emoji-picker>
                         <div class="d-flex align-items-center bg-light border rounded-pill px-2 py-1 shadow-sm">
-
                             <button class="btn btn-link text-secondary p-2 text-decoration-none" id="emojiBtn" title="Emoji">
                                 <i class="far fa-smile"></i>
                             </button>
                             <input type="text" id="msgInput"
                                    class="form-control border-0 bg-transparent shadow-none"
                                    placeholder="Message room..." autocomplete="off">
-                            <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center p-2 lh-1" id="sendBtn" style="width: 38px; height: 38px;">
+                            <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center p-2 lh-1 flex-shrink-0"
+                                    id="sendBtn" style="width:38px;height:38px;">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </div>
-
                     </div>
 
-                    <!-- ── Full-screen Call Overlay (position/size handled by CSS) ── -->
+                    <!-- Full-screen Call Overlay -->
                     <div id="callUI" class="flex-column p-3">
                         <div class="d-flex justify-content-end mb-2 flex-shrink-0">
-                            <button class="btn btn-danger rounded-circle shadow-lg p-2 lh-1" id="leaveLectureBtn" title="Leave" style="width: 40px; height: 40px;">
+                            <button class="btn btn-danger rounded-circle shadow-lg p-2 lh-1" id="leaveLectureBtn"
+                                    title="Leave" style="width:40px;height:40px;">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
@@ -198,13 +327,15 @@
                     </div>
 
                 </div>
-            </div>
+            </div><!-- /chatView -->
+
         </div>
     </div>
 </div>
 
-<!-- ── Room Info Offcanvas ───────────────────────────────────────────────────── -->
-<div class="offcanvas offcanvas-end border-0 shadow-lg" tabindex="-1" id="roomInfoOffcanvas">
+<!-- ── Room Info Offcanvas ── -->
+<div class="offcanvas offcanvas-end border-0 shadow-lg" tabindex="-1" id="roomInfoOffcanvas"
+     style="max-width: min(340px, 100vw);">
     <div class="offcanvas-header bg-light border-bottom p-4">
         <h5 class="offcanvas-title fw-bold text-dark">
             <i class="fas fa-info-circle text-info me-2"></i>Room Info
@@ -215,24 +346,24 @@
 
         <div class="text-center p-4 border-bottom">
             <div class="bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3 fw-bold rounded-4 display-6 p-3"
-                 id="offcanvasAvatar" style="width: 80px; height: 80px;">--</div>
+                 id="offcanvasAvatar" style="width:80px;height:80px;">--</div>
             <h5 class="fw-bold text-dark mb-1" id="offcanvasCourseCode">--</h5>
             <div class="text-muted small fw-medium mb-2" id="offcanvasCourseName">--</div>
             <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill"
                   id="offcanvasTerm">--</span>
         </div>
 
-        <div class="d-flex gap-2 p-4 border-bottom bg-light">
+        <div class="d-flex gap-2 p-3 border-bottom bg-light">
             <div class="card flex-grow-1 border-0 shadow-sm text-center py-3">
-                <span class="fs-4 fw-bold text-dark lh-1 mb-1" id="statStudents">0</span>
+                <span class="fs-5 fw-bold text-dark lh-1 mb-1" id="statStudents">0</span>
                 <span class="text-muted small fw-bold">Students</span>
             </div>
             <div class="card flex-grow-1 border-0 shadow-sm text-center py-3">
-                <span class="fs-4 fw-bold text-dark lh-1 mb-1" id="statTasks">0</span>
+                <span class="fs-5 fw-bold text-dark lh-1 mb-1" id="statTasks">0</span>
                 <span class="text-muted small fw-bold">Tasks</span>
             </div>
             <div class="card flex-grow-1 border-0 shadow-sm text-center py-3">
-                <span class="fs-4 fw-bold text-dark lh-1 mb-1" id="statQuizzes">0</span>
+                <span class="fs-5 fw-bold text-dark lh-1 mb-1" id="statQuizzes">0</span>
                 <span class="text-muted small fw-bold">Quizzes</span>
             </div>
         </div>
@@ -242,10 +373,11 @@
                 <i class="fas fa-chalkboard-teacher me-2"></i>Instructor
             </div>
             <div class="d-flex align-items-center gap-3">
-                <img src="" id="teacherAvatar" alt="Instructor" class="rounded-circle object-fit-cover" width="40" height="40">
-                <div>
-                    <div class="fw-bold text-dark" id="teacherName">--</div>
-                    <div class="small text-muted" id="teacherEmail">--</div>
+                <img src="" id="teacherAvatar" alt="Instructor" class="rounded-circle object-fit-cover flex-shrink-0"
+                     width="40" height="40">
+                <div class="min-w-0">
+                    <div class="fw-bold text-dark text-truncate" id="teacherName">--</div>
+                    <div class="small text-muted text-truncate" id="teacherEmail">--</div>
                 </div>
             </div>
         </div>
@@ -266,13 +398,12 @@
     </div>
 </div>
 
-<!-- ── Room + Resource Request Modal ────────────────────────────────────────── -->
+<!-- ── Room + Resource Request Modal ── -->
 <div class="modal fade" id="roomRequestModal" tabindex="-1">
-    <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-dialog modal-md modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
 
-            <!-- Header -->
-            <div class="modal-header border-bottom px-4 pt-4 pb-0 bg-white">
+            <div class="modal-header border-bottom px-3 px-md-4 pt-4 pb-0 bg-white">
                 <div class="w-100">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="modal-title fw-bold text-dark mb-0">
@@ -280,26 +411,23 @@
                         </h5>
                         <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
                     </div>
-                    <!-- Tabs -->
-                    <div class="d-flex gap-1" id="rrTabBar">
-                        <button class="rr-tab-btn active px-4 py-2 fw-bold small border-0 rounded-top-3" id="tabRoomBtn" data-tab="room">
-                            <i class="fas fa-building me-2"></i>Room
+                    <div class="d-flex gap-1 flex-wrap" id="rrTabBar">
+                        <button class="rr-tab-btn active px-3 px-md-4 py-2 fw-bold small border-0 rounded-top-3" id="tabRoomBtn" data-tab="room">
+                            <i class="fas fa-building me-1 me-md-2"></i>Room
                         </button>
-                        <button class="rr-tab-btn px-4 py-2 fw-bold small border-0 rounded-top-3" id="tabResourceBtn" data-tab="resource">
-                            <i class="fas fa-box-open me-2"></i>Resource
+                        <button class="rr-tab-btn px-3 px-md-4 py-2 fw-bold small border-0 rounded-top-3" id="tabResourceBtn" data-tab="resource">
+                            <i class="fas fa-box-open me-1 me-md-2"></i>Resource
                         </button>
                     </div>
                 </div>
             </div>
 
-            <div class="modal-body p-4">
+            <div class="modal-body p-3 p-md-4">
 
                 <div id="roomRequestAlert" class="alert d-none mb-3"></div>
 
-                <!-- ══ ROOM TAB ══════════════════════════════════════════════ -->
+                <!-- Room Tab -->
                 <div id="rrTabRoom">
-
-                    <!-- Room picker -->
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted text-uppercase">Select Room</label>
                         <select id="rrRoom" class="form-select border-0 bg-light shadow-none"></select>
@@ -308,23 +436,21 @@
                         </div>
                     </div>
 
-                    <!-- Date / Time -->
-                    <div class="row g-3 mb-3">
-                        <div class="col-12 col-md-6">
+                    <div class="row g-2 g-md-3 mb-3">
+                        <div class="col-12 col-sm-6">
                             <label class="form-label small fw-bold text-muted text-uppercase">Date</label>
                             <input type="date" id="rrDate" class="form-control border-0 bg-light shadow-none">
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-sm-3">
                             <label class="form-label small fw-bold text-muted text-uppercase">Start</label>
                             <input type="time" id="rrStart" class="form-control border-0 bg-light shadow-none">
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-sm-3">
                             <label class="form-label small fw-bold text-muted text-uppercase">End</label>
                             <input type="time" id="rrEnd" class="form-control border-0 bg-light shadow-none">
                         </div>
                     </div>
 
-                    <!-- Purpose -->
                     <div class="mb-4">
                         <label class="form-label small fw-bold text-muted text-uppercase">Purpose (Optional)</label>
                         <textarea id="rrPurpose" class="form-control border-0 bg-light shadow-none" rows="2" placeholder="Briefly describe the activity..."></textarea>
@@ -333,13 +459,10 @@
                     <button id="rrSubmitBtn" class="btn btn-primary w-100 fw-bold py-2 rounded-3 shadow-sm">
                         <i class="fas fa-paper-plane me-2"></i>Submit to Scheduling Office
                     </button>
+                </div>
 
-                </div><!-- /rrTabRoom -->
-
-                <!-- ══ RESOURCE TAB ══════════════════════════════════════════ -->
+                <!-- Resource Tab -->
                 <div id="rrTabResource" class="d-none">
-
-                    <!-- Searchable resource dropdown -->
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted text-uppercase">Search Resource</label>
                         <div class="position-relative">
@@ -351,46 +474,40 @@
                                    placeholder="Type to search resources…"
                                    autocomplete="off">
                         </div>
-                        <!-- Dropdown list -->
                         <div id="rrResDropdown"
                              class="border rounded-3 bg-white shadow-sm mt-1 d-none custom-scrollbar"
-                             style="max-height:200px;overflow-y:auto;">
-                            <!-- Populated by JS -->
-                        </div>
+                             style="max-height:200px;overflow-y:auto;"></div>
                     </div>
 
-                    <!-- Selected resources basket -->
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted text-uppercase d-flex justify-content-between align-items-center">
-                            <span><i class="fas fa-cart-shopping me-1"></i> Selected Resources</span>
+                            <span><i class="fas fa-cart-shopping me-1"></i>Selected Resources</span>
                             <span id="rrResCount" class="badge bg-primary rounded-pill">0</span>
                         </label>
                         <div id="rrResBasket"
                              class="border rounded-3 bg-light p-2 d-flex flex-column gap-2"
-                             style="min-height:64px;">
+                             style="min-height:64px;max-height:160px;overflow-y:auto;">
                             <div id="rrResBasketEmpty" class="text-center text-muted small py-2 fst-italic">
                                 No resources selected yet.
                             </div>
                         </div>
                     </div>
 
-                    <!-- Date / Time (resource tab own copies) -->
-                    <div class="row g-3 mb-3">
-                        <div class="col-12 col-md-6">
+                    <div class="row g-2 g-md-3 mb-3">
+                        <div class="col-12 col-sm-6">
                             <label class="form-label small fw-bold text-muted text-uppercase">Date Needed</label>
                             <input type="date" id="rrResDate" class="form-control border-0 bg-light shadow-none">
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-sm-3">
                             <label class="form-label small fw-bold text-muted text-uppercase">From</label>
                             <input type="time" id="rrResStart" class="form-control border-0 bg-light shadow-none">
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-sm-3">
                             <label class="form-label small fw-bold text-muted text-uppercase">Until</label>
                             <input type="time" id="rrResEnd" class="form-control border-0 bg-light shadow-none">
                         </div>
                     </div>
 
-                    <!-- Purpose -->
                     <div class="mb-4">
                         <label class="form-label small fw-bold text-muted text-uppercase">Purpose (Optional)</label>
                         <textarea id="rrResPurpose" class="form-control border-0 bg-light shadow-none" rows="2" placeholder="Briefly describe the activity..."></textarea>
@@ -399,12 +516,10 @@
                     <button id="rrResSubmitBtn" class="btn btn-primary w-100 fw-bold py-2 rounded-3 shadow-sm">
                         <i class="fas fa-paper-plane me-2"></i>Submit Resource Request
                     </button>
-
-                </div><!-- /rrTabResource -->
+                </div>
 
                 <hr class="my-4 text-muted opacity-25">
 
-                <!-- Shared History -->
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-history text-muted me-2"></i>Recent Requests</h6>
                     <button id="rrRefreshBtn" class="btn btn-sm btn-light border text-secondary" title="Refresh History">
