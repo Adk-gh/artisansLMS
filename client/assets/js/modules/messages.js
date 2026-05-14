@@ -565,10 +565,15 @@ function openView(uid) {
 
     renderList();
     if (window.innerWidth <= 768) el('contactsSidebar').classList.add('hidden');
-    el('stateEmpty').style.display  = 'none';
+
+    // Reset all states cleanly
+    el('stateEmpty').style.display = 'none';
+
     el('stateProfile').classList.add('d-none');
-    el('stateChat').style.display   = 'none !important';
+    el('stateProfile').style.display = 'none';
+
     el('stateChat').classList.add('d-none');
+    el('stateChat').style.cssText = 'display:none!important;';
 
     if (selectedUser.isGroup || selectedUser.rel_status === 'accepted') showChat();
     else showProfile();
