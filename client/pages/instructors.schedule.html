@@ -1,530 +1,746 @@
 <!DOCTYPE html>
+<!--
+    instructor_schedule.html
+    Path: C:\xampp\htdocs\artisansLMS\client\pages\instructor_schedule.html
+    Instructor-facing weekly schedule view — matches ArtisansLMS design system
+-->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instructor Schedule — ArtisansLMS</title>
+    <title>LMS | My Schedule</title>
 
-    <!-- Bootstrap Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- Your global stylesheet -->
+    <link rel="stylesheet" href="../assets/css/style.css">
 
     <style>
-        /* ── Reset & Tokens ───────────────────────────────────────────────── */
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        /* ── Reset & Layout ───────────────────────────────────────────────── */
+        html, body { height: 100%; margin: 0; overflow: hidden; }
+        body { font-family: 'Sora', sans-serif; background: #f0f2f7; display: flex; flex-direction: column; }
 
-        :root {
-            --green-900 : #1b5e20;
-            --green-700 : #2e7d32;
-            --green-500 : #4caf50;
-            --green-200 : #c8e6c9;
-            --green-50  : #f1f8f1;
-            --slate-900 : #0f172a;
-            --slate-700 : #334155;
-            --slate-500 : #64748b;
-            --slate-200 : #e2e8f0;
-            --slate-100 : #f1f5f9;
-            --slate-50  : #f8fafc;
-            --white     : #ffffff;
-            --shadow-sm : 0 1px 3px rgba(0,0,0,.08);
-            --shadow-md : 0 4px 16px rgba(0,0,0,.10);
-            --shadow-lg : 0 8px 32px rgba(0,0,0,.12);
-            --radius    : 12px;
-            --radius-sm : 8px;
-            --slot-h    : 40px;  /* Height per 30-min slot */
-            --time-col  : 72px;
-        }
+        #content { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        body {
-            font-family: 'DM Sans', sans-serif;
-            background: var(--slate-100);
-            color: var(--slate-900);
-            min-height: 100vh;
-        }
-
-        /* ── Top Bar ──────────────────────────────────────────────────────── */
-        .topbar {
-            background: var(--white);
-            border-bottom: 1px solid var(--slate-200);
-            padding: 0 24px;
-            height: 56px;
+        main {
+            flex: 1;
+            min-height: 0;
             display: flex;
-            align-items: center;
-            gap: 12px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: var(--shadow-sm);
-        }
-        .topbar-logo {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.15rem;
-            font-weight: 700;
-            color: var(--green-700);
-            letter-spacing: -.3px;
-        }
-        .topbar-logo span { color: var(--slate-500); font-weight: 400; }
-        .topbar-divider { width: 1px; height: 24px; background: var(--slate-200); }
-        .topbar-title { font-size: .9rem; color: var(--slate-500); }
-        .topbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-
-        .btn-icon {
-            display: inline-flex; align-items: center; justify-content: center;
-            width: 36px; height: 36px; border-radius: var(--radius-sm);
-            border: 1px solid var(--slate-200); background: var(--white);
-            color: var(--slate-700); cursor: pointer; font-size: .95rem;
-            transition: all .18s;
-        }
-        .btn-icon:hover { background: var(--green-50); border-color: var(--green-500); color: var(--green-700); }
-
-        .btn-primary {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 0 16px; height: 36px; border-radius: var(--radius-sm);
-            background: var(--green-700); color: var(--white);
-            border: none; font-family: 'DM Sans', sans-serif;
-            font-size: .875rem; font-weight: 500; cursor: pointer;
-            transition: background .18s;
-        }
-        .btn-primary:hover { background: var(--green-900); }
-
-        /* ── Page Layout ──────────────────────────────────────────────────── */
-        .page-wrap {
-            max-width: 1440px;
-            margin: 0 auto;
-            padding: 28px 24px 48px;
-        }
-
-        /* ── Instructor Hero Card ─────────────────────────────────────────── */
-        .instructor-hero {
-            background: var(--white);
-            border-radius: var(--radius);
-            padding: 28px 32px;
-            display: flex;
-            align-items: flex-start;
-            gap: 24px;
-            margin-bottom: 24px;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--slate-200);
-        }
-        .instructor-avatar {
-            width: 72px; height: 72px; border-radius: 50%;
-            background: linear-gradient(135deg, var(--green-700), var(--green-500));
-            display: flex; align-items: center; justify-content: center;
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.5rem; font-weight: 700; color: var(--white);
-            flex-shrink: 0;
-        }
-        .instructor-meta { flex: 1; }
-        .instructor-meta h1 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.5rem; font-weight: 700; color: var(--slate-900);
-            margin-bottom: 4px;
-        }
-        .instructor-meta .meta-row {
-            display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
-            margin-top: 8px;
-        }
-        .meta-chip {
-            display: inline-flex; align-items: center; gap: 5px;
-            font-size: .8125rem; color: var(--slate-600, #475569);
-        }
-        .meta-chip i { color: var(--green-700); font-size: .9rem; }
-        .sem-badge {
-            margin-left: auto;
-            background: var(--green-50); border: 1px solid var(--green-200);
-            color: var(--green-900); border-radius: 20px;
-            padding: 4px 14px; font-size: .8125rem; font-weight: 500;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 1.5rem !important;
+            gap: 14px;
         }
 
         /* ── Stats Row ────────────────────────────────────────────────────── */
-        #schedStats {
+        .stats-row {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 16px;
-            margin-bottom: 24px;
+            gap: 14px;
+            flex-shrink: 0;
         }
-        .sched-stat {
-            background: var(--white);
-            border: 1px solid var(--slate-200);
-            border-radius: var(--radius);
-            padding: 20px 24px;
-            text-align: center;
-            box-shadow: var(--shadow-sm);
+        .stat-card {
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 14px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: box-shadow .2s;
         }
-        .sched-stat-val {
-            display: block;
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 1.75rem; font-weight: 700;
-            color: var(--green-700);
+        .stat-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+        .stat-icon {
+            width: 42px; height: 42px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; flex-shrink: 0;
         }
-        .sched-stat-lbl {
-            display: block;
-            font-size: .8125rem; color: var(--slate-500);
-            margin-top: 2px;
+        .stat-icon.blue   { background: #eff6ff; color: #2563eb; }
+        .stat-icon.green  { background: #f0fdf4; color: #16a34a; }
+        .stat-icon.purple { background: #faf5ff; color: #7c3aed; }
+        .stat-icon.amber  { background: #fffbeb; color: #d97706; }
+        .stat-val {
+            font-size: 1.4rem; font-weight: 800;
+            color: #1e293b; line-height: 1;
+        }
+        .stat-lbl {
+            font-size: .68rem; font-weight: 600;
+            color: #94a3b8; text-transform: uppercase;
+            letter-spacing: .6px; margin-top: 3px;
         }
 
-        /* ── Schedule Card ────────────────────────────────────────────────── */
-        .schedule-card {
-            background: var(--white);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--slate-200);
+        /* ── Filter / Control Bar ─────────────────────────────────────────── */
+        .sf-bar {
+            background: #fff; border: 1px solid #e9ecef; border-radius: 14px;
+            padding: 12px 18px;
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+        .sf-select {
+            padding: 8px 30px 8px 12px; border: 1.5px solid #e9ecef; border-radius: 10px;
+            font-size: .8rem; font-family: 'Sora', sans-serif; font-weight: 600;
+            color: #475569; background: #f8fafc; outline: none; cursor: pointer;
+            transition: .2s; appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 10px center;
+        }
+        .sf-select:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,.08); outline: none; }
+
+        /* Day filter pills */
+        .day-pill-wrap { display: flex; gap: 6px; flex-wrap: wrap; }
+        .day-pill {
+            padding: 6px 14px; border-radius: 20px;
+            border: 1.5px solid #e9ecef;
+            background: #f8fafc; color: #64748b;
+            font-size: .75rem; font-weight: 700;
+            cursor: pointer; transition: all .15s;
+            font-family: 'Sora', sans-serif;
+        }
+        .day-pill:hover      { border-color: #1e293b; color: #1e293b; background: #f1f5f9; }
+        .day-pill.active     { background: #1e293b; color: #fff; border-color: #1e293b; }
+        .day-pill.is-today   { border-color: #86efac; color: #15803d; background: #f0fdf4; }
+        .day-pill.is-today.active { background: #1e293b; color: #fff; border-color: #1e293b; }
+
+        .btn-print {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 7px 14px; border-radius: 10px;
+            border: 1.5px solid #e9ecef;
+            background: #f8fafc; color: #475569;
+            font-size: .78rem; font-weight: 700;
+            cursor: pointer; transition: all .15s;
+            font-family: 'Sora', sans-serif;
+        }
+        .btn-print:hover { background: #1e293b; color: #fff; border-color: #1e293b; }
+
+        /* ── Timetable Wrapper ────────────────────────────────────────────── */
+        .schedule-wrap {
+            flex: 1;
+            min-height: 0;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px 16px 0 0;
+            border-bottom: none;
             overflow: hidden;
-        }
-        .schedule-card-header {
-            padding: 18px 24px 14px;
-            border-bottom: 1px solid var(--slate-200);
-            display: flex; align-items: center; gap: 12px;
-            flex-wrap: wrap;
-        }
-        .schedule-card-header h2 {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 1rem; font-weight: 600;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* Day Filter Tabs */
-        .day-tabs {
-            display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto;
-        }
-        .sched-day-tab {
-            padding: 5px 14px; border-radius: 20px;
-            border: 1px solid var(--slate-200);
-            background: var(--slate-50); color: var(--slate-700);
-            font-size: .8125rem; font-weight: 500; cursor: pointer;
-            transition: all .15s;
-        }
-        .sched-day-tab:hover { border-color: var(--green-500); color: var(--green-700); }
-        .sched-day-tab.active {
-            background: var(--green-700); color: var(--white);
-            border-color: var(--green-700);
-        }
-
-        /* ── Timetable Grid ───────────────────────────────────────────────── */
-        .timetable-scroll { overflow-x: auto; }
-
-        .sched-grid {
-            display: grid;
-            /* time column + N day columns */
-            grid-template-columns: var(--time-col) repeat(var(--day-count, 7), minmax(140px, 1fr));
-            min-width: calc(var(--time-col) + var(--day-count, 7) * 140px);
-        }
-
-        .sched-corner {
-            position: sticky; left: 0; z-index: 5;
-            background: var(--slate-50);
-            border-right: 1px solid var(--slate-200);
-            border-bottom: 2px solid var(--slate-200);
-        }
-
-        .sched-day-header {
-            text-align: center; padding: 12px 8px;
-            border-right: 1px solid var(--slate-100);
-            border-bottom: 2px solid var(--slate-200);
-            position: sticky; top: 0; background: var(--white); z-index: 4;
-        }
-        .sched-day-header .day-short {
-            display: block;
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: .875rem; font-weight: 700;
-            color: var(--slate-700);
-        }
-        .sched-day-header .day-full {
-            display: block; font-size: .75rem; color: var(--slate-500);
-        }
-        .sched-day-header.has-class .day-short { color: var(--green-700); }
-        .sched-day-header.empty-day { opacity: .55; }
-        .day-badge {
-            display: inline-block; margin-top: 4px;
-            background: var(--green-700); color: var(--white);
-            border-radius: 20px; font-size: .65rem;
-            padding: 1px 7px; font-weight: 600;
-        }
-
-        .sched-time-cell {
-            position: sticky; left: 0; z-index: 3;
-            background: var(--slate-50);
-            border-right: 1px solid var(--slate-200);
-            border-bottom: 1px solid var(--slate-100);
-            height: var(--slot-h);
-            display: flex; align-items: flex-start; justify-content: flex-end;
-            padding: 4px 10px 0 0;
-            font-size: .7rem; color: var(--slate-400);
-        }
-        .sched-time-cell.on-hour {
-            color: var(--slate-600);
-            font-weight: 600; font-size: .75rem;
-            border-bottom-color: var(--slate-200);
-        }
-
-        .sched-cell {
-            border-right: 1px solid var(--slate-100);
-            border-bottom: 1px solid var(--slate-100);
-            height: var(--slot-h);
-            position: relative;
-        }
-        .sched-cell.empty:hover { background: var(--green-50); }
-        .sched-cell.spanned { background: transparent; }
-        .sched-cell.session-start {
-            overflow: visible;   /* let the block overflow downwards */
-            z-index: 2;
-        }
-
-        /* ── Session Block ────────────────────────────────────────────────── */
-        .sched-session {
-            position: absolute;
-            top: 2px; left: 3px; right: 3px;
-            border-radius: var(--radius-sm);
-            padding: 6px 8px;
-            overflow: hidden;
-            cursor: pointer;
-            z-index: 2;
-            transition: box-shadow .15s, transform .15s;
-            font-size: .75rem;
-            line-height: 1.4;
-        }
-        .sched-session:hover {
-            box-shadow: 0 4px 14px rgba(0,0,0,.18);
-            transform: translateY(-1px) scaleX(1.01);
-            z-index: 10;
-        }
-        .sess-subj-code {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: .8rem; font-weight: 700;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .sess-subj-name {
-            font-size: .72rem; opacity: .9;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .sess-meta {
-            font-size: .68rem; opacity: .75; margin-top: 2px;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .sess-meta i { margin-right: 2px; }
-        .sess-section {
-            font-size: .68rem; font-weight: 600; margin-top: 2px; opacity: .85;
-        }
-
-        /* ── Loader ───────────────────────────────────────────────────────── */
+        /* Loader */
         #schedLoader {
+            flex: 1;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            padding: 80px 0; gap: 12px;
+            gap: 12px;
         }
         .spinner {
-            width: 36px; height: 36px;
-            border: 3px solid var(--slate-200);
-            border-top-color: var(--green-700);
+            width: 34px; height: 34px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #1e293b;
             border-radius: 50%;
             animation: spin .7s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ── Error ────────────────────────────────────────────────────────── */
+        /* Error */
         #schedError {
             display: none;
             margin: 24px;
-            padding: 16px 20px;
-            background: #fff1f2;
-            border: 1px solid #fecdd3;
-            border-radius: var(--radius-sm);
-            color: #be123c;
-            font-size: .875rem;
+            padding: 14px 18px;
+            background: #fff1f2; border: 1px solid #fecdd3;
+            border-radius: 10px; color: #be123c;
+            font-size: .82rem;
         }
 
-        /* ── Legend ───────────────────────────────────────────────────────── */
-        .legend-wrap {
-            padding: 14px 24px;
-            border-top: 1px solid var(--slate-200);
-            display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+        /* Timetable scroll area */
+        .timetable-scroll {
+            flex: 1;
+            overflow: auto;
         }
-        .legend-title { font-size: .8rem; color: var(--slate-500); margin-right: 4px; }
-        .legend-item {
-            display: flex; align-items: center; gap: 5px;
-            font-size: .775rem; color: var(--slate-600);
+        .timetable-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+        .timetable-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+
+        /* Grid */
+        .sched-grid {
+            display: grid;
+            grid-template-columns: 72px repeat(var(--day-count, 7), minmax(148px, 1fr));
+            min-width: calc(72px + var(--day-count, 7) * 148px);
         }
-        .legend-dot {
-            width: 12px; height: 12px; border-radius: 3px;
+
+        /* Corner cell */
+        .sched-corner {
+            position: sticky; left: 0; top: 0; z-index: 10;
+            background: #f8fafc;
+            border-right: 1px solid #e2e8f0;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        /* Day column headers */
+        .sched-day-header {
+            text-align: center; padding: 12px 8px 10px;
+            border-right: 1px solid #f1f5f9;
+            border-bottom: 2px solid #f1f5f9;
+            position: sticky; top: 0;
+            background: #f8fafc; z-index: 5;
+        }
+        .sched-day-header.has-class  { background: #fff; }
+        .sched-day-header.is-today   { background: #f0fdf4; }
+        .sched-day-header.empty-day  { opacity: .45; }
+
+        .day-hdr-short {
+            display: block;
+            font-size: .7rem; font-weight: 800;
+            text-transform: uppercase; letter-spacing: 1.2px;
+            color: #94a3b8;
+        }
+        .sched-day-header.has-class  .day-hdr-short { color: #1e293b; }
+        .sched-day-header.is-today   .day-hdr-short { color: #16a34a; }
+        .day-hdr-full  { display: block; font-size: .68rem; color: #94a3b8; margin-top: 1px; }
+        .today-dot {
+            display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+            background: #22c55e; margin-bottom: 3px;
+            animation: blink 1.5s ease-in-out infinite;
+        }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+        .day-count-badge {
+            display: inline-block; margin-top: 4px;
+            background: #1e293b; color: #fff;
+            border-radius: 20px; font-size: .6rem; font-weight: 800;
+            padding: 1px 8px;
+        }
+
+        /* Time label cells */
+        .sched-time-cell {
+            position: sticky; left: 0; z-index: 4;
+            background: #f8fafc;
+            border-right: 1px solid #e2e8f0;
+            border-bottom: 1px solid #f1f5f9;
+            height: 44px;
+            display: flex; align-items: flex-start; justify-content: flex-end;
+            padding: 4px 10px 0;
+            font-size: .67rem; color: #cbd5e1;
+        }
+        .sched-time-cell.on-hour {
+            color: #64748b; font-weight: 700; font-size: .72rem;
+            border-bottom-color: #e9ecef;
+        }
+
+        /* Body cells */
+        .sched-cell {
+            border-right: 1px solid #f1f5f9;
+            border-bottom: 1px solid #f1f5f9;
+            height: 44px;
+            position: relative;
+            transition: background .1s;
+        }
+        .sched-cell.empty:hover   { background: #f8fafc; }
+        .sched-cell.today-col     { background: rgba(240,253,244,.45); }
+        .sched-cell.session-start { overflow: visible; z-index: 2; }
+
+        /* Session blocks */
+        .sched-session {
+            position: absolute;
+            top: 3px; left: 4px; right: 4px;
+            border-radius: 10px;
+            padding: 7px 10px;
+            overflow: hidden;
+            cursor: pointer;
+            z-index: 3;
+            font-size: .72rem;
+            line-height: 1.4;
+            transition: box-shadow .15s, transform .15s;
+        }
+        .sched-session:hover {
+            box-shadow: 0 6px 20px rgba(0,0,0,.14);
+            transform: translateY(-2px) scale(1.01);
+            z-index: 10;
+        }
+        .sess-code {
+            font-size: .78rem; font-weight: 800;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .sess-name {
+            font-size: .68rem; opacity: .85;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .sess-row {
+            font-size: .64rem; opacity: .72; margin-top: 3px;
+            display: flex; align-items: center; gap: 4px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .sess-section {
+            font-size: .64rem; font-weight: 800; opacity: .9;
+            margin-top: 2px; display: flex; align-items: center; gap: 4px;
+        }
+
+        /* Empty state */
+        .no-schedule {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 60px 24px;
+            color: #94a3b8; font-size: .875rem; text-align: center;
+        }
+        .no-schedule i { font-size: 2.5rem; margin-bottom: 12px; opacity: .4; }
+
+        /* ── Legend / Footer ──────────────────────────────────────────────── */
+        .schedule-footer {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-top: 1px solid #f1f5f9;
+            border-radius: 0 0 16px 16px;
+            padding: 11px 20px;
+            display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
             flex-shrink: 0;
         }
+        .legend-lbl {
+            font-size: .68rem; font-weight: 700;
+            color: #94a3b8; text-transform: uppercase; letter-spacing: .6px;
+        }
+        .legend-item {
+            display: flex; align-items: center; gap: 6px;
+            font-size: .74rem; color: #475569;
+            background: #f8fafc; border: 1px solid #e9ecef;
+            border-radius: 20px; padding: 3px 10px 3px 6px;
+        }
+        .legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
 
         /* ── Print ────────────────────────────────────────────────────────── */
         @media print {
-            .topbar, .topbar-actions, .day-tabs,
-            #schedPrintBtn, .btn-icon { display: none !important; }
-            .page-wrap { padding: 0; }
-            .schedule-card { box-shadow: none; border: 1px solid #ccc; }
+            #sidebar, .sf-bar, .stats-row { display: none !important; }
+            #content { margin-left: 0 !important; }
+            .schedule-wrap { border-radius: 0; overflow: visible; }
             .sched-session { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         }
 
         /* ── Responsive ───────────────────────────────────────────────────── */
-        @media (max-width: 768px) {
-            .instructor-hero { flex-direction: column; }
-            .sem-badge { margin-left: 0; }
-            #schedStats { grid-template-columns: repeat(2, 1fr); }
-            .day-tabs { margin-left: 0; margin-top: 10px; }
+        @media (max-width: 1100px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 768px)  {
+            .stats-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .day-pill-wrap { margin-left: 0 !important; margin-top: 8px; }
         }
     </style>
 </head>
 <body>
 
-<!-- ── Top Bar ──────────────────────────────────────────────────────────── -->
-<nav class="topbar">
-    <div class="topbar-logo">Artisans<span>LMS</span></div>
-    <div class="topbar-divider"></div>
-    <div class="topbar-title">Instructor Schedule</div>
-    <div class="topbar-actions">
-        <button class="btn-icon" onclick="history.back()" title="Go back">
-            <i class="bi bi-arrow-left"></i>
-        </button>
-        <button class="btn-primary" id="schedPrintBtn">
-            <i class="bi bi-printer"></i> Print
-        </button>
-    </div>
-</nav>
+<!-- ── Sidebar ───────────────────────────────────────────────────────────── -->
+<div id="sidebar-placeholder"></div>
 
-<!-- ── Page Content ──────────────────────────────────────────────────────── -->
-<div class="page-wrap" id="scheduleRoot">
+<div id="content">
 
-    <!-- Instructor Hero Card -->
-    <div class="instructor-hero">
-        <div class="instructor-avatar" id="schedAvatar">?</div>
-        <div class="instructor-meta">
-            <h1 id="schedInstructorName">Loading…</h1>
-            <div class="meta-row">
-                <span class="meta-chip"><i class="bi bi-building"></i><span id="schedDept">—</span></span>
-                <span class="meta-chip"><i class="bi bi-person-badge"></i><span id="schedEmpId">—</span></span>
+    <!-- ── Page Header ───────────────────────────────────────────────────── -->
+    <div id="header-placeholder"></div>
+
+    <main>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-icon blue"><i class="fas fa-calendar-check"></i></div>
+                <div>
+                    <div class="stat-val" id="statSessions">—</div>
+                    <div class="stat-lbl">Sessions / Week</div>
+                </div>
             </div>
-        </div>
-        <span class="sem-badge" id="schedSemLabel">—</span>
-    </div>
-
-    <!-- Stats Row -->
-    <div id="schedStats">
-        <!-- Populated by JS -->
-    </div>
-
-    <!-- Schedule Card -->
-    <div class="schedule-card">
-        <div class="schedule-card-header">
-            <i class="bi bi-calendar3 text-success" style="color:var(--green-700)"></i>
-            <h2>Weekly Timetable&nbsp;<span style="font-weight:400;color:var(--slate-500);font-size:.85rem">08:00 AM – 05:00 PM</span></h2>
-
-            <!-- Day filter tabs -->
-            <div class="day-tabs">
-                <button class="sched-day-tab active" data-day="all">All Days</button>
-                <button class="sched-day-tab" data-day="Monday">Mon</button>
-                <button class="sched-day-tab" data-day="Tuesday">Tue</button>
-                <button class="sched-day-tab" data-day="Wednesday">Wed</button>
-                <button class="sched-day-tab" data-day="Thursday">Thu</button>
-                <button class="sched-day-tab" data-day="Friday">Fri</button>
-                <button class="sched-day-tab" data-day="Saturday">Sat</button>
-                <button class="sched-day-tab" data-day="Sunday">Sun</button>
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="fas fa-clock"></i></div>
+                <div>
+                    <div class="stat-val" id="statHours">—</div>
+                    <div class="stat-lbl">Teaching Hours</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple"><i class="fas fa-book-open"></i></div>
+                <div>
+                    <div class="stat-val" id="statSubjects">—</div>
+                    <div class="stat-lbl">Subjects</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber"><i class="fas fa-door-open"></i></div>
+                <div>
+                    <div class="stat-val" id="statRooms">—</div>
+                    <div class="stat-lbl">Rooms Used</div>
+                </div>
             </div>
         </div>
 
-        <!-- Loader -->
-        <div id="schedLoader">
-            <div class="spinner"></div>
-            <span style="font-size:.875rem;color:var(--slate-500)">Loading schedule…</span>
-        </div>
+        <!-- Controls -->
+        <div class="sf-bar">
+            <select class="sf-select" id="semesterSelect">
+                <option value="1st Semester">1st Semester</option>
+                <option value="2nd Semester">2nd Semester</option>
+                <option value="Summer">Summer</option>
+            </select>
+            <select class="sf-select" id="yearSelect">
+                <option value="2025-2026">SY 2025–2026</option>
+                <option value="2024-2025">SY 2024–2025</option>
+                <option value="2023-2024">SY 2023–2024</option>
+            </select>
 
-        <!-- Error -->
-        <div id="schedError"></div>
+            <!-- Day filter pills — pushed right -->
+            <div class="day-pill-wrap ms-auto" id="dayPills">
+                <button class="day-pill active" data-day="all">All Days</button>
+                <button class="day-pill" data-day="Monday">Mon</button>
+                <button class="day-pill" data-day="Tuesday">Tue</button>
+                <button class="day-pill" data-day="Wednesday">Wed</button>
+                <button class="day-pill" data-day="Thursday">Thu</button>
+                <button class="day-pill" data-day="Friday">Fri</button>
+                <button class="day-pill" data-day="Saturday">Sat</button>
+                <button class="day-pill" data-day="Sunday">Sun</button>
+            </div>
+
+            <button class="btn-print" onclick="window.print()">
+                <i class="fas fa-print"></i> Print
+            </button>
+        </div>
 
         <!-- Timetable -->
-        <div class="timetable-scroll">
-            <div id="schedTimetable"></div>
+        <div class="schedule-wrap shadow-sm">
+
+            <div id="schedLoader">
+                <div class="spinner"></div>
+                <span class="small fw-bold text-muted">Loading your schedule…</span>
+            </div>
+
+            <div id="schedError"></div>
+
+            <div class="timetable-scroll" id="timetableScroll" style="display:none;">
+                <div id="schedGrid"></div>
+            </div>
+
+            <div class="no-schedule" id="schedEmpty" style="display:none;">
+                <i class="fas fa-calendar-times"></i>
+                No classes scheduled for this period.
+            </div>
+
         </div>
 
-        <!-- Legend -->
-        <div class="legend-wrap" id="schedLegend">
-            <span class="legend-title">Legend:</span>
-            <!-- Populated by JS after render -->
+        <!-- Legend footer — flush under timetable -->
+        <div class="schedule-footer shadow-sm" id="schedLegend">
+            <span class="legend-lbl">Subjects:</span>
         </div>
-    </div>
 
-</div><!-- /page-wrap -->
+    </main>
+</div>
 
-<!-- ── JS Module ──────────────────────────────────────────────────────────── -->
-<script src="../assets/js/modules/instructors.schedule.js"></script>
+<!-- ── Scripts ───────────────────────────────────────────────────────────── -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+    /* Load shared sidebar & header partials (adjust paths as needed) */
+    fetch('/client/partials/sidebar.html').then(r=>r.text()).then(h=>document.getElementById('sidebar-placeholder').innerHTML=h).catch(()=>{});
+    fetch('/client/partials/header.html').then(r=>r.text()).then(h=>document.getElementById('header-placeholder').innerHTML=h).catch(()=>{});
+</script>
 
-    // ── Read instructor_id from URL query string ──────────────────────────
-    const params       = new URLSearchParams(window.location.search);
-    const instructorId = params.get('instructor_id') || null;
-    const semester     = params.get('semester')     || '1st Semester';
-    const schoolYear   = params.get('school_year')  || '2025-2026';
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   Instructor Schedule — self-contained module
+   Fetches instructor_id from the PHP session, then loads their timetable.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function () {
 
-    // ── After schedule loads, build legend and update avatar initials ─────
-    const _origInit = InstructorSchedule.init.bind(InstructorSchedule);
-    InstructorSchedule.init = async function (opts) {
-        await _origInit(opts);
+    /* ── Config ────────────────────────────────────────────────────────── */
+    const API_BASE    = '/backend/endpoints/instructors.schedule.php';
+    const SESSION_URL = '/backend/middleware/session_info.php';
 
-        // Avatar initials
-        const nameEl = document.getElementById('schedInstructorName');
-        if (nameEl && nameEl.textContent.trim() !== 'Loading…') {
-            const parts    = nameEl.textContent.trim().split(' ');
-            const initials = parts.length >= 2
-                ? parts[0][0] + parts[parts.length - 1][0]
-                : parts[0][0];
-            const av = document.getElementById('schedAvatar');
-            if (av) av.textContent = initials.toUpperCase();
-        }
+    const DAYS      = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+    const DAY_SHORT = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
 
-        // Subject colour legend
-        buildLegend();
+    const GRID_START = 7;   // 07:00
+    const GRID_END   = 20;  // 20:00
+    const SLOT_MIN   = 30;
+    const SLOT_PX    = 44;  // px per 30-min slot
+    const TOTAL_SLOTS = ((GRID_END - GRID_START) * 60) / SLOT_MIN; // 26 slots
+
+    /* Colour palette — system colours matching the LMS palette */
+    const PALETTE = [
+        { bg:'#eff6ff', border:'#3b82f6', text:'#1d4ed8' },  // blue
+        { bg:'#f0fdf4', border:'#22c55e', text:'#15803d' },  // green
+        { bg:'#faf5ff', border:'#a855f7', text:'#7e22ce' },  // purple
+        { bg:'#fffbeb', border:'#f59e0b', text:'#b45309' },  // amber
+        { bg:'#fff1f2', border:'#f43f5e', text:'#be123c' },  // rose
+        { bg:'#ecfdf5', border:'#10b981', text:'#065f46' },  // emerald
+        { bg:'#fff7ed', border:'#f97316', text:'#c2410c' },  // orange
+        { bg:'#f0f9ff', border:'#0ea5e9', text:'#0369a1' },  // sky
+    ];
+
+    /* State */
+    const S = {
+        instructorId : null,
+        semester     : '1st Semester',
+        schoolYear   : '2025-2026',
+        data         : null,
+        colorMap     : {},
+        colorIdx     : 0,
+        activeDay    : null,
     };
 
-    function buildLegend() {
-        const legendWrap = document.getElementById('schedLegend');
-        if (!legendWrap) return;
+    const TODAY = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];
 
-        // Collect all unique sessions from the rendered timetable
-        const sessions = document.querySelectorAll('.sched-session');
-        const seen     = new Map();  // subject_code → { name, color }
+    /* ── Helpers ───────────────────────────────────────────────────────── */
+    function toMins(t) {
+        if (!t) return 0;
+        let m = t.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+        if (m) return +m[1] * 60 + +m[2];
+        m = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+        if (m) {
+            let h = +m[1]; const mn = +m[2]; const mer = m[3].toUpperCase();
+            if (mer === 'PM' && h !== 12) h += 12;
+            if (mer === 'AM' && h === 12) h = 0;
+            return h * 60 + mn;
+        }
+        return 0;
+    }
 
-        sessions.forEach(s => {
-            const code = s.querySelector('.sess-subj-code')?.textContent?.trim();
-            const name = s.querySelector('.sess-subj-name')?.textContent?.trim();
-            if (code && !seen.has(code)) {
-                seen.set(code, {
-                    name,
-                    bg     : s.style.background,
-                    border : s.style.borderLeftColor,
-                    color  : s.style.color,
+    function fmtTime(mins) {
+        let h = Math.floor(mins / 60), m = mins % 60;
+        const mer = h >= 12 ? 'PM' : 'AM';
+        if (h > 12) h -= 12;
+        if (h === 0) h = 12;
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')} ${mer}`;
+    }
+
+    function colorFor(code) {
+        if (!S.colorMap[code]) { S.colorMap[code] = PALETTE[S.colorIdx % PALETTE.length]; S.colorIdx++; }
+        return S.colorMap[code];
+    }
+
+    function slotOf(mins) { return Math.round((mins - GRID_START * 60) / SLOT_MIN); }
+
+    /* ── DOM helpers ───────────────────────────────────────────────────── */
+    const $  = id  => document.getElementById(id);
+    const $$ = sel => document.querySelectorAll(sel);
+
+    function showLoader(v)  { $('schedLoader').style.display  = v ? 'flex'  : 'none'; }
+    function showGrid(v)    { $('timetableScroll').style.display = v ? 'block' : 'none'; }
+    function showEmpty(v)   { $('schedEmpty').style.display   = v ? 'flex'  : 'none'; }
+    function showError(msg) { const e=$('schedError'); e.textContent=msg; e.style.display='block'; }
+    function hideError()    { $('schedError').style.display   = 'none'; }
+
+    /* ── Fetch ─────────────────────────────────────────────────────────── */
+    async function getSession() {
+        const r = await fetch(SESSION_URL);
+        return r.json();
+    }
+
+    async function getSchedule() {
+        const url = `${API_BASE}?instructor_id=${encodeURIComponent(S.instructorId)}`
+                  + `&semester=${encodeURIComponent(S.semester)}`
+                  + `&school_year=${encodeURIComponent(S.schoolYear)}`;
+        const r = await fetch(url);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const j = await r.json();
+        if (!j.success) throw new Error(j.message || 'API error');
+        return j.data;
+    }
+
+    /* ── Render stats ──────────────────────────────────────────────────── */
+    function renderStats(stats) {
+        $('statSessions').textContent = stats.total_sessions;
+        $('statHours').textContent    = stats.total_hours + 'h';
+        $('statSubjects').textContent = stats.unique_subjects;
+        $('statRooms').textContent    = stats.unique_rooms;
+    }
+
+    /* ── Render timetable ──────────────────────────────────────────────── */
+    function renderTimetable(byDay) {
+        const displayDays = S.activeDay ? [S.activeDay] : DAYS;
+        const hasSessions = displayDays.some(d => (byDay[d] || []).length > 0);
+
+        if (!hasSessions) { showGrid(false); showEmpty(true); return; }
+        showEmpty(false); showGrid(true);
+
+        const gridEl = $('schedGrid');
+        gridEl.style.setProperty('--day-count', displayDays.length);
+
+        let html = `<div class="sched-grid">`;
+
+        /* Corner */
+        html += `<div class="sched-corner" style="height:${SLOT_PX}px"></div>`;
+
+        /* Day headers */
+        displayDays.forEach(day => {
+            const sessions = byDay[day] || [];
+            const hasClass = sessions.length > 0;
+            const isToday  = day === TODAY;
+            let cls = 'sched-day-header';
+            if (isToday)   cls += ' is-today';
+            if (hasClass)  cls += ' has-class';
+            if (!hasClass) cls += ' empty-day';
+
+            html += `<div class="${cls}">
+                ${isToday ? '<span class="today-dot"></span>' : ''}
+                <span class="day-hdr-short">${DAY_SHORT[DAYS.indexOf(day)]}</span>
+                <span class="day-hdr-full">${day}</span>
+                ${hasClass ? `<span class="day-count-badge">${sessions.length}</span>` : ''}
+            </div>`;
+        });
+
+        /* Time rows */
+        for (let s = 0; s < TOTAL_SLOTS; s++) {
+            const slotMins = GRID_START * 60 + s * SLOT_MIN;
+            const isHour   = slotMins % 60 === 0;
+
+            html += `<div class="sched-time-cell ${isHour ? 'on-hour' : ''}">${isHour ? fmtTime(slotMins) : ''}</div>`;
+
+            displayDays.forEach(day => {
+                const sessions  = byDay[day] || [];
+                const isToday   = day === TODAY;
+                const todayCls  = isToday ? ' today-col' : '';
+
+                const starting = sessions.filter(sess => slotOf(toMins(sess.start_raw || sess.start_time)) === s);
+                const spanned  = !starting.length && sessions.some(sess => {
+                    const sm = slotOf(toMins(sess.start_raw || sess.start_time));
+                    const em = slotOf(toMins(sess.end_raw   || sess.end_time));
+                    return sm < s && s < em;
                 });
+
+                if (starting.length) {
+                    html += `<div class="sched-cell session-start${todayCls}">`;
+                    starting.forEach(sess => {
+                        const sm       = toMins(sess.start_raw || sess.start_time);
+                        const em       = toMins(sess.end_raw   || sess.end_time);
+                        const spans    = Math.round((em - sm) / SLOT_MIN);
+                        const height   = spans * SLOT_PX - 6;
+                        const c        = colorFor(sess.subject_code);
+                        html += `
+                            <div class="sched-session"
+                                 style="height:${height}px;background:${c.bg};border-left:4px solid ${c.border};color:${c.text};"
+                                 title="${sess.subject_name} | ${sess.section} | ${sess.room_name}">
+                                <div class="sess-code">${sess.subject_code}</div>
+                                <div class="sess-name">${sess.subject_name}</div>
+                                <div class="sess-row"><i class="bi bi-clock"></i> ${sess.start_time} – ${sess.end_time}</div>
+                                <div class="sess-row"><i class="bi bi-building"></i> ${sess.room_name}${sess.building ? ' · ' + sess.building : ''}</div>
+                                <div class="sess-section"><i class="bi bi-people"></i> ${sess.section}</div>
+                            </div>`;
+                    });
+                    html += `</div>`;
+                } else if (spanned) {
+                    html += `<div class="sched-cell${todayCls}" style="border-right:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;"></div>`;
+                } else {
+                    html += `<div class="sched-cell empty${todayCls}"></div>`;
+                }
+            });
+        }
+
+        html += `</div>`;
+        gridEl.innerHTML = html;
+    }
+
+    /* ── Render legend ─────────────────────────────────────────────────── */
+    function renderLegend() {
+        const wrap = $('schedLegend');
+        if (!wrap) return;
+
+        const seen = new Map();
+        document.querySelectorAll('.sched-session').forEach(el => {
+            const code = el.querySelector('.sess-code')?.textContent?.trim();
+            const name = el.querySelector('.sess-name')?.textContent?.trim();
+            if (code && !seen.has(code)) {
+                seen.set(code, { name, bg: el.style.background, border: el.style.borderLeftColor, text: el.style.color });
             }
         });
 
-        if (seen.size === 0) {
-            legendWrap.style.display = 'none';
-            return;
-        }
+        if (!seen.size) { wrap.style.display = 'none'; return; }
+        wrap.style.display = '';
 
-        let html = '<span class="legend-title">Subjects:</span>';
-        seen.forEach((val, code) => {
-            html += `
-                <div class="legend-item">
-                    <div class="legend-dot" style="background:${val.bg};border:2px solid ${val.border}"></div>
-                    <span style="color:${val.color};font-weight:600">${code}</span>
-                    <span style="color:var(--slate-500)">— ${val.name}</span>
-                </div>`;
+        let html = '<span class="legend-lbl">Subjects:</span>';
+        seen.forEach((v, code) => {
+            html += `<div class="legend-item">
+                <div class="legend-dot" style="background:${v.bg};border:2px solid ${v.border}"></div>
+                <span style="color:${v.text};font-weight:800">${code}</span>
+                <span style="color:#64748b">— ${v.name}</span>
+            </div>`;
         });
-        legendWrap.innerHTML = html;
+        wrap.innerHTML = html;
     }
 
-    // ── Boot ──────────────────────────────────────────────────────────────
-    InstructorSchedule.init({
-        instructorId,
-        semester,
-        schoolYear,
-    });
-});
+    /* ── Bind day pills ────────────────────────────────────────────────── */
+    function bindDayPills() {
+        $$('#dayPills .day-pill[data-day]').forEach(btn => {
+            if (btn.dataset.day === TODAY) btn.classList.add('is-today');
+            btn.addEventListener('click', () => {
+                $$('#dayPills .day-pill').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                S.activeDay = btn.dataset.day === 'all' ? null : btn.dataset.day;
+                renderTimetable(S.data.schedule_by_day);
+                renderLegend();
+            });
+        });
+    }
+
+    /* ── Bind semester/year selects ────────────────────────────────────── */
+    function bindSelects() {
+        $('semesterSelect').value = S.semester;
+        $('yearSelect').value     = S.schoolYear;
+
+        ['semesterSelect', 'yearSelect'].forEach(id => {
+            $(id).addEventListener('change', function () {
+                if (id === 'semesterSelect') S.semester   = this.value;
+                else                         S.schoolYear = this.value;
+                reload();
+            });
+        });
+    }
+
+    /* ── Reload on semester/year change ────────────────────────────────── */
+    async function reload() {
+        showGrid(false); showEmpty(false); hideError();
+        showLoader(true);
+        S.colorMap = {}; S.colorIdx = 0;
+        try {
+            S.data = await getSchedule();
+            renderStats(S.data.stats);
+            renderTimetable(S.data.schedule_by_day);
+            renderLegend();
+        } catch (err) {
+            showError('Could not load schedule: ' + err.message);
+        } finally {
+            showLoader(false);
+        }
+    }
+
+    /* ── Boot ──────────────────────────────────────────────────────────── */
+    async function boot() {
+        showLoader(true);
+        try {
+            /*
+             * Get logged-in instructor's ID from the session.
+             * Your session_info.php should return { role, instructor_id, name, … }
+             * Adjust field names below to match your actual session response.
+             */
+            const session = await getSession();
+
+            if (!session.instructor_id) {
+                showError('No instructor profile is linked to your account. Please contact admin.');
+                showLoader(false);
+                return;
+            }
+
+            S.instructorId = session.instructor_id;
+            S.data = await getSchedule();
+
+            renderStats(S.data.stats);
+            renderTimetable(S.data.schedule_by_day);
+            renderLegend();
+            bindDayPills();
+            bindSelects();
+
+        } catch (err) {
+            console.error('[MySchedule]', err);
+            showError('Failed to load schedule: ' + err.message);
+        } finally {
+            showLoader(false);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', boot);
+
+})();
 </script>
+
 </body>
 </html>

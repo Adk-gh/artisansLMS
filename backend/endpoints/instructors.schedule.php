@@ -1,4 +1,5 @@
 <?php
+//C:\xampp\htdocs\artisansLMS\backend\endpoints\instructors.schedule.php
 // backend/endpoints/instructors.schedule.php
 // Returns weekly schedule for a specific instructor
 

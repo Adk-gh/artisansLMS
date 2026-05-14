@@ -1,7 +1,7 @@
 /**
  * instructors.schedule.js
  * Module for fetching and rendering the instructor's weekly schedule timetable.
- * Path: client/assets/js/modules/instructors.schedule.js
+ * Path: \client\assets\js\modules\instructors.schedule.js
  */
 
 const InstructorSchedule = (() => {
