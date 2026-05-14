@@ -13,6 +13,10 @@
         html, body { height: 100%; margin: 0; overflow: hidden; }
         body { font-family: 'Sora', sans-serif; background: #f0f2f7; display: flex; flex-direction: column; }
 
+        /*
+         * #content margin/transition is now fully managed by sidebar.html globally
+         * via the body.sidebar-collapsed class. Only page-specific layout goes here.
+         */
         #content { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
         /*
@@ -58,8 +62,6 @@
          * ── Table container ──
          * flex:1 + min-height:0 makes this fill remaining vertical space.
          * overflow-y:auto makes ONLY this div scroll, not the page.
-         * The border-radius only applies to the top corners; the bottom
-         * corners are handled by the pagination bar below.
          */
         .class-table-wrapper {
             flex: 1;
@@ -98,7 +100,7 @@
         /*
          * ── Pagination bar ──
          * flex-shrink:0 keeps it from being squashed.
-         * It sits directly under .class-table-wrapper and shares the outer border.
+         * Sits directly under .class-table-wrapper and shares the outer border.
          */
         .pagination-bar {
             background: #fff;
@@ -118,11 +120,11 @@
         .page-btn.active { background: #1e293b; color: #fff; border-color: #1e293b; }
         .page-btn:disabled { cursor: not-allowed; }
 
-        /* ── Instructor Avatar — colorful square initials (matches student style) ── */
+        /* ── Instructor Avatar ── */
         .instructor-avatar {
             width: 36px;
             height: 36px;
-            border-radius: 10px;          /* square with soft corners, same as .stu-avatar */
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -133,9 +135,8 @@
             font-family: 'Sora', sans-serif;
             letter-spacing: .5px;
         }
-        #classNoResults {
-    display: none;
-}
+
+        #classNoResults { display: none; }
 
         /* Utility */
         .class-row-wrap.hidden { display: none; }
@@ -173,7 +174,7 @@
             </div>
         </div>
 
-        <!-- Scrollable Table — only this div scrolls -->
+        <!-- Scrollable Table -->
         <div class="class-table-wrapper shadow-sm">
             <div class="table-responsive">
                 <table class="table class-table align-middle mb-0 table-hover">
@@ -193,7 +194,7 @@
             </div>
         </div>
 
-        <!-- Pagination Footer — flush under the table -->
+        <!-- Pagination Footer -->
         <div class="pagination-bar shadow-sm">
             <div class="small fw-bold text-muted" id="paginationInfo">Page 1 of 1</div>
             <div class="d-flex gap-1 align-items-center" id="paginationControls"></div>

@@ -14,6 +14,31 @@
             background: #f0f2f7;
         }
 
+        /* ── Layout & Sidebar Sync ── */
+        #content {
+            margin-left: 260px;
+            transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 0;
+            overflow-x: hidden;
+        }
+
+        /* Syncs with the body class toggled by sidebar.html */
+        body.sidebar-collapsed #content {
+            margin-left: 68px;
+        }
+
+        @media (max-width: 768px) {
+            #content {
+                margin-left: 0 !important;
+            }
+        }
+
+        /* Prevent header dropdowns from being clipped by main content */
+        #header-placeholder {
+            position: relative;
+            z-index: 1050;
+        }
+
         /* ── Tabs Navigation ── */
         .arch-tab-container {
             background: #fff; border: 1px solid #e9ecef; border-radius: 14px;
@@ -154,7 +179,6 @@
 
         <main class="p-4 p-md-5">
 
-            <!-- Tab Navigation Container -->
             <div class="arch-tab-container no-scrollbar">
                 <button class="arch-tab active" data-tab="classes" onclick="switchTab('classes')">
                     <i class="fas fa-door-open"></i> Classes
@@ -178,7 +202,6 @@
                 </button>
             </div>
 
-            <!-- Search & Filter Bar (SF-Bar) -->
             <div class="sf-bar" id="archFilterBar">
                 <div class="sf-search-wrap">
                     <i class="fas fa-search"></i>
@@ -197,7 +220,6 @@
                 </div>
             </div>
 
-            <!-- Table Container -->
             <div id="tableContainer" class="shadow-sm">
                 <div class="text-center py-5 text-muted fw-bold">
                     <div class="spinner-border spinner-border-sm mb-3 text-primary" style="width: 1.5rem; height: 1.5rem;"></div><br>

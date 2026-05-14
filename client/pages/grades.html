@@ -9,7 +9,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { font-family: 'Sora', sans-serif; background-color: #f8fafc; }
-        @media (min-width: 768px) { #content { margin-left: 260px !important; } }
+
+        /* Let sidebar.html drive the margin via body class toggle */
+        #content { margin-left: 260px; transition: margin-left .28s cubic-bezier(.4,0,.2,1); }
+        body.sidebar-collapsed #content { margin-left: 68px; }
+        @media (max-width: 768px) { #content { margin-left: 0 !important; } }
 
         .grade-card { border-radius: 16px; border: 1px solid #e2e8f0; background: white; transition: 0.2s; height: 100%; display: flex; flex-direction: column; }
         .grade-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.07); }
@@ -83,27 +87,28 @@
             fetchGrades();
 
             function fetchGrades() {
-    console.log("Attempting to fetch grades...");
-    fetch('/backend/endpoints/my_grades.php')
-        .then(res => {
-            console.log("Response status:", res.status);
-            return res.json();
-        })
-        .then(data => {
-            console.log("Data received:", data); // Check if data.status is success
-            if (data.status === 'success') {
-                document.getElementById('overallAvg').textContent = data.summary.overall_avg + '%';
-                document.getElementById('totalClasses').textContent = data.summary.total_classes;
-                renderGrid(data.classes);
-            } else {
-                document.getElementById('gradesGrid').innerHTML = `<div class="alert alert-warning">${data.message}</div>`;
+                console.log("Attempting to fetch grades...");
+                fetch('/backend/endpoints/my_grades.php')
+                    .then(res => {
+                        console.log("Response status:", res.status);
+                        return res.json();
+                    })
+                    .then(data => {
+                        console.log("Data received:", data);
+                        if (data.status === 'success') {
+                            document.getElementById('overallAvg').textContent = data.summary.overall_avg + '%';
+                            document.getElementById('totalClasses').textContent = data.summary.total_classes;
+                            renderGrid(data.classes);
+                        } else {
+                            document.getElementById('gradesGrid').innerHTML = `<div class="alert alert-warning">${data.message}</div>`;
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Fetch error:', err);
+                        document.getElementById('gradesGrid').innerHTML = `<div class="alert alert-danger">Critical Error: ${err.message}</div>`;
+                    });
             }
-        })
-        .catch(err => {
-            console.error('Fetch error:', err);
-            document.getElementById('gradesGrid').innerHTML = `<div class="alert alert-danger">Critical Error: ${err.message}</div>`;
-        });
-}
+
             function getRingClass(score) {
                 if (score === null) return 'ring-none';
                 if (score >= 90) return 'ring-excellent';

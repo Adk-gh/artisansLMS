@@ -18,14 +18,21 @@
         body{font-family:'Sora',sans-serif;}
         body.dm-mode { background:#f0f2f7; overflow: hidden; }
 
-        .dm-page-wrapper { display: flex; min-height: 100vh; overflow: hidden; }
+        .dm-page-wrapper { display: flex; min-height: 100vh; overflow: hidden; transition: all 0.3s ease; }
 
-        /* Sidebar */
-       #sidebar-container {
+        /* ── Sidebar Spacer ── */
+        #sidebar-container {
             width: 260px;
             flex-shrink: 0;
             background-color: #1e293b;
             z-index: 1040;
+            transition: width .28s cubic-bezier(.4,0,.2,1); /* Match sidebar.html timing */
+            overflow: hidden;
+        }
+
+        /* Respond to global sidebar collapsed state */
+        body.sidebar-collapsed #sidebar-container {
+            width: 68px !important;
         }
 
         .dm-main-col {
@@ -33,7 +40,6 @@
             display: flex;
             flex-direction: column;
             min-width: 0;
-            /* REMOVED: overflow: hidden; height: 100vh; to allow mobile menu to overflow */
             height: 100vh;
         }
 
@@ -195,55 +201,29 @@
 
         .btn-back { display: none; }
 
-/* ════════════════════════════════════════════
+        /* ════════════════════════════════════════════
            MOBILE RESPONSIVE
         ════════════════════════════════════════════ */
 
-        /* ── FIX: Make sidebar an off-canvas overlay on mobile ── */
         @media (max-width: 767.98px) {
             #sidebar-container {
                 position: fixed;
                 top: 0;
-                left: -300px; /* Hide off-screen to the left by default */
+                left: -300px;
                 height: 100vh;
                 transition: left 0.3s ease-in-out;
-                z-index: 9999 !important; /* Ensure it floats above absolutely everything */
-                box-shadow: 5px 0 25px rgba(0,0,0,0.5); /* Add a shadow so it pops out */
+                z-index: 9999 !important;
+                box-shadow: 5px 0 25px rgba(0,0,0,0.5);
             }
 
-            /* These cover the most common classes your shared JS might use to open it */
             #sidebar-container.show,
             #sidebar-container.active,
             #sidebar-container.open,
             body.sidebar-open #sidebar-container,
             body.sidebar-show #sidebar-container {
-                left: 0 !important; /* Slide in when active */
+                left: 0 !important;
             }
-        }
-        /* Collapsed sidebar state */
-#sidebar-container.collapsed {
-    width: 60px !important;
-}
 
-/* Ensure the wrapper reflows properly */
-.dm-page-wrapper {
-    display: flex;
-    min-height: 100vh;
-    overflow: hidden;
-    transition: all 0.3s ease;
-}
-
-#sidebar-container {
-    width: 260px;
-    flex-shrink: 0;
-    background-color: #1e293b;
-    z-index: 1040;
-    transition: width 0.3s ease; /* smooth collapse */
-    overflow: hidden; /* prevents content from overflowing when collapsing */
-}
-
-        /* ── Contacts sidebar: full-screen slide on mobile ── */
-        @media (max-width: 767.98px) {
             .contacts-sidebar {
                 position: absolute;
                 top: 0;
@@ -251,20 +231,17 @@
                 width: 100%;
                 height: 100%;
                 transition: transform .3s cubic-bezier(.4,0,.2,1);
-                /* ── FIX: keep below the page header ── */
-                z-index: 20;   /* lower than #header-container z-index: 1050 */
+                z-index: 20;
             }
             .contacts-sidebar.hidden { transform: translateX(-100%); }
             .btn-back { display: flex !important; }
 
-            /* ── FIX: dm-content must sit below the header ── */
             .dm-content {
                 position: relative;
                 z-index: 1;
             }
         }
 
-        /* ── Chat header tightened ── */
         @media (max-width: 575.98px) {
             .chat-header {
                 padding: 8px 10px;
@@ -274,10 +251,8 @@
             .chat-header-name   { font-size: .82rem; }
             .chat-header-status { font-size: .6rem; }
 
-            /* Shrink call buttons */
             .call-btn { width: 30px; height: 30px; font-size: .72rem; border-radius: 8px; }
 
-            /* Back button compact */
             .btn-back {
                 padding: 6px !important;
                 width: 32px !important; height: 32px !important;
@@ -285,37 +260,20 @@
                 justify-content: center;
             }
 
-            /* Copy code button: icon only */
             #btnCopyGroupCode .d-none { display: none !important; }
-        }
 
-        /* ── Chat input on mobile ── */
-        @media (max-width: 575.98px) {
             .chat-input-area { padding: 8px 10px 10px; }
             .chat-input-wrap { padding: 5px 8px; }
             .chat-input-wrap input { font-size: .8rem; }
             emoji-picker { left: 8px; max-width: calc(100vw - 16px); }
-        }
 
-        /* ── Messages padding on mobile ── */
-        @media (max-width: 575.98px) {
             .messages-container { padding: 12px 10px; }
             .msg-bubble { max-width: 85%; font-size: .8rem; padding: 8px 11px; }
-        }
 
-        /* ── Profile/empty states on mobile ── */
-        @media (max-width: 575.98px) {
             .profile-view { padding: 24px 16px; }
             .empty-state  { padding: 24px 16px; }
-        }
 
-        /* ── Modals ── */
-        @media (max-width: 575.98px) {
             .modal-dialog { margin: .5rem; }
-        }
-
-        /* ── Group Details modal: member list height cap ── */
-        @media (max-width: 575.98px) {
             #modalMembersList { max-height: 150px; }
         }
     </style>
@@ -352,14 +310,12 @@
                 </div>
 
                 <div class="chat-area">
-                    <!-- Empty state -->
                     <div class="empty-state" id="stateEmpty">
                         <div class="empty-state-icon"><i class="fas fa-comments"></i></div>
                         <h5>Your Messages</h5>
                         <p>Select a contact or search for someone to start a conversation.</p>
                     </div>
 
-                    <!-- Profile view -->
                     <div class="profile-view d-none" id="stateProfile">
                         <button class="btn-back position-absolute top-0 start-0 m-3 icon-btn" id="profileBackBtn"
                                 style="width:auto;height:auto;padding:8px 14px;border-radius:8px;background:#f1f5f9;color:#475569;">
@@ -371,7 +327,6 @@
                         <div id="profileActionArea" class="d-flex flex-wrap gap-2 justify-content-center"></div>
                     </div>
 
-                    <!-- Chat state -->
                     <div class="d-none" id="stateChat" style="flex:1;min-height:0;display:none!important;flex-direction:column;">
                         <div class="chat-header shadow-sm">
                             <button class="btn-back icon-btn me-1" id="chatBackBtn"><i class="fas fa-arrow-left"></i></button>
@@ -413,7 +368,6 @@
         </div>
     </div>
 
-    <!-- Create Group Modal -->
     <div class="modal fade" id="createGroupModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
             <div class="modal-content border-0" style="border-radius:20px;">
@@ -431,7 +385,6 @@
         </div>
     </div>
 
-    <!-- Join Group Modal -->
     <div class="modal fade" id="joinGroupModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
             <div class="modal-content border-0" style="border-radius:20px;">
@@ -449,7 +402,6 @@
         </div>
     </div>
 
-    <!-- Group Details Modal -->
     <div class="modal fade" id="groupDetailsModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:420px;">
             <div class="modal-content border-0" style="border-radius:24px;background:#f8fafc;overflow:hidden;">
@@ -530,7 +482,6 @@
         </div>
     </div>
 
-    <!-- Call Overlay -->
     <div class="call-overlay" id="callOverlay">
         <div class="call-overlay-header">
             <h6 id="callOverlayTitle">Call</h6>
@@ -539,7 +490,6 @@
         <div id="jitsiContainer" style="width:100%;height:100%;padding-top:64px;"></div>
     </div>
 
-    <!-- Incoming Call -->
     <div class="incoming-backdrop" id="incomingBackdrop">
         <div class="incoming-card" id="incomingCard">
             <span class="call-type-badge video" id="incomingBadge"><i class="fas fa-video"></i> Video Call</span>
