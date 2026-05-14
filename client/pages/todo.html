@@ -8,8 +8,20 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Sora', sans-serif; background-color: #f8fafc; }
-        @media (min-width: 768px) { #content { margin-left: 260px !important; transition: margin-left .28s; } }
+        /* ── Layout ── */
+        html, body { height: 100%; margin: 0; overflow: hidden; }
+        body { font-family: 'Sora', sans-serif; background-color: #f8fafc; display: flex; flex-direction: column; }
+        #content { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 1.5rem !important; }
+
+        /* ── Layout & Sidebar Sync ── */
+        @media (min-width: 768px) {
+            #content { margin-left: 260px !important; transition: margin-left .28s cubic-bezier(0.4, 0, 0.2, 1); }
+
+            /* Responsive offset when sidebar is collapsed globally */
+            body.sidebar-collapsed #content { margin-left: 68px !important; }
+        }
+        @media (max-width: 768px) { #content { margin-left: 0 !important; } }
 
         .font-monospace-sm { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
 
@@ -24,9 +36,9 @@
         /* ── FIX: header must not clip dropdown ── */
         #header-container {
             flex-shrink: 0;
-            overflow: visible;
+            overflow: visible !important;
             position: relative;
-            z-index: 200;
+            z-index: 1050 !important; /* Raised to match other pages and clear modals */
         }
 
         /* ── Collab-style chat header (back btn + course code + actions) ── */
@@ -160,7 +172,6 @@
     <div id="content" class="flex-grow-1 w-100 d-flex flex-column">
         <div id="header-container"></div>
 
-        <!-- ── Collab-style back + course code header ── -->
         <div class="collab-header shadow-sm">
             <a href="collaborations.html" id="topBackBtn"
                class="btn btn-sm btn-light border text-dark fw-bold d-flex align-items-center gap-1 flex-shrink-0">
@@ -172,11 +183,9 @@
                 style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
                        font-size:clamp(.75rem,3.5vw,1rem);"></h6>
 
-            <!-- placeholder so layout matches collaborations (no action btns here) -->
             <div class="flex-shrink-0"></div>
         </div>
 
-        <!-- ── Collab-style tab nav ── -->
         <nav class="collab-nav">
             <a href="#" id="tabChat"    class="page-tab"><i class="fas fa-comments me-1"></i>Live Chat</a>
             <a href="#" id="tabModules" class="page-tab"><i class="fas fa-book-open me-1"></i>Modules</a>
@@ -298,7 +307,6 @@
     </div>
 </div>
 
-<!-- ── Quiz Overlay ── -->
 <div id="quizOverlay">
     <div class="bg-dark p-3 d-flex justify-content-between align-items-center border-bottom border-secondary">
         <span class="text-light fw-bold fs-5" id="quizOverlayTitle">Quiz</span>
@@ -333,7 +341,6 @@
 
 <div id="modalsPortal"></div>
 
-<!-- Submit Task Modal -->
 <div class="modal fade" id="submitTaskModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <form id="studentSubmitForm" class="modal-content border-0 shadow-lg rounded-4 bg-light">
@@ -358,7 +365,6 @@
     </div>
 </div>
 
-<!-- Grade Task Modal -->
 <div class="modal fade" id="gradeTaskModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg rounded-4 bg-light">
@@ -376,7 +382,6 @@
     </div>
 </div>
 
-<!-- Create Task Modal -->
 <div class="modal fade" id="createModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
         <form id="createTaskForm" class="modal-content border-0 shadow-lg rounded-4 bg-light">
@@ -435,7 +440,6 @@
     </div>
 </div>
 
-<!-- Reassign Modal -->
 <div class="modal fade" id="reassignModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <form id="reassignForm" class="modal-content border-0 shadow-lg rounded-4 bg-light">
@@ -473,7 +477,6 @@
     </div>
 </div>
 
-<!-- Quiz Results Modal -->
 <div class="modal fade" id="quizResultsModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg rounded-4">
@@ -490,7 +493,6 @@
     </div>
 </div>
 
-<!-- Create Quiz Modal -->
 <div class="modal fade" id="createQuizModal" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg rounded-4">
@@ -561,6 +563,17 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/client/assets/js/app.js"></script>
+
+<script>
+    $(document).ready(function() {
+        $("#sidebar-container").load("../components/sidebar.html");
+        $("#header-container").load("../components/header.html", function(res, status) {
+            if (status !== 'error' && typeof window.initHeader === 'function') {
+                window.initHeader();
+            }
+        });
+    });
+</script>
 
 <script>
     function switchSubTab(tab) {

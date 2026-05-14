@@ -24,7 +24,16 @@
         main::-webkit-scrollbar { width: 6px; }
         main::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
 
-        @media (min-width: 768px) { #content { margin-left: 260px !important; transition: margin-left .28s; } }
+        /* ── Layout & Sidebar Sync ── */
+        @media (min-width: 768px) {
+            #content { margin-left: 260px !important; transition: margin-left .28s cubic-bezier(0.4, 0, 0.2, 1); }
+
+            /* Responsive offset when sidebar is collapsed globally */
+            body.sidebar-collapsed #content { margin-left: 68px !important; }
+        }
+
+        /* Ensure dropdowns aren't clipped */
+        #header-placeholder { position: relative; z-index: 1050; }
 
         /* ── Report Elements ── */
         .stat-pill {
@@ -70,13 +79,10 @@
         <div id="sidebar-placeholder"></div>
 
         <div id="content" class="flex-grow-1 w-100">
-            <!-- Header is fixed via flex-shrink-0 -->
             <div id="header-placeholder" class="flex-shrink-0"></div>
 
-            <!-- Scrollable Content -->
             <main class="container-fluid p-4 p-md-5">
 
-                <!-- Summary Pills -->
                 <div class="row g-3 mb-5">
                     <div class="col-6 col-lg-3">
                         <div class="stat-pill shadow-sm">
@@ -124,10 +130,8 @@
                     </div>
                 </div>
 
-                <!-- Performance Cards -->
                 <div class="row g-4 mb-5">
 
-                    <!-- Average Class Grade -->
                     <div class="col-md-4">
                         <div class="report-card shadow-sm h-100">
                             <div class="report-card-header">
@@ -151,7 +155,6 @@
                         </div>
                     </div>
 
-                    <!-- Task Submission Rate -->
                     <div class="col-md-4">
                         <div class="report-card shadow-sm h-100">
                             <div class="report-card-header">
@@ -172,7 +175,6 @@
                         </div>
                     </div>
 
-                    <!-- Quiz Pass Rate -->
                     <div class="col-md-4">
                         <div class="report-card shadow-sm h-100">
                             <div class="report-card-header">
@@ -195,7 +197,6 @@
 
                 </div>
 
-                <!-- Course Table + Faculty + Top Students -->
                 <div class="row g-4 mb-5">
                     <div class="col-lg-4">
                         <div class="report-card shadow-sm h-100">
@@ -244,7 +245,6 @@
                     </div>
                 </div>
 
-                <!-- Instructor Performance -->
                 <div class="row g-4">
                     <div class="col-12">
                         <div class="report-card shadow-sm">
@@ -285,7 +285,6 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Move component loads here to avoid duplicate script blocks -->
     <script>
         $(document).ready(function() {
             $("#sidebar-placeholder").load("../components/sidebar.html");

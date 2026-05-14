@@ -10,26 +10,34 @@
     <style>
         /* ── Absolute Essentials Not Covered by Bootstrap ── */
         body { font-family: 'Sora', sans-serif; background-color: #f8fafc; }
-        
-        /* Sidebar Offset */
-        @media (min-width: 768px) { #content { margin-left: 260px !important; transition: margin-left .28s; } }
+
+        /* ── Layout & Sidebar Sync ── */
+        @media (min-width: 768px) {
+            #content { margin-left: 260px !important; transition: margin-left .28s cubic-bezier(0.4, 0, 0.2, 1); }
+
+            /* Responsive offset when sidebar is collapsed globally */
+            body.sidebar-collapsed #content { margin-left: 68px !important; }
+        }
+
+        /* Ensure dropdowns aren't clipped */
+        #header-container { position: relative; z-index: 1050; }
 
         /* ── Analytics Matching Theme ── */
-        .player-card { 
-            background: #0f172a; 
-            color: white; 
-            border-radius: 20px; 
-            overflow: hidden; 
+        .player-card {
+            background: #0f172a;
+            color: white;
+            border-radius: 20px;
+            overflow: hidden;
             border: none;
             position: relative;
         }
-        .player-card::after { 
-            content: ''; 
-            position: absolute; 
-            top: 0; right: 0; 
-            width: 400px; height: 100%; 
-            background: url('https://www.transparenttextures.com/patterns/cubes.png'); 
-            opacity: .08; 
+        .player-card::after {
+            content: '';
+            position: absolute;
+            top: 0; right: 0;
+            width: 400px; height: 100%;
+            background: url('https://www.transparenttextures.com/patterns/cubes.png');
+            opacity: .08;
             pointer-events: none;
         }
 
@@ -46,9 +54,9 @@
 </head>
 <body>
     <div class="d-flex min-vh-100">
-        
+
         <div id="sidebar-container"></div>
-        
+
         <div id="content" class="flex-grow-1 w-100">
             <div id="header-container"></div>
 
@@ -60,12 +68,12 @@
                         <div class="card player-card shadow-lg mb-4">
                             <div class="card-body p-4 p-md-5 position-relative z-1">
                                 <div class="d-flex align-items-center gap-4">
-                                    <img src="https://ui-avatars.com/api/?name=User&background=0ea5e9&color=fff&size=128" 
-                                         class="rounded-circle border border-4 border-light border-opacity-25 shadow-sm flex-shrink-0" 
+                                    <img src="https://ui-avatars.com/api/?name=User&background=0ea5e9&color=fff&size=128"
+                                         class="rounded-circle border border-4 border-light border-opacity-25 shadow-sm flex-shrink-0"
                                          id="heroAvatar" alt="Avatar" width="90" height="90">
                                     <div>
                                         <h5 class="fw-bold mb-1 text-white" id="heroFullName">Loading...</h5>
-                                        <span class="badge bg-white bg-opacity-10 border border-white border-opacity-25 text-white rounded-pill px-3 py-1 mt-1 text-uppercase glass-badge" 
+                                        <span class="badge bg-white bg-opacity-10 border border-white border-opacity-25 text-white rounded-pill px-3 py-1 mt-1 text-uppercase glass-badge"
                                               id="heroRoleBadge">...</span>
                                         <div class="mt-2 text-white-50 small fw-semibold" id="heroEmail"></div>
                                     </div>
