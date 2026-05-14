@@ -25,7 +25,19 @@
         main::-webkit-scrollbar { width: 6px; }
         main::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
 
-        @media (min-width: 768px) { #content { margin-left: 260px !important; transition: margin-left .28s; } }
+        /* ── Layout & Sidebar Sync ── */
+        @media (min-width: 768px) {
+            #content { margin-left: 260px !important; transition: margin-left .28s cubic-bezier(0.4, 0, 0.2, 1); }
+
+            /* Responsive offset when sidebar is collapsed globally */
+            body.sidebar-collapsed #content { margin-left: 68px !important; }
+        }
+
+        /* ── FIX: header must not clip dropdown ── */
+        #header-container {
+            position: relative;
+            z-index: 1050;
+        }
 
         /* ── Hero ── */
         .hero-card {
@@ -202,13 +214,10 @@
 
     <div id="content" class="flex-grow-1 w-100">
 
-        <!-- Header is fixed inside the flex-column #content wrapper via flex-shrink-0 -->
         <div id="header-container" class="flex-shrink-0"></div>
 
-        <!-- Main scrolls independently -->
         <main class="container-fluid p-3 p-md-4 p-lg-5">
 
-            <!-- ── Hero ── -->
             <div class="hero-card shadow-lg mb-4 mb-md-5 fade-up fd-1">
                 <div class="hero-accent"></div>
                 <div class="card-body p-4 p-md-5 position-relative" style="z-index:1;">
@@ -229,7 +238,6 @@
                         </div>
                     </div>
 
-                    <!-- stat pills -->
                     <div class="d-flex flex-wrap gap-3 mt-4 mt-md-5" id="heroPills">
                         <div class="d-flex align-items-center gap-3 rounded-3 p-2 pe-4"
                              style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);">
@@ -275,7 +283,6 @@
                 </div>
             </div>
 
-            <!-- ── My Classes ── -->
             <div class="fade-up fd-2">
                 <div class="section-label">My Classes</div>
                 <div class="row g-3 mb-4 mb-md-5" id="classGrid">
@@ -285,10 +292,8 @@
                 </div>
             </div>
 
-            <!-- ── Row: Pending + Upcoming ── -->
             <div class="row g-3 g-md-4 mb-4 mb-md-5 fade-up fd-3">
 
-                <!-- Pending Submissions -->
                 <div class="col-lg-6">
                     <div class="section-label">Pending Submissions to Grade</div>
                     <div class="bg-white rounded-4 border p-3 p-md-4 shadow-sm h-100" style="border-color:#e9f0f8!important;">
@@ -300,7 +305,6 @@
                     </div>
                 </div>
 
-                <!-- Upcoming Due Dates -->
                 <div class="col-lg-6">
                     <div class="section-label">Upcoming Due Dates <span class="text-primary">(next 7 days)</span></div>
                     <div class="bg-white rounded-4 border p-3 p-md-4 shadow-sm h-100" style="border-color:#e9f0f8!important;">
@@ -313,10 +317,8 @@
                 </div>
             </div>
 
-            <!-- ── Row: Quiz Results + Activity ── -->
             <div class="row g-3 g-md-4 fade-up fd-4">
 
-                <!-- Quiz Results -->
                 <div class="col-lg-7">
                     <div class="section-label">Recent Quiz Results</div>
                     <div class="bg-white rounded-4 border shadow-sm overflow-hidden" style="border-color:#e9f0f8!important;">
@@ -341,7 +343,6 @@
                     </div>
                 </div>
 
-                <!-- Activity Feed -->
                 <div class="col-lg-5">
                     <div class="section-label">Recent Student Activity</div>
                     <div class="bg-white rounded-4 border p-3 p-md-4 shadow-sm" style="border-color:#e9f0f8!important;">
@@ -361,6 +362,18 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        $("#sidebar-container").load("../components/sidebar.html");
+        $("#header-container").load("../components/header.html", function(res, status) {
+            if (status !== 'error' && typeof window.initHeader === 'function') {
+                window.initHeader();
+            }
+        });
+    });
+</script>
+
 <script src="/client/assets/js/modules/instructor_dashboard.js"></script>
 </body>
 </html>

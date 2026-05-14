@@ -14,20 +14,3 @@ integrate with schedule.
 ~~have email for instructors~~
 
 add a check for signup if the email is already used for both students table and employees
-
-
-
-mygrades
-
-myanalytics
-
-~~profiel~~
-
-~~instructors_course_~~_\
-~~instructors~~_~~assignment~~
-
-~~reports~~
-
-modules
-
-todo
