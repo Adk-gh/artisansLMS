@@ -220,6 +220,27 @@
                 left: 0 !important; /* Slide in when active */
             }
         }
+        /* Collapsed sidebar state */
+#sidebar-container.collapsed {
+    width: 60px !important;
+}
+
+/* Ensure the wrapper reflows properly */
+.dm-page-wrapper {
+    display: flex;
+    min-height: 100vh;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+#sidebar-container {
+    width: 260px;
+    flex-shrink: 0;
+    background-color: #1e293b;
+    z-index: 1040;
+    transition: width 0.3s ease; /* smooth collapse */
+    overflow: hidden; /* prevents content from overflowing when collapsing */
+}
 
         /* ── Contacts sidebar: full-screen slide on mobile ── */
         @media (max-width: 767.98px) {

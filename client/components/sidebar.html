@@ -119,11 +119,12 @@
 .role-teacher,
 .role-student { display: none; }
 
+/* ── CHANGED: We now target the body class instead of a sibling selector ── */
 #content {
     margin-left: 260px;
     transition: margin-left .28s cubic-bezier(.4,0,.2,1);
 }
-#sidebar.collapsed ~ #content { margin-left: 68px; }
+body.sidebar-collapsed #content { margin-left: 68px; }
 
 #sb-overlay {
     display: none;
@@ -167,64 +168,40 @@
     </div>
 
     <div class="sb-nav">
-<div class="sb-section role-teacher">
+        <div class="sb-section role-teacher">
             <div class="sb-divider"></div>
             <span class="sb-label">Faculty Portal</span>
-            <a href="/client/pages/instructor_dashboard.html"
-            class="sb-link"
-            data-label="Dashboard"
-            data-active-page="instructor_dashboard.html">
+            <a href="/client/pages/instructor_dashboard.html" class="sb-link" data-label="Dashboard" data-active-page="instructor_dashboard.html">
                 <span class="sb-icon"><i class="fas fa-th-large"></i></span>
                 <span class="sb-link-text">Dashboard</span>
             </a>
-
-            <a href="/client/pages/instructor_courses.html"
-               class="sb-link"
-               data-label="Course Materials"
-               data-active-page="instructor_courses.html">
+            <a href="/client/pages/instructor_courses.html" class="sb-link" data-label="Course Materials" data-active-page="instructor_courses.html">
                 <span class="sb-icon"><i class="fas fa-book-reader"></i></span>
                 <span class="sb-link-text">Course Materials</span>
             </a>
-
-            <a href="/client/pages/instructor_assignments.html"
-               class="sb-link"
-               data-label="Task Manager"
-               data-active-page="instructor_assignments.html">
+            <a href="/client/pages/instructor_assignments.html" class="sb-link" data-label="Task Manager" data-active-page="instructor_assignments.html">
                 <span class="sb-icon"><i class="fas fa-tasks"></i></span>
                 <span class="sb-link-text">Task Manager</span>
             </a>
-            <a href="/client/pages/instructors.schedule.html"
-                class="sb-link"
-                data-label="My Schedule"
-                data-active-page="instructor_schedule.html">
-                    <span class="sb-icon"><i class="fas fa-calendar-week"></i></span>
-                    <span class="sb-link-text">My Schedule</span>
-                </a>
-
+            <a href="/client/pages/instructors.schedule.html" class="sb-link" data-label="My Schedule" data-active-page="instructor_schedule.html">
+                <span class="sb-icon"><i class="fas fa-calendar-week"></i></span>
+                <span class="sb-link-text">My Schedule</span>
+            </a>
         </div>
+
         <div class="sb-section" >
             <span class="sb-label">General</span>
             <div class="sb-section role-admin">
-            <a href="/client/pages/dashboard.html"
-               class="sb-link"
-               data-label="Dashboard"
-               data-active-page="dashboard.html">
-                <span class="sb-icon"><i class="fas fa-th-large"></i></span>
-                <span class="sb-link-text">Dashboard</span>
-            </a>
+                <a href="/client/pages/dashboard.html" class="sb-link" data-label="Dashboard" data-active-page="dashboard.html">
+                    <span class="sb-icon"><i class="fas fa-th-large"></i></span>
+                    <span class="sb-link-text">Dashboard</span>
+                </a>
             </div>
-            <a href="/client/pages/collaborations.html"
-               class="sb-link"
-               data-label="Classes"
-               data-active-page="collaborations.html">
+            <a href="/client/pages/collaborations.html" class="sb-link" data-label="Classes" data-active-page="collaborations.html">
                 <span class="sb-icon"><i class="fas fa-user-friends"></i></span>
                 <span class="sb-link-text">Classes</span>
             </a>
-
-            <a href="/client/pages/messages.html"
-               class="sb-link"
-               data-label="Direct Messages"
-               data-active-page="messages.html">
+            <a href="/client/pages/messages.html" class="sb-link" data-label="Direct Messages" data-active-page="messages.html">
                 <span class="sb-icon"><i class="fas fa-comments"></i></span>
                 <span class="sb-link-text">Direct Messages</span>
             </a>
@@ -233,115 +210,62 @@
         <div class="sb-section role-student">
             <div class="sb-divider"></div>
             <span class="sb-label">Student Portal</span>
-            <a href="/client/pages/instructors.schedule.html"
-                class="sb-link"
-                data-label="My Schedule"
-                data-active-page="instructor_schedule.html">
-                    <span class="sb-icon"><i class="fas fa-calendar-week"></i></span>
-                    <span class="sb-link-text">My Schedule</span>
-                </a>
-
-            <a href="/client/pages/my_grades.html"
-               class="sb-link"
-               data-label="My Grades"
-               data-active-page="my_grades.html">
+            <a href="/client/pages/instructors.schedule.html" class="sb-link" data-label="My Schedule" data-active-page="instructor_schedule.html">
+                <span class="sb-icon"><i class="fas fa-calendar-week"></i></span>
+                <span class="sb-link-text">My Schedule</span>
+            </a>
+            <a href="/client/pages/my_grades.html" class="sb-link" data-label="My Grades" data-active-page="my_grades.html">
                 <span class="sb-icon"><i class="fas fa-graduation-cap"></i></span>
                 <span class="sb-link-text">My Grades</span>
             </a>
-
-            <a href="/client/pages/my_analytics.html"
-               class="sb-link"
-               data-label="Achievement Board"
-               data-active-page="my_analytics.html">
+            <a href="/client/pages/my_analytics.html" class="sb-link" data-label="Achievement Board" data-active-page="my_analytics.html">
                 <span class="sb-icon"><i class="fas fa-gamepad"></i></span>
                 <span class="sb-link-text">Achievement Board</span>
             </a>
         </div>
 
-
-
         <div class="sb-section role-admin">
             <div class="sb-divider"></div>
             <span class="sb-label">System Admin</span>
-
-            <a href="/client/pages/instructor_assignments.html"
-               class="sb-link"
-               data-label="Task Manager"
-               data-active-page="instructor_assignments.html">
+            <a href="/client/pages/instructor_assignments.html" class="sb-link" data-label="Task Manager" data-active-page="instructor_assignments.html">
                 <span class="sb-icon"><i class="fas fa-tasks"></i></span>
                 <span class="sb-link-text">Task Manager</span>
             </a>
-            <a href="/client/pages/instructors.schedule.html"
-                class="sb-link"
-                data-label="My Schedule"
-                data-active-page="instructor_schedule.html">
-                    <span class="sb-icon"><i class="fas fa-calendar-week"></i></span>
-                    <span class="sb-link-text">My Schedule</span>
-                </a>
-        </div>
-
-        <div class="sb-section role-admin">
-            <div class="sb-divider"></div>
-            <span class="sb-label">System Admin</span>
-
-            <a href="/client/pages/enrollment.html"
-               class="sb-link"
-               data-label="Student Enrollment"
-               data-active-page="enrollment.html">
+            <a href="/client/pages/instructors.schedule.html" class="sb-link" data-label="My Schedule" data-active-page="instructor_schedule.html">
+                <span class="sb-icon"><i class="fas fa-calendar-week"></i></span>
+                <span class="sb-link-text">My Schedule</span>
+            </a>
+            <a href="/client/pages/enrollment.html" class="sb-link" data-label="Student Enrollment" data-active-page="enrollment.html">
                 <span class="sb-icon"><i class="fas fa-link"></i></span>
                 <span class="sb-link-text">Student Enrollment</span>
             </a>
-
-            <a href="/client/pages/students.html"
-               class="sb-link"
-               data-label="Manage Students"
-               data-active-page="students.html">
+            <a href="/client/pages/students.html" class="sb-link" data-label="Manage Students" data-active-page="students.html">
                 <span class="sb-icon"><i class="fas fa-user-graduate"></i></span>
                 <span class="sb-link-text">Manage Students</span>
             </a>
-
-            <a href="/client/pages/courses.html"
-               class="sb-link"
-               data-label="Master Courses"
-               data-active-page="courses.html">
+            <a href="/client/pages/courses.html" class="sb-link" data-label="Master Courses" data-active-page="courses.html">
                 <span class="sb-icon"><i class="fas fa-layer-group"></i></span>
                 <span class="sb-link-text">Master Courses</span>
             </a>
-
-            <a href="/client/pages/classes.html"
-               class="sb-link"
-               data-label="Class Management"
-               data-active-page="classes.html">
+            <a href="/client/pages/classes.html" class="sb-link" data-label="Class Management" data-active-page="classes.html">
                 <span class="sb-icon"><i class="fas fa-chalkboard"></i></span>
                 <span class="sb-link-text">Class Management</span>
             </a>
-
-            <a href="/client/pages/instructors.html"
-               class="sb-link"
-               data-label="Master Instructors"
-               data-active-page="instructors.html">
+            <a href="/client/pages/instructors.html" class="sb-link" data-label="Master Instructors" data-active-page="instructors.html">
                 <span class="sb-icon"><i class="fas fa-user-tie"></i></span>
                 <span class="sb-link-text">Master Instructors</span>
             </a>
-
-            <a href="/client/pages/reports.html"
-               class="sb-link"
-               data-label="System Reports"
-               data-active-page="reports.html">
+            <a href="/client/pages/reports.html" class="sb-link" data-label="System Reports" data-active-page="reports.html">
                 <span class="sb-icon"><i class="fas fa-chart-pie"></i></span>
                 <span class="sb-link-text">System Reports</span>
             </a>
-
-            <a href="/client/pages/archived.html"
-               class="sb-link"
-               data-label="Archives"
-               data-active-page="archived.html">
+            <a href="/client/pages/archived.html" class="sb-link" data-label="Archives" data-active-page="archived.html">
                 <span class="sb-icon" ><i class="fas fa-archive"></i></span>
                 <span class="sb-link-text">Archives</span>
             </a>
         </div>
-
-    </div></nav>
+    </div>
+</nav>
 
 <script>
 (function () {
@@ -354,11 +278,13 @@
     // ── 1. Restore collapsed state (desktop only) ──
     if (!isMobile() && localStorage.getItem(STORE_KEY) === '1') {
         sidebar.classList.add('collapsed');
+        document.body.classList.add('sidebar-collapsed'); // <-- CHANGED: Sync state to body on load
     }
 
     if (btnCollapse) {
         btnCollapse.addEventListener('click', () => {
             sidebar.classList.toggle('collapsed');
+            document.body.classList.toggle('sidebar-collapsed'); // <-- CHANGED: Toggle state on body
             localStorage.setItem(STORE_KEY, sidebar.classList.contains('collapsed') ? '1' : '0');
         });
     }

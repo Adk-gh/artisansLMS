@@ -564,7 +564,9 @@ function openView(uid) {
     if (!selectedUser) return;
 
     renderList();
-    if (window.innerWidth <= 768) el('contactsSidebar').classList.add('hidden');
+
+    // Fix: match your CSS breakpoint exactly
+    if (window.innerWidth < 768) el('contactsSidebar').classList.add('hidden');
 
     // Reset all states cleanly
     el('stateEmpty').style.display = 'none';
