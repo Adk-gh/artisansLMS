@@ -288,8 +288,7 @@ function initChatView() {
             if (data.status === 'success') {
                 populateRoomInfo(data);
 
-                // ── ADDED: Initialize Room Request functionality ─────────────
-                initRoomRequest(classId, currentUser, isTeacher);
+               
                 // ─────────────────────────────────────────────────────────────
 
                 initFirebase();
@@ -407,7 +406,7 @@ function initFirebase() {
                     <span class="badge bg-white text-muted border px-3 py-2 rounded-pill shadow-sm" style="font-size:.75rem;">
                         ${m.text || ''}
                     </span>
-                </div>`); 
+                </div>`);
             box.scrollTop = box.scrollHeight;
             return;
         }

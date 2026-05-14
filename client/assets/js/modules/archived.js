@@ -72,37 +72,83 @@ $(document).ready(function() {
         });
     }
 
+    // ── Custom Confirm Modal ──
+    function showConfirmModal({ icon, iconClass, title, message, confirmLabel, confirmClass, onConfirm }) {
+        $('#archModal').remove();
+        const html = `
+        <div id="archModal" class="arch-modal-backdrop">
+            <div class="arch-modal">
+                <div class="arch-modal-icon ${iconClass}"><i class="fas ${icon}"></i></div>
+                <div class="arch-modal-title">${title}</div>
+                <div class="arch-modal-message">${message}</div>
+                <div class="arch-modal-actions">
+                    <button class="arch-modal-cancel" id="archModalCancel">Cancel</button>
+                    <button class="arch-modal-confirm ${confirmClass}" id="archModalConfirm">${confirmLabel}</button>
+                </div>
+            </div>
+        </div>`;
+        $('body').append(html);
+
+        $('#archModalCancel, #archModal').on('click', function(e) {
+            if (e.target === this) $('#archModal').remove();
+        });
+        $('#archModalConfirm').on('click', function() {
+            $('#archModal').remove();
+            onConfirm();
+        });
+        // Prevent modal box click from closing
+        $('.arch-modal').on('click', e => e.stopPropagation());
+    }
+
     function restoreRecord(id) {
-        if (!confirm("Restore this item back to the active system?")) return;
-        $.ajax({
-            url: `${API_URL}?action=restore`,
-            method: 'POST',
-            xhrFields: { withCredentials: true },
-            contentType: 'application/json',
-            data: JSON.stringify({ archive_id: id }),
-            dataType: 'json',
-            success: function(json) {
-                if (json.status === 'success') {
-                    showToast(json.message, "success");
-                    fetchArchivedData(currentTab);
-                } else showToast(json.message, "error");
+        showConfirmModal({
+            icon: 'fa-undo',
+            iconClass: 'success',
+            title: 'Restore Record',
+            message: 'This item will be moved back to the active system and become visible again.',
+            confirmLabel: '<i class="fas fa-undo me-1"></i> Restore',
+            confirmClass: 'success',
+            onConfirm: () => {
+                $.ajax({
+                    url: `${API_URL}?action=restore`,
+                    method: 'POST',
+                    xhrFields: { withCredentials: true },
+                    contentType: 'application/json',
+                    data: JSON.stringify({ archive_id: id }),
+                    dataType: 'json',
+                    success: function(json) {
+                        if (json.status === 'success') {
+                            showToast(json.message, "success");
+                            fetchArchivedData(currentTab);
+                        } else showToast(json.message, "error");
+                    }
+                });
             }
         });
     }
 
     function purgeRecord(id) {
-        if (!confirm("Permanently delete this record? This action cannot be undone.")) return;
-        $.ajax({
-            url: `${API_URL}?action=purge`,
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({ archive_id: id }),
-            dataType: 'json',
-            success: function(json) {
-                if (json.status === 'success') {
-                    showToast(json.message, "deleted");
-                    fetchArchivedData(currentTab);
-                } else showToast(json.message, "error");
+        showConfirmModal({
+            icon: 'fa-trash',
+            iconClass: 'danger',
+            title: 'Permanently Delete?',
+            message: 'This record will be erased forever and cannot be recovered. Are you sure you want to continue?',
+            confirmLabel: '<i class="fas fa-trash me-1"></i> Delete Forever',
+            confirmClass: 'danger',
+            onConfirm: () => {
+                $.ajax({
+                    url: `${API_URL}?action=purge`,
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ archive_id: id }),
+                    dataType: 'json',
+                    success: function(json) {
+                        if (json.status === 'success') {
+                            showToast(json.message, "deleted");
+                            fetchArchivedData(currentTab);
+                        } else showToast(json.message, "error");
+                    }
+                });
             }
         });
     }
@@ -473,7 +519,6 @@ function initHeader() {
     $.ajax({
         url: AUTH_API,
         method: 'POST',
-
         contentType: 'application/json',
         dataType: 'json',
         data: JSON.stringify({ route: 'auth', action: 'checkSession' }),

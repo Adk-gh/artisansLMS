@@ -95,12 +95,53 @@
         .btn-delete { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
         .btn-delete:hover { background: #fee2e2; color: #991b1b; }
 
+        /* ── Confirm Modal ── */
+        .arch-modal-backdrop {
+            position: fixed; inset: 0; z-index: 10000;
+            background: rgba(15,23,42,.45); backdrop-filter: blur(3px);
+            display: flex; align-items: center; justify-content: center;
+            animation: fadeIn .15s ease;
+        }
+        .arch-modal {
+            background: #fff; border-radius: 18px; padding: 28px 28px 22px;
+            width: 100%; max-width: 400px; margin: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,.18);
+            animation: slideUp .2s ease;
+        }
+        .arch-modal-icon {
+            width: 48px; height: 48px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; margin-bottom: 16px;
+        }
+        .arch-modal-icon.danger  { background: #fef2f2; color: #dc2626; }
+        .arch-modal-icon.success { background: #f0fdf4; color: #16a34a; }
+        .arch-modal-title   { font-size: .95rem; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+        .arch-modal-message { font-size: .8rem; color: #64748b; line-height: 1.5; margin-bottom: 22px; }
+        .arch-modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+        .arch-modal-cancel {
+            padding: 9px 20px; border-radius: 10px; font-size: .8rem; font-weight: 700;
+            background: #f8fafc; color: #475569; border: 1.5px solid #e2e8f0; cursor: pointer;
+            font-family: 'Sora', sans-serif; transition: .15s;
+        }
+        .arch-modal-cancel:hover { background: #e2e8f0; }
+        .arch-modal-confirm {
+            padding: 9px 20px; border-radius: 10px; font-size: .8rem; font-weight: 700;
+            border: none; cursor: pointer; font-family: 'Sora', sans-serif; transition: .15s;
+        }
+        .arch-modal-confirm.danger  { background: #dc2626; color: #fff; }
+        .arch-modal-confirm.danger:hover  { background: #b91c1c; }
+        .arch-modal-confirm.success { background: #16a34a; color: #fff; }
+        .arch-modal-confirm.success:hover { background: #15803d; }
+        @keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
         /* Mobile Adjustments */
         @media (max-width:576px) {
             .sf-bar { padding: 12px 14px; gap: 10px; }
             .arch-tab { font-size: .8rem; padding: 8px 12px; }
             .arch-filter-chip { padding: 6px 12px; font-size: .7rem; }
             .sf-count { width: 100%; text-align: center; margin-left: 0; }
+            .arch-modal { padding: 22px 18px 18px; }
         }
     </style>
 </head>
@@ -162,11 +203,6 @@
                     <div class="spinner-border spinner-border-sm mb-3 text-primary" style="width: 1.5rem; height: 1.5rem;"></div><br>
                     <span style="font-size: .9rem;">Loading archives...</span>
                 </div>
-                <!-- NOTE FOR JS INJECTION:
-                     Use these classes for your action buttons:
-                     <button class="btn-action btn-restore"><i class="fas fa-undo"></i> Restore</button>
-                     <button class="btn-action btn-delete"><i class="fas fa-trash"></i> Delete</button>
-                -->
             </div>
 
         </main>
