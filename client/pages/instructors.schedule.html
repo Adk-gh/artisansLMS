@@ -2,7 +2,6 @@
 <!--
     instructor_schedule.html
     Path: C:\xampp\htdocs\artisansLMS\client\pages\instructor_schedule.html
-    Instructor-facing weekly schedule view — matches ArtisansLMS design system
 -->
 <html lang="en">
 <head>
@@ -10,29 +9,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LMS | My Schedule</title>
 
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- Your global stylesheet -->
     <link rel="stylesheet" href="../assets/css/style.css">
 
     <style>
-        /* ── Reset & Layout ───────────────────────────────────────────────── */
+        /* ── Layout Constraint (Freezes the page) ── */
         html, body { height: 100%; margin: 0; overflow: hidden; }
-        body { font-family: 'Sora', sans-serif; background: #f0f2f7; display: flex; flex-direction: column; }
+        body { font-family: 'Sora', sans-serif; background-color: #f8fafc; display: flex; flex-direction: column; }
 
         #content { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 1.5rem !important; gap: 14px;}
 
-        main {
-            flex: 1;
-            min-height: 0;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            padding: 1.5rem !important;
-            gap: 14px;
-        }
+        /* Sidebar Offset */
+        @media (min-width: 768px) { #content { margin-left: 260px !important; transition: margin-left .28s; } }
+
+        /* Hover Lift Animation */
+        .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important; }
 
         /* ── Stats Row ────────────────────────────────────────────────────── */
         .stats-row {
@@ -308,7 +304,7 @@
 
         /* ── Print ────────────────────────────────────────────────────────── */
         @media print {
-            #sidebar, .sf-bar, .stats-row { display: none !important; }
+            #sidebar-container, .sf-bar, .stats-row { display: none !important; }
             #content { margin-left: 0 !important; }
             .schedule-wrap { border-radius: 0; overflow: visible; }
             .sched-session { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -324,423 +320,135 @@
 </head>
 <body>
 
-<!-- ── Sidebar ───────────────────────────────────────────────────────────── -->
-<div id="sidebar-placeholder"></div>
+    <div class="d-flex min-vh-100 overflow-hidden">
 
-<div id="content">
+        <!-- ── Sidebar ───────────────────────────────────────────────────────────── -->
+        <div id="sidebar-container"></div>
 
-    <!-- ── Page Header ───────────────────────────────────────────────────── -->
-    <div id="header-placeholder"></div>
+        <div id="content" class="flex-grow-1 w-100">
 
-    <main>
+            <!-- ── Page Header ───────────────────────────────────────────────────── -->
+            <div id="header-container" class="flex-shrink-0"></div>
 
-        <!-- Stats -->
-        <div class="stats-row">
-            <div class="stat-card">
-                <div class="stat-icon blue"><i class="fas fa-calendar-check"></i></div>
-                <div>
-                    <div class="stat-val" id="statSessions">—</div>
-                    <div class="stat-lbl">Sessions / Week</div>
+            <main class="container-fluid p-3 p-md-4 p-lg-5 d-flex flex-column">
+
+                <!-- Stats -->
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-icon blue"><i class="fas fa-calendar-check"></i></div>
+                        <div>
+                            <div class="stat-val" id="statSessions">—</div>
+                            <div class="stat-lbl">Sessions / Week</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green"><i class="fas fa-clock"></i></div>
+                        <div>
+                            <div class="stat-val" id="statHours">—</div>
+                            <div class="stat-lbl">Teaching Hours</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon purple"><i class="fas fa-book-open"></i></div>
+                        <div>
+                            <div class="stat-val" id="statSubjects">—</div>
+                            <div class="stat-lbl">Subjects</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon amber"><i class="fas fa-door-open"></i></div>
+                        <div>
+                            <div class="stat-val" id="statRooms">—</div>
+                            <div class="stat-lbl">Rooms Used</div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon green"><i class="fas fa-clock"></i></div>
-                <div>
-                    <div class="stat-val" id="statHours">—</div>
-                    <div class="stat-lbl">Teaching Hours</div>
+
+                <!-- Controls -->
+                <div class="sf-bar">
+                    <select class="sf-select" id="semesterSelect">
+                        <option value="1st Semester">1st Semester</option>
+                        <option value="2nd Semester">2nd Semester</option>
+                        <option value="Summer">Summer</option>
+                    </select>
+                    <select class="sf-select" id="yearSelect">
+                        <option value="2025-2026">SY 2025–2026</option>
+                        <option value="2024-2025">SY 2024–2025</option>
+                        <option value="2023-2024">SY 2023–2024</option>
+                    </select>
+
+                    <!-- Day filter pills — pushed right -->
+                    <div class="day-pill-wrap ms-auto" id="dayPills">
+                        <button class="day-pill active" data-day="all">All Days</button>
+                        <button class="day-pill" data-day="Monday">Mon</button>
+                        <button class="day-pill" data-day="Tuesday">Tue</button>
+                        <button class="day-pill" data-day="Wednesday">Wed</button>
+                        <button class="day-pill" data-day="Thursday">Thu</button>
+                        <button class="day-pill" data-day="Friday">Fri</button>
+                        <button class="day-pill" data-day="Saturday">Sat</button>
+                        <button class="day-pill" data-day="Sunday">Sun</button>
+                    </div>
+
+                    <button class="btn-print" onclick="window.print()">
+                        <i class="fas fa-print"></i> Print
+                    </button>
                 </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon purple"><i class="fas fa-book-open"></i></div>
-                <div>
-                    <div class="stat-val" id="statSubjects">—</div>
-                    <div class="stat-lbl">Subjects</div>
+
+                <!-- Timetable -->
+                <div class="schedule-wrap shadow-sm">
+
+                    <div id="schedLoader">
+                        <div class="spinner"></div>
+                        <span class="small fw-bold text-muted">Loading your schedule…</span>
+                    </div>
+
+                    <div id="schedError"></div>
+
+                    <div class="timetable-scroll" id="timetableScroll" style="display:none;">
+                        <div id="schedGrid"></div>
+                    </div>
+
+                    <div class="no-schedule" id="schedEmpty" style="display:none;">
+                        <i class="fas fa-calendar-times"></i>
+                        No classes scheduled for this period.
+                    </div>
+
                 </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon amber"><i class="fas fa-door-open"></i></div>
-                <div>
-                    <div class="stat-val" id="statRooms">—</div>
-                    <div class="stat-lbl">Rooms Used</div>
+
+                <!-- Legend footer — flush under timetable -->
+                <div class="schedule-footer shadow-sm" id="schedLegend">
+                    <span class="legend-lbl">Subjects:</span>
                 </div>
-            </div>
+
+            </main>
         </div>
-
-        <!-- Controls -->
-        <div class="sf-bar">
-            <select class="sf-select" id="semesterSelect">
-                <option value="1st Semester">1st Semester</option>
-                <option value="2nd Semester">2nd Semester</option>
-                <option value="Summer">Summer</option>
-            </select>
-            <select class="sf-select" id="yearSelect">
-                <option value="2025-2026">SY 2025–2026</option>
-                <option value="2024-2025">SY 2024–2025</option>
-                <option value="2023-2024">SY 2023–2024</option>
-            </select>
-
-            <!-- Day filter pills — pushed right -->
-            <div class="day-pill-wrap ms-auto" id="dayPills">
-                <button class="day-pill active" data-day="all">All Days</button>
-                <button class="day-pill" data-day="Monday">Mon</button>
-                <button class="day-pill" data-day="Tuesday">Tue</button>
-                <button class="day-pill" data-day="Wednesday">Wed</button>
-                <button class="day-pill" data-day="Thursday">Thu</button>
-                <button class="day-pill" data-day="Friday">Fri</button>
-                <button class="day-pill" data-day="Saturday">Sat</button>
-                <button class="day-pill" data-day="Sunday">Sun</button>
-            </div>
-
-            <button class="btn-print" onclick="window.print()">
-                <i class="fas fa-print"></i> Print
-            </button>
-        </div>
-
-        <!-- Timetable -->
-        <div class="schedule-wrap shadow-sm">
-
-            <div id="schedLoader">
-                <div class="spinner"></div>
-                <span class="small fw-bold text-muted">Loading your schedule…</span>
-            </div>
-
-            <div id="schedError"></div>
-
-            <div class="timetable-scroll" id="timetableScroll" style="display:none;">
-                <div id="schedGrid"></div>
-            </div>
-
-            <div class="no-schedule" id="schedEmpty" style="display:none;">
-                <i class="fas fa-calendar-times"></i>
-                No classes scheduled for this period.
-            </div>
-
-        </div>
-
-        <!-- Legend footer — flush under timetable -->
-        <div class="schedule-footer shadow-sm" id="schedLegend">
-            <span class="legend-lbl">Subjects:</span>
-        </div>
-
-    </main>
-</div>
+    </div>
 
 <!-- ── Scripts ───────────────────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
+<!-- Fetch Components Script matching the new layout container IDs -->
 <script>
-    /* Load shared sidebar & header partials (adjust paths as needed) */
-    fetch('/client/partials/sidebar.html').then(r=>r.text()).then(h=>document.getElementById('sidebar-placeholder').innerHTML=h).catch(()=>{});
-    fetch('/client/partials/header.html').then(r=>r.text()).then(h=>document.getElementById('header-placeholder').innerHTML=h).catch(()=>{});
+    fetch('/client/components/sidebar.html')
+        .then(r => {
+            if (!r.ok) throw new Error("Sidebar file not found");
+            return r.text();
+        })
+        .then(h => document.getElementById('sidebar-container').innerHTML = h)
+        .catch(err => console.error(err));
+
+    fetch('/client/components/header.html')
+        .then(r => {
+            if (!r.ok) throw new Error("Header file not found");
+            return r.text();
+        })
+        .then(h => document.getElementById('header-container').innerHTML = h)
+        .catch(err => console.error(err));
 </script>
 
-<script>
-/* ═══════════════════════════════════════════════════════════════════════════
-   Instructor Schedule — self-contained module
-   Fetches instructor_id from the PHP session, then loads their timetable.
-   ═══════════════════════════════════════════════════════════════════════════ */
-(function () {
-
-    /* ── Config ────────────────────────────────────────────────────────── */
-    const API_BASE    = '/backend/endpoints/instructors.schedule.php';
-    const SESSION_URL = '/backend/middleware/session_info.php';
-
-    const DAYS      = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-    const DAY_SHORT = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
-
-    const GRID_START = 7;   // 07:00
-    const GRID_END   = 20;  // 20:00
-    const SLOT_MIN   = 30;
-    const SLOT_PX    = 44;  // px per 30-min slot
-    const TOTAL_SLOTS = ((GRID_END - GRID_START) * 60) / SLOT_MIN; // 26 slots
-
-    /* Colour palette — system colours matching the LMS palette */
-    const PALETTE = [
-        { bg:'#eff6ff', border:'#3b82f6', text:'#1d4ed8' },  // blue
-        { bg:'#f0fdf4', border:'#22c55e', text:'#15803d' },  // green
-        { bg:'#faf5ff', border:'#a855f7', text:'#7e22ce' },  // purple
-        { bg:'#fffbeb', border:'#f59e0b', text:'#b45309' },  // amber
-        { bg:'#fff1f2', border:'#f43f5e', text:'#be123c' },  // rose
-        { bg:'#ecfdf5', border:'#10b981', text:'#065f46' },  // emerald
-        { bg:'#fff7ed', border:'#f97316', text:'#c2410c' },  // orange
-        { bg:'#f0f9ff', border:'#0ea5e9', text:'#0369a1' },  // sky
-    ];
-
-    /* State */
-    const S = {
-        instructorId : null,
-        semester     : '1st Semester',
-        schoolYear   : '2025-2026',
-        data         : null,
-        colorMap     : {},
-        colorIdx     : 0,
-        activeDay    : null,
-    };
-
-    const TODAY = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];
-
-    /* ── Helpers ───────────────────────────────────────────────────────── */
-    function toMins(t) {
-        if (!t) return 0;
-        let m = t.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
-        if (m) return +m[1] * 60 + +m[2];
-        m = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-        if (m) {
-            let h = +m[1]; const mn = +m[2]; const mer = m[3].toUpperCase();
-            if (mer === 'PM' && h !== 12) h += 12;
-            if (mer === 'AM' && h === 12) h = 0;
-            return h * 60 + mn;
-        }
-        return 0;
-    }
-
-    function fmtTime(mins) {
-        let h = Math.floor(mins / 60), m = mins % 60;
-        const mer = h >= 12 ? 'PM' : 'AM';
-        if (h > 12) h -= 12;
-        if (h === 0) h = 12;
-        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')} ${mer}`;
-    }
-
-    function colorFor(code) {
-        if (!S.colorMap[code]) { S.colorMap[code] = PALETTE[S.colorIdx % PALETTE.length]; S.colorIdx++; }
-        return S.colorMap[code];
-    }
-
-    function slotOf(mins) { return Math.round((mins - GRID_START * 60) / SLOT_MIN); }
-
-    /* ── DOM helpers ───────────────────────────────────────────────────── */
-    const $  = id  => document.getElementById(id);
-    const $$ = sel => document.querySelectorAll(sel);
-
-    function showLoader(v)  { $('schedLoader').style.display  = v ? 'flex'  : 'none'; }
-    function showGrid(v)    { $('timetableScroll').style.display = v ? 'block' : 'none'; }
-    function showEmpty(v)   { $('schedEmpty').style.display   = v ? 'flex'  : 'none'; }
-    function showError(msg) { const e=$('schedError'); e.textContent=msg; e.style.display='block'; }
-    function hideError()    { $('schedError').style.display   = 'none'; }
-
-    /* ── Fetch ─────────────────────────────────────────────────────────── */
-    async function getSession() {
-        const r = await fetch(SESSION_URL);
-        return r.json();
-    }
-
-    async function getSchedule() {
-        const url = `${API_BASE}?instructor_id=${encodeURIComponent(S.instructorId)}`
-                  + `&semester=${encodeURIComponent(S.semester)}`
-                  + `&school_year=${encodeURIComponent(S.schoolYear)}`;
-        const r = await fetch(url);
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const j = await r.json();
-        if (!j.success) throw new Error(j.message || 'API error');
-        return j.data;
-    }
-
-    /* ── Render stats ──────────────────────────────────────────────────── */
-    function renderStats(stats) {
-        $('statSessions').textContent = stats.total_sessions;
-        $('statHours').textContent    = stats.total_hours + 'h';
-        $('statSubjects').textContent = stats.unique_subjects;
-        $('statRooms').textContent    = stats.unique_rooms;
-    }
-
-    /* ── Render timetable ──────────────────────────────────────────────── */
-    function renderTimetable(byDay) {
-        const displayDays = S.activeDay ? [S.activeDay] : DAYS;
-        const hasSessions = displayDays.some(d => (byDay[d] || []).length > 0);
-
-        if (!hasSessions) { showGrid(false); showEmpty(true); return; }
-        showEmpty(false); showGrid(true);
-
-        const gridEl = $('schedGrid');
-        gridEl.style.setProperty('--day-count', displayDays.length);
-
-        let html = `<div class="sched-grid">`;
-
-        /* Corner */
-        html += `<div class="sched-corner" style="height:${SLOT_PX}px"></div>`;
-
-        /* Day headers */
-        displayDays.forEach(day => {
-            const sessions = byDay[day] || [];
-            const hasClass = sessions.length > 0;
-            const isToday  = day === TODAY;
-            let cls = 'sched-day-header';
-            if (isToday)   cls += ' is-today';
-            if (hasClass)  cls += ' has-class';
-            if (!hasClass) cls += ' empty-day';
-
-            html += `<div class="${cls}">
-                ${isToday ? '<span class="today-dot"></span>' : ''}
-                <span class="day-hdr-short">${DAY_SHORT[DAYS.indexOf(day)]}</span>
-                <span class="day-hdr-full">${day}</span>
-                ${hasClass ? `<span class="day-count-badge">${sessions.length}</span>` : ''}
-            </div>`;
-        });
-
-        /* Time rows */
-        for (let s = 0; s < TOTAL_SLOTS; s++) {
-            const slotMins = GRID_START * 60 + s * SLOT_MIN;
-            const isHour   = slotMins % 60 === 0;
-
-            html += `<div class="sched-time-cell ${isHour ? 'on-hour' : ''}">${isHour ? fmtTime(slotMins) : ''}</div>`;
-
-            displayDays.forEach(day => {
-                const sessions  = byDay[day] || [];
-                const isToday   = day === TODAY;
-                const todayCls  = isToday ? ' today-col' : '';
-
-                const starting = sessions.filter(sess => slotOf(toMins(sess.start_raw || sess.start_time)) === s);
-                const spanned  = !starting.length && sessions.some(sess => {
-                    const sm = slotOf(toMins(sess.start_raw || sess.start_time));
-                    const em = slotOf(toMins(sess.end_raw   || sess.end_time));
-                    return sm < s && s < em;
-                });
-
-                if (starting.length) {
-                    html += `<div class="sched-cell session-start${todayCls}">`;
-                    starting.forEach(sess => {
-                        const sm       = toMins(sess.start_raw || sess.start_time);
-                        const em       = toMins(sess.end_raw   || sess.end_time);
-                        const spans    = Math.round((em - sm) / SLOT_MIN);
-                        const height   = spans * SLOT_PX - 6;
-                        const c        = colorFor(sess.subject_code);
-                        html += `
-                            <div class="sched-session"
-                                 style="height:${height}px;background:${c.bg};border-left:4px solid ${c.border};color:${c.text};"
-                                 title="${sess.subject_name} | ${sess.section} | ${sess.room_name}">
-                                <div class="sess-code">${sess.subject_code}</div>
-                                <div class="sess-name">${sess.subject_name}</div>
-                                <div class="sess-row"><i class="bi bi-clock"></i> ${sess.start_time} – ${sess.end_time}</div>
-                                <div class="sess-row"><i class="bi bi-building"></i> ${sess.room_name}${sess.building ? ' · ' + sess.building : ''}</div>
-                                <div class="sess-section"><i class="bi bi-people"></i> ${sess.section}</div>
-                            </div>`;
-                    });
-                    html += `</div>`;
-                } else if (spanned) {
-                    html += `<div class="sched-cell${todayCls}" style="border-right:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;"></div>`;
-                } else {
-                    html += `<div class="sched-cell empty${todayCls}"></div>`;
-                }
-            });
-        }
-
-        html += `</div>`;
-        gridEl.innerHTML = html;
-    }
-
-    /* ── Render legend ─────────────────────────────────────────────────── */
-    function renderLegend() {
-        const wrap = $('schedLegend');
-        if (!wrap) return;
-
-        const seen = new Map();
-        document.querySelectorAll('.sched-session').forEach(el => {
-            const code = el.querySelector('.sess-code')?.textContent?.trim();
-            const name = el.querySelector('.sess-name')?.textContent?.trim();
-            if (code && !seen.has(code)) {
-                seen.set(code, { name, bg: el.style.background, border: el.style.borderLeftColor, text: el.style.color });
-            }
-        });
-
-        if (!seen.size) { wrap.style.display = 'none'; return; }
-        wrap.style.display = '';
-
-        let html = '<span class="legend-lbl">Subjects:</span>';
-        seen.forEach((v, code) => {
-            html += `<div class="legend-item">
-                <div class="legend-dot" style="background:${v.bg};border:2px solid ${v.border}"></div>
-                <span style="color:${v.text};font-weight:800">${code}</span>
-                <span style="color:#64748b">— ${v.name}</span>
-            </div>`;
-        });
-        wrap.innerHTML = html;
-    }
-
-    /* ── Bind day pills ────────────────────────────────────────────────── */
-    function bindDayPills() {
-        $$('#dayPills .day-pill[data-day]').forEach(btn => {
-            if (btn.dataset.day === TODAY) btn.classList.add('is-today');
-            btn.addEventListener('click', () => {
-                $$('#dayPills .day-pill').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                S.activeDay = btn.dataset.day === 'all' ? null : btn.dataset.day;
-                renderTimetable(S.data.schedule_by_day);
-                renderLegend();
-            });
-        });
-    }
-
-    /* ── Bind semester/year selects ────────────────────────────────────── */
-    function bindSelects() {
-        $('semesterSelect').value = S.semester;
-        $('yearSelect').value     = S.schoolYear;
-
-        ['semesterSelect', 'yearSelect'].forEach(id => {
-            $(id).addEventListener('change', function () {
-                if (id === 'semesterSelect') S.semester   = this.value;
-                else                         S.schoolYear = this.value;
-                reload();
-            });
-        });
-    }
-
-    /* ── Reload on semester/year change ────────────────────────────────── */
-    async function reload() {
-        showGrid(false); showEmpty(false); hideError();
-        showLoader(true);
-        S.colorMap = {}; S.colorIdx = 0;
-        try {
-            S.data = await getSchedule();
-            renderStats(S.data.stats);
-            renderTimetable(S.data.schedule_by_day);
-            renderLegend();
-        } catch (err) {
-            showError('Could not load schedule: ' + err.message);
-        } finally {
-            showLoader(false);
-        }
-    }
-
-    /* ── Boot ──────────────────────────────────────────────────────────── */
-    async function boot() {
-        showLoader(true);
-        try {
-            /*
-             * Get logged-in instructor's ID from the session.
-             * Your session_info.php should return { role, instructor_id, name, … }
-             * Adjust field names below to match your actual session response.
-             */
-            const session = await getSession();
-
-            if (!session.instructor_id) {
-                showError('No instructor profile is linked to your account. Please contact admin.');
-                showLoader(false);
-                return;
-            }
-
-            S.instructorId = session.instructor_id;
-            S.data = await getSchedule();
-
-            renderStats(S.data.stats);
-            renderTimetable(S.data.schedule_by_day);
-            renderLegend();
-            bindDayPills();
-            bindSelects();
-
-        } catch (err) {
-            console.error('[MySchedule]', err);
-            showError('Failed to load schedule: ' + err.message);
-        } finally {
-            showLoader(false);
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', boot);
-
-})();
-</script>
+<!-- External Custom Script -->
+<script src="/client/assets/js/modules/instructors.schedule.js"></script>
 
 </body>
 </html>
