@@ -1,5 +1,4 @@
 <?php
-//C:\xampp\htdocs\artisansLMS\backend\endpoints\instructors.schedule.php
 // backend/endpoints/instructors.schedule.php
 // Returns weekly schedule for a specific instructor
 
@@ -81,7 +80,7 @@ try {
             sub.subject_name,
             sub.units
         FROM schedules s
-        JOIN rooms    r   ON s.room_id    = r.id
+        JOIN rooms    r  ON s.room_id    = r.id
         JOIN subjects sub ON s.subject_id = sub.id
         WHERE s.instructor_id = :instructor_id
           AND s.semester       = :semester

@@ -1,746 +1,365 @@
 <!DOCTYPE html>
-<!--
-    instructor_schedule.html
-    Path: C:\xampp\htdocs\artisansLMS\client\pages\instructor_schedule.html
-    Instructor-facing weekly schedule view — matches ArtisansLMS design system
--->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LMS | My Schedule</title>
-
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>LMS | Task Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- Your global stylesheet -->
-    <link rel="stylesheet" href="../assets/css/style.css">
-
+    <link rel="stylesheet" href="/client/assets/css/style.css">
     <style>
-        /* ── Reset & Layout ───────────────────────────────────────────────── */
+        /* ── Layout Constraint (Freezes the page) ── */
         html, body { height: 100%; margin: 0; overflow: hidden; }
-        body { font-family: 'Sora', sans-serif; background: #f0f2f7; display: flex; flex-direction: column; }
+        body { font-family: 'Sora', sans-serif; background-color: #f8fafc; display: flex; flex-direction: column; }
 
         #content { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        main { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 1.5rem !important; }
 
-        main {
-            flex: 1;
-            min-height: 0;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            padding: 1.5rem !important;
-            gap: 14px;
-        }
+        /* Sidebar Offset */
+        @media (min-width: 768px) { #content { margin-left: 260px !important; transition: margin-left .28s; } }
 
-        /* ── Stats Row ────────────────────────────────────────────────────── */
-        .stats-row {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 14px;
-            flex-shrink: 0;
-        }
-        .stat-card {
-            background: #fff;
-            border: 1px solid #e9ecef;
-            border-radius: 14px;
-            padding: 16px 20px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            transition: box-shadow .2s;
-        }
-        .stat-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
-        .stat-icon {
-            width: 42px; height: 42px;
-            border-radius: 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1rem; flex-shrink: 0;
-        }
-        .stat-icon.blue   { background: #eff6ff; color: #2563eb; }
-        .stat-icon.green  { background: #f0fdf4; color: #16a34a; }
-        .stat-icon.purple { background: #faf5ff; color: #7c3aed; }
-        .stat-icon.amber  { background: #fffbeb; color: #d97706; }
-        .stat-val {
-            font-size: 1.4rem; font-weight: 800;
-            color: #1e293b; line-height: 1;
-        }
-        .stat-lbl {
-            font-size: .68rem; font-weight: 600;
-            color: #94a3b8; text-transform: uppercase;
-            letter-spacing: .6px; margin-top: 3px;
-        }
+        /* Hover Lift Animation */
+        .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important; }
 
-        /* ── Filter / Control Bar ─────────────────────────────────────────── */
-        .sf-bar {
-            background: #fff; border: 1px solid #e9ecef; border-radius: 14px;
-            padding: 12px 18px;
-            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-            flex-shrink: 0;
-        }
+        /* ── Custom UI Components ── */
+        .font-monospace-sm { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+
+        /* Filter Pills */
+        .filter-pill { transition: all 0.2s ease; cursor: pointer; white-space: nowrap; }
+        .filter-pill.active { background-color: #0f172a !important; color: white !important; border-color: #0f172a !important; }
+        .filter-pill.active .badge { background-color: rgba(255,255,255,0.2) !important; color: white !important; }
+
+        /* Dropdown Filter matches sf-select style */
         .sf-select {
-            padding: 8px 30px 8px 12px; border: 1.5px solid #e9ecef; border-radius: 10px;
-            font-size: .8rem; font-family: 'Sora', sans-serif; font-weight: 600;
-            color: #475569; background: #f8fafc; outline: none; cursor: pointer;
-            transition: .2s; appearance: none;
+            padding: 8px 32px 8px 14px;
+            border: 1.5px solid #e2e8f0; border-radius: 50rem; /* pill shape to match buttons */
+            font-size: .85rem; font-family: 'Sora', sans-serif; font-weight: 600;
+            color: #475569; background: #f8fafc; outline: none; cursor: pointer; transition: .2s;
+            appearance: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-            background-repeat: no-repeat; background-position: right 10px center;
+            background-repeat: no-repeat; background-position: right 12px center;
+            min-width: 200px;
         }
-        .sf-select:focus { border-color: #0ea5e9; box-shadow: 0 0 0 3px rgba(14,165,233,.08); outline: none; }
+        .sf-select:focus { border-color: #0ea5e9; background-color: #fff; box-shadow: 0 0 0 3px rgba(14,165,233,.08); }
 
-        /* Day filter pills */
-        .day-pill-wrap { display: flex; gap: 6px; flex-wrap: wrap; }
-        .day-pill {
-            padding: 6px 14px; border-radius: 20px;
-            border: 1.5px solid #e9ecef;
-            background: #f8fafc; color: #64748b;
-            font-size: .75rem; font-weight: 700;
-            cursor: pointer; transition: all .15s;
-            font-family: 'Sora', sans-serif;
-        }
-        .day-pill:hover      { border-color: #1e293b; color: #1e293b; background: #f1f5f9; }
-        .day-pill.active     { background: #1e293b; color: #fff; border-color: #1e293b; }
-        .day-pill.is-today   { border-color: #86efac; color: #15803d; background: #f0fdf4; }
-        .day-pill.is-today.active { background: #1e293b; color: #fff; border-color: #1e293b; }
-
-        .btn-print {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 7px 14px; border-radius: 10px;
-            border: 1.5px solid #e9ecef;
-            background: #f8fafc; color: #475569;
-            font-size: .78rem; font-weight: 700;
-            cursor: pointer; transition: all .15s;
-            font-family: 'Sora', sans-serif;
-        }
-        .btn-print:hover { background: #1e293b; color: #fff; border-color: #1e293b; }
-
-        /* ── Timetable Wrapper ────────────────────────────────────────────── */
-        .schedule-wrap {
+        /* ── Scrollable Table Wrapper ── */
+        .table-scroll-wrapper {
             flex: 1;
-            min-height: 0;
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            border-radius: 16px 16px 0 0;
-            border-bottom: none;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
         }
+        .table-scroll-wrapper::-webkit-scrollbar { width: 6px; }
+        .table-scroll-wrapper::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
 
-        /* Loader */
-        #schedLoader {
-            flex: 1;
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            gap: 12px;
-        }
-        .spinner {
-            width: 34px; height: 34px;
-            border: 3px solid #e2e8f0;
-            border-top-color: #1e293b;
-            border-radius: 50%;
-            animation: spin .7s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        /* Error */
-        #schedError {
-            display: none;
-            margin: 24px;
-            padding: 14px 18px;
-            background: #fff1f2; border: 1px solid #fecdd3;
-            border-radius: 10px; color: #be123c;
-            font-size: .82rem;
-        }
-
-        /* Timetable scroll area */
-        .timetable-scroll {
-            flex: 1;
-            overflow: auto;
-        }
-        .timetable-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
-        .timetable-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
-
-        /* Grid */
-        .sched-grid {
-            display: grid;
-            grid-template-columns: 72px repeat(var(--day-count, 7), minmax(148px, 1fr));
-            min-width: calc(72px + var(--day-count, 7) * 148px);
-        }
-
-        /* Corner cell */
-        .sched-corner {
-            position: sticky; left: 0; top: 0; z-index: 10;
+        /* Sticky Header */
+        .table-scroll-wrapper table thead th {
+            position: sticky;
+            top: 0;
             background: #f8fafc;
-            border-right: 1px solid #e2e8f0;
-            border-bottom: 2px solid #f1f5f9;
-        }
-
-        /* Day column headers */
-        .sched-day-header {
-            text-align: center; padding: 12px 8px 10px;
-            border-right: 1px solid #f1f5f9;
-            border-bottom: 2px solid #f1f5f9;
-            position: sticky; top: 0;
-            background: #f8fafc; z-index: 5;
-        }
-        .sched-day-header.has-class  { background: #fff; }
-        .sched-day-header.is-today   { background: #f0fdf4; }
-        .sched-day-header.empty-day  { opacity: .45; }
-
-        .day-hdr-short {
-            display: block;
-            font-size: .7rem; font-weight: 800;
-            text-transform: uppercase; letter-spacing: 1.2px;
-            color: #94a3b8;
-        }
-        .sched-day-header.has-class  .day-hdr-short { color: #1e293b; }
-        .sched-day-header.is-today   .day-hdr-short { color: #16a34a; }
-        .day-hdr-full  { display: block; font-size: .68rem; color: #94a3b8; margin-top: 1px; }
-        .today-dot {
-            display: inline-block; width: 6px; height: 6px; border-radius: 50%;
-            background: #22c55e; margin-bottom: 3px;
-            animation: blink 1.5s ease-in-out infinite;
-        }
-        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
-        .day-count-badge {
-            display: inline-block; margin-top: 4px;
-            background: #1e293b; color: #fff;
-            border-radius: 20px; font-size: .6rem; font-weight: 800;
-            padding: 1px 8px;
-        }
-
-        /* Time label cells */
-        .sched-time-cell {
-            position: sticky; left: 0; z-index: 4;
-            background: #f8fafc;
-            border-right: 1px solid #e2e8f0;
-            border-bottom: 1px solid #f1f5f9;
-            height: 44px;
-            display: flex; align-items: flex-start; justify-content: flex-end;
-            padding: 4px 10px 0;
-            font-size: .67rem; color: #cbd5e1;
-        }
-        .sched-time-cell.on-hour {
-            color: #64748b; font-weight: 700; font-size: .72rem;
-            border-bottom-color: #e9ecef;
-        }
-
-        /* Body cells */
-        .sched-cell {
-            border-right: 1px solid #f1f5f9;
-            border-bottom: 1px solid #f1f5f9;
-            height: 44px;
-            position: relative;
-            transition: background .1s;
-        }
-        .sched-cell.empty:hover   { background: #f8fafc; }
-        .sched-cell.today-col     { background: rgba(240,253,244,.45); }
-        .sched-cell.session-start { overflow: visible; z-index: 2; }
-
-        /* Session blocks */
-        .sched-session {
-            position: absolute;
-            top: 3px; left: 4px; right: 4px;
-            border-radius: 10px;
-            padding: 7px 10px;
-            overflow: hidden;
-            cursor: pointer;
-            z-index: 3;
-            font-size: .72rem;
-            line-height: 1.4;
-            transition: box-shadow .15s, transform .15s;
-        }
-        .sched-session:hover {
-            box-shadow: 0 6px 20px rgba(0,0,0,.14);
-            transform: translateY(-2px) scale(1.01);
             z-index: 10;
-        }
-        .sess-code {
-            font-size: .78rem; font-weight: 800;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .sess-name {
-            font-size: .68rem; opacity: .85;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .sess-row {
-            font-size: .64rem; opacity: .72; margin-top: 3px;
-            display: flex; align-items: center; gap: 4px;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .sess-section {
-            font-size: .64rem; font-weight: 800; opacity: .9;
-            margin-top: 2px; display: flex; align-items: center; gap: 4px;
+            border-bottom: none !important;
+            box-shadow: inset 0 -2px 0 #e9ecef;
         }
 
-        /* Empty state */
-        .no-schedule {
-            flex: 1; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            padding: 60px 24px;
-            color: #94a3b8; font-size: .875rem; text-align: center;
-        }
-        .no-schedule i { font-size: 2.5rem; margin-bottom: 12px; opacity: .4; }
+        /* Modals Checkboxes & Radios */
+        .type-radio-lbl { border: 2px solid #e9ecef; cursor: pointer; transition: all 0.2s ease; }
+        .type-radio:checked + .type-radio-lbl { border-color: #0ea5e9; background-color: #f0f9ff; color: #0ea5e9 !important; }
 
-        /* ── Legend / Footer ──────────────────────────────────────────────── */
-        .schedule-footer {
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            border-top: 1px solid #f1f5f9;
-            border-radius: 0 0 16px 16px;
-            padding: 11px 20px;
-            display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
-            flex-shrink: 0;
-        }
-        .legend-lbl {
-            font-size: .68rem; font-weight: 700;
-            color: #94a3b8; text-transform: uppercase; letter-spacing: .6px;
-        }
-        .legend-item {
-            display: flex; align-items: center; gap: 6px;
-            font-size: .74rem; color: #475569;
-            background: #f8fafc; border: 1px solid #e9ecef;
-            border-radius: 20px; padding: 3px 10px 3px 6px;
-        }
-        .legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+        .cls-item { border: 1px solid #e9ecef; cursor: pointer; transition: all 0.15s ease; }
+        .cls-item:hover { background-color: #f8fafc; }
+        .cls-item.chk { background-color: #f0f9ff; border-color: #bae6fd; }
+        .cls-item.disabled-cls { opacity: 0.5; pointer-events: none; background: #f8fafc; }
 
-        /* ── Print ────────────────────────────────────────────────────────── */
-        @media print {
-            #sidebar, .sf-bar, .stats-row { display: none !important; }
-            #content { margin-left: 0 !important; }
-            .schedule-wrap { border-radius: 0; overflow: visible; }
-            .sched-session { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        }
-
-        /* ── Responsive ───────────────────────────────────────────────────── */
-        @media (max-width: 1100px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 768px)  {
-            .stats-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            .day-pill-wrap { margin-left: 0 !important; margin-top: 8px; }
-        }
+        /* Scrollable List Utility for Modals */
+        .scrollable-list { max-height: 150px; overflow-y: auto; }
+        .scrollable-list::-webkit-scrollbar { width: 5px; }
+        .scrollable-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
 <body>
 
-<!-- ── Sidebar ───────────────────────────────────────────────────────────── -->
-<div id="sidebar-placeholder"></div>
+    <!-- ── Sidebar ───────────────────────────────────────────────────────────── -->
+    <div id="sidebar-placeholder"></div>
 
-<div id="content">
+    <div id="content">
 
-    <!-- ── Page Header ───────────────────────────────────────────────────── -->
-    <div id="header-placeholder"></div>
+        <!-- ── Page Header ───────────────────────────────────────────────────── -->
+        <div id="header-placeholder"></div>
 
-    <main>
+        <main class="container-fluid p-3 p-md-4 p-lg-5 d-flex flex-column">
 
-        <!-- Stats -->
-        <div class="stats-row">
-            <div class="stat-card">
-                <div class="stat-icon blue"><i class="fas fa-calendar-check"></i></div>
-                <div>
-                    <div class="stat-val" id="statSessions">—</div>
-                    <div class="stat-lbl">Sessions / Week</div>
+            <div id="alertsContainer" class="flex-shrink-0"></div>
+
+            <div class="d-flex justify-content-end align-items-start flex-wrap gap-3 mb-3 flex-shrink-0">
+                <button class="btn btn-dark fw-bold rounded-pill px-4 py-2 shadow-sm d-flex align-items-center gap-2 hover-lift" data-bs-toggle="modal" data-bs-target="#createModal" title="Create New Task">
+                    <i class="fas fa-plus text-info"></i> Create New Task
+                </button>
+            </div>
+
+            <!-- Desktop Filters (Integrated) -->
+            <div class="card border-0 shadow-sm rounded-4 mb-3 d-none d-md-flex bg-white flex-shrink-0">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center gap-3 flex-wrap w-100" id="typeFilters">
+                        <span class="small fw-bold text-muted text-uppercase me-2">Type</span>
+                        <button class="btn btn-outline-secondary rounded-pill filter-pill active" data-filter-type="type" data-val="all">
+                            All <span class="badge bg-secondary ms-1 rounded-pill" id="cnt-type-all">0</span>
+                        </button>
+                        <button class="btn btn-outline-secondary rounded-pill filter-pill" data-filter-type="type" data-val="assignment">
+                            <i class="fas fa-file-alt text-primary me-1"></i> Assignments <span class="badge bg-secondary ms-1 rounded-pill" id="cnt-type-assignment">0</span>
+                        </button>
+                        <button class="btn btn-outline-secondary rounded-pill filter-pill" data-filter-type="type" data-val="activity">
+                            <i class="fas fa-running text-success me-1"></i> Activities <span class="badge bg-secondary ms-1 rounded-pill" id="cnt-type-activity">0</span>
+                        </button>
+                        <button class="btn btn-outline-secondary rounded-pill filter-pill" data-filter-type="type" data-val="quiz">
+                            <i class="fas fa-brain text-warning me-1"></i> Quizzes <span class="badge bg-secondary ms-1 rounded-pill" id="cnt-type-quiz">0</span>
+                        </button>
+
+                        <!-- Class Filter Dropdown (Pushed to Far Right via ms-auto) -->
+                        <div class="ms-auto d-flex align-items-center gap-2">
+                            <span class="small fw-bold text-muted text-uppercase">Class:</span>
+                            <select class="sf-select" id="deskClassFilter">
+                                <option value="all">All Classes</option>
+                                <!-- Populated via JS -->
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon green"><i class="fas fa-clock"></i></div>
-                <div>
-                    <div class="stat-val" id="statHours">—</div>
-                    <div class="stat-lbl">Teaching Hours</div>
+
+            <!-- Mobile Filters -->
+            <div class="d-flex d-md-none gap-2 mb-3 flex-shrink-0">
+                <select class="form-select border-0 shadow-sm rounded-3 fw-semibold text-dark bg-white" id="mobClassFilter"></select>
+                <select class="form-select border-0 shadow-sm rounded-3 fw-semibold text-dark bg-white" id="mobTypeFilter">
+                    <option value="all">All Types</option>
+                    <option value="assignment">Assignments</option>
+                    <option value="activity">Activities</option>
+                    <option value="quiz">Quizzes</option>
+                </select>
+            </div>
+
+            <!-- Main Scrollable Table Area -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white flex-grow-1 d-flex flex-column" style="min-height: 0;">
+                <div class="table-responsive table-scroll-wrapper h-100 w-100">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light text-muted small text-uppercase fw-bold">
+                            <tr>
+                                <th class="ps-4 py-3">Task</th>
+                                <th class="py-3">Type</th>
+                                <th class="py-3">Class</th>
+                                <th class="py-3">Due Date</th>
+                                <th class="py-3">Responses</th>
+                                <th class="text-end pe-4 py-3">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="taskTableBody">
+                            <tr>
+                                <td colspan="6" class="text-center py-5">
+                                    <div class="spinner-border text-primary"></div>
+                                    <div class="text-muted mt-2 small fw-bold">Loading tasks...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-icon purple"><i class="fas fa-book-open"></i></div>
-                <div>
-                    <div class="stat-val" id="statSubjects">—</div>
-                    <div class="stat-lbl">Subjects</div>
+
+        </main>
+    </div>
+
+    <!-- Modals (Create & Reassign remain unchanged) -->
+    <div class="modal fade" id="createModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+            <form id="createTaskForm" class="modal-content border-0 shadow-lg rounded-4 bg-light">
+                <div class="modal-header bg-dark text-white border-0 py-3 px-4">
+                    <h6 class="modal-title fw-bold"><i class="fas fa-plus text-info me-2"></i> Create New Task</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" title="Close Modal"></button>
                 </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon amber"><i class="fas fa-door-open"></i></div>
-                <div>
-                    <div class="stat-val" id="statRooms">—</div>
-                    <div class="stat-lbl">Rooms Used</div>
+                <div class="modal-body p-4">
+
+                    <label class="small fw-bold text-muted text-uppercase mb-2">Task Type</label>
+                    <div class="row g-2 mb-4">
+                        <div class="col-4 text-center">
+                            <input type="radio" class="d-none type-radio" name="task_type" id="tt-a" value="assignment" checked>
+                            <label for="tt-a" class="type-radio-lbl w-100 rounded-3 py-3 fw-bold bg-white text-muted shadow-sm">
+                                <i class="fas fa-file-alt d-block mb-1 fs-5"></i> Assignment
+                            </label>
+                        </div>
+                        <div class="col-4 text-center">
+                            <input type="radio" class="d-none type-radio" name="task_type" id="tt-ac" value="activity">
+                            <label for="tt-ac" class="type-radio-lbl w-100 rounded-3 py-3 fw-bold bg-white text-muted shadow-sm">
+                                <i class="fas fa-running d-block mb-1 fs-5"></i> Activity
+                            </label>
+                        </div>
+                        <div class="col-4 text-center">
+                            <input type="radio" class="d-none type-radio" name="task_type" id="tt-q" value="quiz">
+                            <label for="tt-q" class="type-radio-lbl w-100 rounded-3 py-3 fw-bold bg-white text-muted shadow-sm">
+                                <i class="fas fa-brain d-block mb-1 fs-5"></i> Quiz
+                            </label>
+                        </div>
+                    </div>
+
+                    <label class="small fw-bold text-muted text-uppercase mb-2">Assign to Class(es) *</label>
+                    <div class="d-flex flex-column gap-2 mb-4 scrollable-list" id="createClassList"></div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-8">
+                            <label class="small fw-bold text-muted text-uppercase mb-1">Title *</label>
+                            <input type="text" name="title" class="form-control border-0 shadow-sm" required placeholder="e.g. Chapter 3 Essay">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="small fw-bold text-muted text-uppercase mb-1">Due Date *</label>
+                            <input type="date" title="Select Due Date" name="due_date" class="form-control border-0 shadow-sm" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="small fw-bold text-muted text-uppercase mb-1">Instructions / Description</label>
+                            <textarea name="description" class="form-control border-0 shadow-sm" rows="3" placeholder="Describe what students need..."></textarea>
+                        </div>
+                    </div>
+
+                    <div id="sec-file" class="mb-4">
+                        <label class="small fw-bold text-muted text-uppercase mb-1">Reference File (optional)</label>
+                        <input type="file" title="Upload Reference File" name="ref_file" class="form-control border-0 shadow-sm bg-white">
+                    </div>
+
+                    <div id="sec-quiz" class="d-none border-top border-light-subtle pt-4 mt-4">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="small fw-bold text-muted text-uppercase mb-1">Time Limit (mins, 0=none)</label>
+                                <input type="number" name="time_limit" class="form-control border-0 shadow-sm" min="0" placeholder="0">
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end pb-2">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" name="randomize" id="randomizeCheck" checked value="1">
+                                    <label class="form-check-label fw-bold text-dark small" for="randomizeCheck">Randomize questions</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold m-0">Questions <span class="badge bg-primary rounded-pill ms-1" id="qcnt">0</span></h6>
+                            <div class="d-flex gap-2">
+                                <div class="d-flex flex-wrap gap-2">
+
+                                    <!-- Multiple Choice -->
+                                    <div class="d-flex align-items-center gap-1 border rounded-pill bg-white shadow-sm px-2 py-1">
+                                        <span class="small fw-bold text-primary ps-1 pe-1" style="white-space:nowrap;">
+                                            <i class="fas fa-list-ul me-1"></i>MC
+                                        </span>
+                                        <button type="button" class="btn btn-sm p-0 d-flex align-items-center justify-content-center text-muted"
+                                                style="width:24px;height:24px;" onclick="adjustCount('mc', -1)" title="Decrease">
+                                            <i class="fas fa-minus" style="font-size:.65rem;"></i>
+                                        </button>
+                                        <input type="number" id="mc-count" value="1" min="1" max="50"
+                                               class="form-control form-control-sm border-0 text-center fw-bold p-0"
+                                               style="width:36px;font-size:.85rem;" title="Multiple choice count">
+                                        <button type="button" class="btn btn-sm p-0 d-flex align-items-center justify-content-center text-muted"
+                                                style="width:24px;height:24px;" onclick="adjustCount('mc', 1)" title="Increase">
+                                            <i class="fas fa-plus" style="font-size:.65rem;"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-primary rounded-pill fw-bold px-3 py-1"
+                                                style="font-size:.78rem;" onclick="addQBulk('multiple_choice', 'mc')"
+                                                title="Add multiple choice questions">
+                                            Add
+                                        </button>
+                                    </div>
+
+                                    <!-- True / False -->
+                                    <div class="d-flex align-items-center gap-1 border rounded-pill bg-white shadow-sm px-2 py-1">
+                                        <span class="small fw-bold text-success ps-1 pe-1" style="white-space:nowrap;">
+                                            <i class="fas fa-check-circle me-1"></i>T/F
+                                        </span>
+                                        <button type="button" class="btn btn-sm p-0 d-flex align-items-center justify-content-center text-muted"
+                                                style="width:24px;height:24px;" onclick="adjustCount('tf', -1)" title="Decrease">
+                                            <i class="fas fa-minus" style="font-size:.65rem;"></i>
+                                        </button>
+                                        <input type="number" id="tf-count" value="1" min="1" max="50"
+                                               class="form-control form-control-sm border-0 text-center fw-bold p-0"
+                                               style="width:36px;font-size:.85rem;" title="True/false count">
+                                        <button type="button" class="btn btn-sm p-0 d-flex align-items-center justify-content-center text-muted"
+                                                style="width:24px;height:24px;" onclick="adjustCount('tf', 1)" title="Increase">
+                                            <i class="fas fa-plus" style="font-size:.65rem;"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-success rounded-pill fw-bold px-3 py-1"
+                                                style="font-size:.78rem;" onclick="addQBulk('true_false', 'tf')"
+                                                title="Add true/false questions">
+                                            Add
+                                        </button>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="qlist"></div>
+
+                        <div id="qhint" class="text-center py-4 text-muted small bg-white rounded-4 shadow-sm border border-light-subtle">
+                            <i class="fas fa-plus-circle fs-3 opacity-25 mb-2 d-block"></i> Add questions.
+                        </div>
+                        <input type="hidden" name="questions_json" id="qjson">
+                    </div>
+
                 </div>
-            </div>
+                <div class="modal-footer border-0 p-3 bg-white rounded-bottom-4">
+                    <button type="submit" class="btn btn-dark w-100 fw-bold py-2 rounded-pill shadow-sm" id="createSubmitBtn" title="Post Task to Selected Classes">
+                        <i class="fas fa-paper-plane me-2"></i> Post to Selected Classes
+                    </button>
+                </div>
+            </form>
         </div>
+    </div>
 
-        <!-- Controls -->
-        <div class="sf-bar">
-            <select class="sf-select" id="semesterSelect">
-                <option value="1st Semester">1st Semester</option>
-                <option value="2nd Semester">2nd Semester</option>
-                <option value="Summer">Summer</option>
-            </select>
-            <select class="sf-select" id="yearSelect">
-                <option value="2025-2026">SY 2025–2026</option>
-                <option value="2024-2025">SY 2024–2025</option>
-                <option value="2023-2024">SY 2023–2024</option>
-            </select>
+    <div class="modal fade" id="reassignModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <form id="reassignForm" class="modal-content border-0 shadow-lg rounded-4 bg-light">
+                <input type="hidden" name="reassign_id" id="ri_id">
+                <input type="hidden" name="reassign_type" id="ri_type">
 
-            <!-- Day filter pills — pushed right -->
-            <div class="day-pill-wrap ms-auto" id="dayPills">
-                <button class="day-pill active" data-day="all">All Days</button>
-                <button class="day-pill" data-day="Monday">Mon</button>
-                <button class="day-pill" data-day="Tuesday">Tue</button>
-                <button class="day-pill" data-day="Wednesday">Wed</button>
-                <button class="day-pill" data-day="Thursday">Thu</button>
-                <button class="day-pill" data-day="Friday">Fri</button>
-                <button class="day-pill" data-day="Saturday">Sat</button>
-                <button class="day-pill" data-day="Sunday">Sun</button>
-            </div>
+                <div class="modal-header bg-dark text-white border-0 py-3 px-4">
+                    <h6 class="modal-title fw-bold"><i class="fas fa-share-nodes text-success me-2"></i> Assign to Other Classes</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" title="Close Modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+                        <div class="card-body p-3 d-flex align-items-center gap-3">
+                            <div class="fs-3" id="ri_icon"></div>
+                            <div>
+                                <div class="fw-bold text-dark mb-1" id="ri_title">—</div>
+                                <div class="badge bg-light text-muted border text-uppercase" id="ri_meta">—</div>
+                            </div>
+                        </div>
+                    </div>
 
-            <button class="btn-print" onclick="window.print()">
-                <i class="fas fa-print"></i> Print
-            </button>
+                    <label class="small fw-bold text-muted text-uppercase mb-2">Select Target Class(es) *</label>
+                    <div class="d-flex flex-column gap-2 scrollable-list" id="ri_classList"></div>
+                </div>
+                <div class="modal-footer border-0 p-3 bg-white rounded-bottom-4">
+                    <button type="submit" class="btn btn-success w-100 fw-bold py-2 rounded-pill shadow-sm" id="reassignSubmitBtn" title="Assign to Selected Classes">
+                        <i class="fas fa-share-nodes me-2"></i> Assign to Selected Classes
+                    </button>
+                </div>
+            </form>
         </div>
+    </div>
 
-        <!-- Timetable -->
-        <div class="schedule-wrap shadow-sm">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-            <div id="schedLoader">
-                <div class="spinner"></div>
-                <span class="small fw-bold text-muted">Loading your schedule…</span>
-            </div>
+    <!-- Script to Load Sidebar & Header Partials -->
+    <script>
+        fetch('/client/partials/sidebar.html')
+            .then(r => r.text())
+            .then(h => document.getElementById('sidebar-placeholder').innerHTML = h)
+            .catch(() => console.error("Failed to load sidebar"));
 
-            <div id="schedError"></div>
+        fetch('/client/partials/header.html')
+            .then(r => r.text())
+            .then(h => document.getElementById('header-placeholder').innerHTML = h)
+            .catch(() => console.error("Failed to load header"));
+    </script>
 
-            <div class="timetable-scroll" id="timetableScroll" style="display:none;">
-                <div id="schedGrid"></div>
-            </div>
-
-            <div class="no-schedule" id="schedEmpty" style="display:none;">
-                <i class="fas fa-calendar-times"></i>
-                No classes scheduled for this period.
-            </div>
-
-        </div>
-
-        <!-- Legend footer — flush under timetable -->
-        <div class="schedule-footer shadow-sm" id="schedLegend">
-            <span class="legend-lbl">Subjects:</span>
-        </div>
-
-    </main>
-</div>
-
-<!-- ── Scripts ───────────────────────────────────────────────────────────── -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<script>
-    /* Load shared sidebar & header partials (adjust paths as needed) */
-    fetch('/client/partials/sidebar.html').then(r=>r.text()).then(h=>document.getElementById('sidebar-placeholder').innerHTML=h).catch(()=>{});
-    fetch('/client/partials/header.html').then(r=>r.text()).then(h=>document.getElementById('header-placeholder').innerHTML=h).catch(()=>{});
-</script>
-
-<script>
-/* ═══════════════════════════════════════════════════════════════════════════
-   Instructor Schedule — self-contained module
-   Fetches instructor_id from the PHP session, then loads their timetable.
-   ═══════════════════════════════════════════════════════════════════════════ */
-(function () {
-
-    /* ── Config ────────────────────────────────────────────────────────── */
-    const API_BASE    = '/backend/endpoints/instructors.schedule.php';
-    const SESSION_URL = '/backend/middleware/session_info.php';
-
-    const DAYS      = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-    const DAY_SHORT = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
-
-    const GRID_START = 7;   // 07:00
-    const GRID_END   = 20;  // 20:00
-    const SLOT_MIN   = 30;
-    const SLOT_PX    = 44;  // px per 30-min slot
-    const TOTAL_SLOTS = ((GRID_END - GRID_START) * 60) / SLOT_MIN; // 26 slots
-
-    /* Colour palette — system colours matching the LMS palette */
-    const PALETTE = [
-        { bg:'#eff6ff', border:'#3b82f6', text:'#1d4ed8' },  // blue
-        { bg:'#f0fdf4', border:'#22c55e', text:'#15803d' },  // green
-        { bg:'#faf5ff', border:'#a855f7', text:'#7e22ce' },  // purple
-        { bg:'#fffbeb', border:'#f59e0b', text:'#b45309' },  // amber
-        { bg:'#fff1f2', border:'#f43f5e', text:'#be123c' },  // rose
-        { bg:'#ecfdf5', border:'#10b981', text:'#065f46' },  // emerald
-        { bg:'#fff7ed', border:'#f97316', text:'#c2410c' },  // orange
-        { bg:'#f0f9ff', border:'#0ea5e9', text:'#0369a1' },  // sky
-    ];
-
-    /* State */
-    const S = {
-        instructorId : null,
-        semester     : '1st Semester',
-        schoolYear   : '2025-2026',
-        data         : null,
-        colorMap     : {},
-        colorIdx     : 0,
-        activeDay    : null,
-    };
-
-    const TODAY = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];
-
-    /* ── Helpers ───────────────────────────────────────────────────────── */
-    function toMins(t) {
-        if (!t) return 0;
-        let m = t.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
-        if (m) return +m[1] * 60 + +m[2];
-        m = t.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-        if (m) {
-            let h = +m[1]; const mn = +m[2]; const mer = m[3].toUpperCase();
-            if (mer === 'PM' && h !== 12) h += 12;
-            if (mer === 'AM' && h === 12) h = 0;
-            return h * 60 + mn;
-        }
-        return 0;
-    }
-
-    function fmtTime(mins) {
-        let h = Math.floor(mins / 60), m = mins % 60;
-        const mer = h >= 12 ? 'PM' : 'AM';
-        if (h > 12) h -= 12;
-        if (h === 0) h = 12;
-        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')} ${mer}`;
-    }
-
-    function colorFor(code) {
-        if (!S.colorMap[code]) { S.colorMap[code] = PALETTE[S.colorIdx % PALETTE.length]; S.colorIdx++; }
-        return S.colorMap[code];
-    }
-
-    function slotOf(mins) { return Math.round((mins - GRID_START * 60) / SLOT_MIN); }
-
-    /* ── DOM helpers ───────────────────────────────────────────────────── */
-    const $  = id  => document.getElementById(id);
-    const $$ = sel => document.querySelectorAll(sel);
-
-    function showLoader(v)  { $('schedLoader').style.display  = v ? 'flex'  : 'none'; }
-    function showGrid(v)    { $('timetableScroll').style.display = v ? 'block' : 'none'; }
-    function showEmpty(v)   { $('schedEmpty').style.display   = v ? 'flex'  : 'none'; }
-    function showError(msg) { const e=$('schedError'); e.textContent=msg; e.style.display='block'; }
-    function hideError()    { $('schedError').style.display   = 'none'; }
-
-    /* ── Fetch ─────────────────────────────────────────────────────────── */
-    async function getSession() {
-        const r = await fetch(SESSION_URL);
-        return r.json();
-    }
-
-    async function getSchedule() {
-        const url = `${API_BASE}?instructor_id=${encodeURIComponent(S.instructorId)}`
-                  + `&semester=${encodeURIComponent(S.semester)}`
-                  + `&school_year=${encodeURIComponent(S.schoolYear)}`;
-        const r = await fetch(url);
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        const j = await r.json();
-        if (!j.success) throw new Error(j.message || 'API error');
-        return j.data;
-    }
-
-    /* ── Render stats ──────────────────────────────────────────────────── */
-    function renderStats(stats) {
-        $('statSessions').textContent = stats.total_sessions;
-        $('statHours').textContent    = stats.total_hours + 'h';
-        $('statSubjects').textContent = stats.unique_subjects;
-        $('statRooms').textContent    = stats.unique_rooms;
-    }
-
-    /* ── Render timetable ──────────────────────────────────────────────── */
-    function renderTimetable(byDay) {
-        const displayDays = S.activeDay ? [S.activeDay] : DAYS;
-        const hasSessions = displayDays.some(d => (byDay[d] || []).length > 0);
-
-        if (!hasSessions) { showGrid(false); showEmpty(true); return; }
-        showEmpty(false); showGrid(true);
-
-        const gridEl = $('schedGrid');
-        gridEl.style.setProperty('--day-count', displayDays.length);
-
-        let html = `<div class="sched-grid">`;
-
-        /* Corner */
-        html += `<div class="sched-corner" style="height:${SLOT_PX}px"></div>`;
-
-        /* Day headers */
-        displayDays.forEach(day => {
-            const sessions = byDay[day] || [];
-            const hasClass = sessions.length > 0;
-            const isToday  = day === TODAY;
-            let cls = 'sched-day-header';
-            if (isToday)   cls += ' is-today';
-            if (hasClass)  cls += ' has-class';
-            if (!hasClass) cls += ' empty-day';
-
-            html += `<div class="${cls}">
-                ${isToday ? '<span class="today-dot"></span>' : ''}
-                <span class="day-hdr-short">${DAY_SHORT[DAYS.indexOf(day)]}</span>
-                <span class="day-hdr-full">${day}</span>
-                ${hasClass ? `<span class="day-count-badge">${sessions.length}</span>` : ''}
-            </div>`;
-        });
-
-        /* Time rows */
-        for (let s = 0; s < TOTAL_SLOTS; s++) {
-            const slotMins = GRID_START * 60 + s * SLOT_MIN;
-            const isHour   = slotMins % 60 === 0;
-
-            html += `<div class="sched-time-cell ${isHour ? 'on-hour' : ''}">${isHour ? fmtTime(slotMins) : ''}</div>`;
-
-            displayDays.forEach(day => {
-                const sessions  = byDay[day] || [];
-                const isToday   = day === TODAY;
-                const todayCls  = isToday ? ' today-col' : '';
-
-                const starting = sessions.filter(sess => slotOf(toMins(sess.start_raw || sess.start_time)) === s);
-                const spanned  = !starting.length && sessions.some(sess => {
-                    const sm = slotOf(toMins(sess.start_raw || sess.start_time));
-                    const em = slotOf(toMins(sess.end_raw   || sess.end_time));
-                    return sm < s && s < em;
-                });
-
-                if (starting.length) {
-                    html += `<div class="sched-cell session-start${todayCls}">`;
-                    starting.forEach(sess => {
-                        const sm       = toMins(sess.start_raw || sess.start_time);
-                        const em       = toMins(sess.end_raw   || sess.end_time);
-                        const spans    = Math.round((em - sm) / SLOT_MIN);
-                        const height   = spans * SLOT_PX - 6;
-                        const c        = colorFor(sess.subject_code);
-                        html += `
-                            <div class="sched-session"
-                                 style="height:${height}px;background:${c.bg};border-left:4px solid ${c.border};color:${c.text};"
-                                 title="${sess.subject_name} | ${sess.section} | ${sess.room_name}">
-                                <div class="sess-code">${sess.subject_code}</div>
-                                <div class="sess-name">${sess.subject_name}</div>
-                                <div class="sess-row"><i class="bi bi-clock"></i> ${sess.start_time} – ${sess.end_time}</div>
-                                <div class="sess-row"><i class="bi bi-building"></i> ${sess.room_name}${sess.building ? ' · ' + sess.building : ''}</div>
-                                <div class="sess-section"><i class="bi bi-people"></i> ${sess.section}</div>
-                            </div>`;
-                    });
-                    html += `</div>`;
-                } else if (spanned) {
-                    html += `<div class="sched-cell${todayCls}" style="border-right:1px solid #f1f5f9;border-bottom:1px solid #f1f5f9;"></div>`;
-                } else {
-                    html += `<div class="sched-cell empty${todayCls}"></div>`;
-                }
-            });
-        }
-
-        html += `</div>`;
-        gridEl.innerHTML = html;
-    }
-
-    /* ── Render legend ─────────────────────────────────────────────────── */
-    function renderLegend() {
-        const wrap = $('schedLegend');
-        if (!wrap) return;
-
-        const seen = new Map();
-        document.querySelectorAll('.sched-session').forEach(el => {
-            const code = el.querySelector('.sess-code')?.textContent?.trim();
-            const name = el.querySelector('.sess-name')?.textContent?.trim();
-            if (code && !seen.has(code)) {
-                seen.set(code, { name, bg: el.style.background, border: el.style.borderLeftColor, text: el.style.color });
-            }
-        });
-
-        if (!seen.size) { wrap.style.display = 'none'; return; }
-        wrap.style.display = '';
-
-        let html = '<span class="legend-lbl">Subjects:</span>';
-        seen.forEach((v, code) => {
-            html += `<div class="legend-item">
-                <div class="legend-dot" style="background:${v.bg};border:2px solid ${v.border}"></div>
-                <span style="color:${v.text};font-weight:800">${code}</span>
-                <span style="color:#64748b">— ${v.name}</span>
-            </div>`;
-        });
-        wrap.innerHTML = html;
-    }
-
-    /* ── Bind day pills ────────────────────────────────────────────────── */
-    function bindDayPills() {
-        $$('#dayPills .day-pill[data-day]').forEach(btn => {
-            if (btn.dataset.day === TODAY) btn.classList.add('is-today');
-            btn.addEventListener('click', () => {
-                $$('#dayPills .day-pill').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                S.activeDay = btn.dataset.day === 'all' ? null : btn.dataset.day;
-                renderTimetable(S.data.schedule_by_day);
-                renderLegend();
-            });
-        });
-    }
-
-    /* ── Bind semester/year selects ────────────────────────────────────── */
-    function bindSelects() {
-        $('semesterSelect').value = S.semester;
-        $('yearSelect').value     = S.schoolYear;
-
-        ['semesterSelect', 'yearSelect'].forEach(id => {
-            $(id).addEventListener('change', function () {
-                if (id === 'semesterSelect') S.semester   = this.value;
-                else                         S.schoolYear = this.value;
-                reload();
-            });
-        });
-    }
-
-    /* ── Reload on semester/year change ────────────────────────────────── */
-    async function reload() {
-        showGrid(false); showEmpty(false); hideError();
-        showLoader(true);
-        S.colorMap = {}; S.colorIdx = 0;
-        try {
-            S.data = await getSchedule();
-            renderStats(S.data.stats);
-            renderTimetable(S.data.schedule_by_day);
-            renderLegend();
-        } catch (err) {
-            showError('Could not load schedule: ' + err.message);
-        } finally {
-            showLoader(false);
-        }
-    }
-
-    /* ── Boot ──────────────────────────────────────────────────────────── */
-    async function boot() {
-        showLoader(true);
-        try {
-            /*
-             * Get logged-in instructor's ID from the session.
-             * Your session_info.php should return { role, instructor_id, name, … }
-             * Adjust field names below to match your actual session response.
-             */
-            const session = await getSession();
-
-            if (!session.instructor_id) {
-                showError('No instructor profile is linked to your account. Please contact admin.');
-                showLoader(false);
-                return;
-            }
-
-            S.instructorId = session.instructor_id;
-            S.data = await getSchedule();
-
-            renderStats(S.data.stats);
-            renderTimetable(S.data.schedule_by_day);
-            renderLegend();
-            bindDayPills();
-            bindSelects();
-
-        } catch (err) {
-            console.error('[MySchedule]', err);
-            showError('Failed to load schedule: ' + err.message);
-        } finally {
-            showLoader(false);
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', boot);
-
-})();
-</script>
-
+    <script src="/client/assets/js/modules/instructor_assignments.js"></script>
 </body>
 </html>
