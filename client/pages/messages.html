@@ -195,24 +195,28 @@
 
         .btn-back { display: none; }
 
-        /* ════════════════════════════════════════════
+/* ════════════════════════════════════════════
            MOBILE RESPONSIVE
         ════════════════════════════════════════════ */
 
-        /* Hide sidebar on mobile — handled by shared sidebar component */
+        /* ── FIX: Do NOT use display: none. Let the shared JS handle the offcanvas/slide state ── */
         @media (max-width: 767.98px) {
-            #sidebar-container { display: none; }
+            #sidebar-container {
+                /* Removed display: none; so the hamburger JS can actually target and open it */
+            }
         }
 
         /* ── Contacts sidebar: full-screen slide on mobile ── */
         @media (max-width: 767.98px) {
             .contacts-sidebar {
                 position: absolute;
+                top: 0;     /* Added to prevent it from floating up and covering the header */
+                left: 0;    /* Added for absolute positioning stability */
                 width: 100%;
                 height: 100%;
                 transition: transform .3s cubic-bezier(.4,0,.2,1);
                 /* ── FIX: keep below the page header ── */
-                z-index: 20;   /* lower than #header-container z-index: 200 */
+                z-index: 20;   /* lower than #header-container z-index: 1050 */
             }
             .contacts-sidebar.hidden { transform: translateX(-100%); }
             .btn-back { display: flex !important; }

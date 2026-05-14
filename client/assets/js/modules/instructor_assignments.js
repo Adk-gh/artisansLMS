@@ -96,12 +96,15 @@ $(document).ready(function() {
         });
     }
 
-    function renderTable() {
+function renderTable() {
         const body = $('#taskTableBody');
         let html = '';
         let visibleCount = 0;
 
         let cntTypeAll=0, cntAssign=0, cntAct=0, cntQuiz=0;
+
+        // 1. Create an array to hold the formatted tasks for the mobile view
+        let mobileTasks = [];
 
         allTasks.forEach(t => {
             const matchClass = currentFilterClass === 'all' || t.class_id == currentFilterClass;
@@ -131,16 +134,17 @@ $(document).ready(function() {
 
                 const responses = t.is_quiz ? `${t.attempt_count} attempted` : `${t.sub_count} submitted`;
 
+                // Build desktop HTML
                 html += `
                 <tr>
                     <td class="ps-4">
-                        <div class="fw-bold text-dark mb-1">${t.title}</div>
+                        <div class="fw-bold text-dark mb-1">${escHtml(t.title)}</div>
                         <div class="font-monospace-sm text-muted">ID #${t.assignment_id} ${t.is_quiz ? `· ${t.q_count} Qs` : ''}</div>
                     </td>
                     <td><span class="badge ${badgeCls} px-2 py-1"><i class="fas ${icon} me-1"></i>${badgeText}</span></td>
                     <td>
-                        <span class="badge bg-light text-dark border mb-1">${t.course_code}</span>
-                        <div class="font-monospace-sm text-muted">${t.semester} ${t.year}</div>
+                        <span class="badge bg-light text-dark border mb-1">${escHtml(t.course_code)}</span>
+                        <div class="font-monospace-sm text-muted">${escHtml(t.semester)} ${escHtml(t.year)}</div>
                     </td>
                     <td class="small fw-bold ${past ? 'text-danger' : 'text-muted'}"><i class="far fa-calendar-alt me-1"></i>${dueStr}</td>
                     <td class="small fw-bold font-monospace-sm text-primary">${responses}</td>
@@ -150,6 +154,22 @@ $(document).ready(function() {
                         <button class="btn btn-sm btn-light border text-danger fw-bold" onclick="deleteTask(${t.assignment_id}, '${t.real_type}')" title="Delete"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>`;
+
+                // 2. Push formatted data to the mobile array
+                mobileTasks.push({
+                    id: t.assignment_id,
+                    title: escHtml(t.title),
+                    type: t.real_type, // 'assignment', 'activity', or 'quiz'
+                    classCode: escHtml(t.course_code),
+                    classTerm: `${escHtml(t.semester)} ${escHtml(t.year)}`,
+                    dueDate: dueStr,
+                    isDue: past,
+                    responsesLabel: responses,
+                    // Pass the exact Javascript commands to the mobile action buttons
+                    onViewFn: `window.location.href='todo.html?class_id=${t.class_id}'`,
+                    onReassignFn: `openReassign(${t.assignment_id}, '${t.real_type}', '${escHtml(t.title).replace(/'/g, "\\'")}', ${t.class_id})`,
+                    onDeleteFn: `deleteTask(${t.assignment_id}, '${t.real_type}')`
+                });
             }
         });
 
@@ -163,6 +183,11 @@ $(document).ready(function() {
         $('#cnt-type-assignment').text(cntAssign);
         $('#cnt-type-activity').text(cntAct);
         $('#cnt-type-quiz').text(cntQuiz);
+
+        // 3. Trigger the mobile rendering function we set up in the HTML
+        if (typeof window.renderMobileCards === 'function') {
+            window.renderMobileCards(mobileTasks);
+        }
     }
 
     function populateModals() {
