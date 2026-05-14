@@ -1,23 +1,11 @@
-/* Load shared sidebar & header partials (adjust paths as needed) */
-fetch('/client/partials/sidebar.html')
-    .then(r => r.text())
-    .then(h => document.getElementById('sidebar-placeholder').innerHTML = h)
-    .catch(() => {});
-
-fetch('/client/partials/header.html')
-    .then(r => r.text())
-    .then(h => document.getElementById('header-placeholder').innerHTML = h)
-    .catch(() => {});
-
 /* ═══════════════════════════════════════════════════════════════════════════
    Instructor Schedule — self-contained module
-   Fetches instructor_id from the PHP session, then loads their timetable.
+   Fetches the timetable based on the secure PHP session.
    ═══════════════════════════════════════════════════════════════════════════ */
 (function () {
 
     /* ── Config ────────────────────────────────────────────────────────── */
-    const API_BASE    = '/backend/endpoints/instructors.schedule.php';
-    const SESSION_URL = '/backend/middleware/session_info.php';
+    const API_BASE = '/backend/endpoints/instructors.schedule.php';
 
     const DAYS      = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
     const DAY_SHORT = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
@@ -42,7 +30,6 @@ fetch('/client/partials/header.html')
 
     /* State */
     const S = {
-        instructorId : null,
         semester     : '1st Semester',
         schoolYear   : '2025-2026',
         data         : null,
@@ -94,17 +81,22 @@ fetch('/client/partials/header.html')
     function hideError()    { $('schedError').style.display   = 'none'; }
 
     /* ── Fetch ─────────────────────────────────────────────────────────── */
-    async function getSession() {
-        const r = await fetch(SESSION_URL);
-        return r.json();
-    }
-
     async function getSchedule() {
-        const url = `${API_BASE}?instructor_id=${encodeURIComponent(S.instructorId)}`
-                  + `&semester=${encodeURIComponent(S.semester)}`
-                  + `&school_year=${encodeURIComponent(S.schoolYear)}`;
+        // We no longer send instructor_id. The PHP session handles it securely.
+        const url = `${API_BASE}?semester=${encodeURIComponent(S.semester)}&school_year=${encodeURIComponent(S.schoolYear)}`;
         const r = await fetch(url);
+
+        // Handle unauthorized or not-found status specifically
+        if (r.status === 401) {
+            const j = await r.json();
+            throw new Error(j.message || "Unauthorized. Please log in as a teacher.");
+        }
+        if (r.status === 404) {
+            const j = await r.json();
+            throw new Error(j.message || "No schedule found.");
+        }
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
+
         const j = await r.json();
         if (!j.success) throw new Error(j.message || 'API error');
         return j.data;
@@ -279,16 +271,10 @@ fetch('/client/partials/header.html')
     /* ── Boot ──────────────────────────────────────────────────────────── */
     async function boot() {
         showLoader(true);
+        hideError();
+
         try {
-            const session = await getSession();
-
-            if (!session.instructor_id) {
-                showError('No instructor profile is linked to your account. Please contact admin.');
-                showLoader(false);
-                return;
-            }
-
-            S.instructorId = session.instructor_id;
+            // Directly fetch the schedule. The backend checks the session itself.
             S.data = await getSchedule();
 
             renderStats(S.data.stats);
@@ -299,7 +285,7 @@ fetch('/client/partials/header.html')
 
         } catch (err) {
             console.error('[MySchedule]', err);
-            showError('Failed to load schedule: ' + err.message);
+            showError(err.message);
         } finally {
             showLoader(false);
         }
