@@ -21,16 +21,28 @@
         .dm-page-wrapper { display: flex; min-height: 100vh; overflow: hidden; }
 
         /* Sidebar */
-        #sidebar-container { width: 260px; flex-shrink: 0; background-color: #1e293b; z-index: 1040; }
+       #sidebar-container {
+            width: 260px;
+            flex-shrink: 0;
+            background-color: #1e293b;
+            z-index: 1040;
+        }
 
-        .dm-main-col { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow: hidden; height: 100vh; }
+        .dm-main-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            /* REMOVED: overflow: hidden; height: 100vh; to allow mobile menu to overflow */
+            height: 100vh;
+        }
 
         /* ── FIX: header must sit above everything and not clip dropdowns ── */
         #header-container {
             flex-shrink: 0;
-            overflow: visible;      /* was: hidden — was clipping hamburger & profile dropdown */
+            overflow: visible !important; /* Force visible for mobile menu dropdown */
             position: relative;
-            z-index: 200;           /* above contacts sidebar (z-index:20) and dm-content */
+            z-index: 1050 !important; /* Much higher z-index to sit above the contacts sidebar */
         }
 
         .dm-content { flex: 1; display: flex; min-height: 0; overflow: hidden; position: relative; z-index: 1; }
