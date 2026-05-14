@@ -369,8 +369,8 @@ window.deleteCurrentGroup = function() {
     remove(ref(db, `lms_group_messages/${groupId}`));
     remove(ref(db, `lms_groups/${groupId}`)).then(() => {
         bootstrap.Modal.getInstance(el('groupDetailsModal')).hide();
+        el('stateChat').style.cssText = 'display:none!important;';
         el('stateChat').classList.add('d-none');
-        el('stateChat').style.display = 'none !important';
         el('stateEmpty').style.display = 'flex';
         selectedUser = null;
         switchTab('groups');
@@ -582,6 +582,7 @@ function openView(uid) {
 function showProfile() {
     const pv = el('stateProfile');
     pv.classList.remove('d-none');
+    pv.style.display = 'flex';
     const col = colorFor(selectedUser.uid);
     el('profileAvatar').textContent      = selectedUser.name.charAt(0).toUpperCase();
     el('profileAvatar').style.background = col;
@@ -643,8 +644,8 @@ function showChat() {
     if (selectedUser.isGroup) {
         el('chatName').textContent   = selectedUser.name;
         el('chatStatus').innerHTML   = `<span class="text-truncate" style="color:#8b5cf6;font-size:.65rem;font-weight:700;"><i class="fas fa-users me-1"></i> Group Chat</span>`;
-        el('btnAudioCall').style.display    = 'flex';
-        el('btnVideoCall').style.display    = 'flex';
+        el('btnAudioCall').style.display     = 'flex';
+        el('btnVideoCall').style.display     = 'flex';
         el('btnCopyGroupCode').style.display = 'block';
         el('groupInfoBtnWrap').style.display = 'block';
 
@@ -763,7 +764,6 @@ document.addEventListener('click', e => {
     if (!e.target.closest('emoji-picker') && !e.target.closest('#emojiBtn'))
         document.querySelector('emoji-picker').style.display = 'none';
 });
-
 
 el('chatBackBtn').addEventListener('click',    () => el('contactsSidebar').classList.remove('hidden'));
 el('profileBackBtn').addEventListener('click', () => el('contactsSidebar').classList.remove('hidden'));
