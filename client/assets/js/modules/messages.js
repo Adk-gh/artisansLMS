@@ -87,14 +87,14 @@ try {
         type: 'GET',
         dataType: 'json'
     });
-    
+
     if (result.status !== 'success') {
         window.location.href = '/login.php';
     }
 
     usersData = result.data.all_users;
     usersData.forEach(u => { u.rel_status = 'none'; u.rel_type = 'none'; u.isGroup = false; });
-    
+
     myUid = result.data.my_uid;
     myName = result.data.my_name;
 
@@ -178,16 +178,16 @@ el('confirmCreateGroup').addEventListener('click', function() {
     this.blur();
     const groupName = el('newGroupName').value.trim();
     if(!groupName) return alert("Please enter a group name.");
-    
+
     const newGroupRef = push(ref(db, 'lms_groups'));
     const groupId     = newGroupRef.key;
-    
+
     set(newGroupRef, {
         name: groupName, createdBy: myUid,
         timestamp: Date.now(), members: { [myUid]: myName }
     });
     set(ref(db, `lms_user_groups/${myUid}/${groupId}`), { name: groupName, createdBy: myUid });
-    
+
     el('newGroupName').value = '';
     bootstrap.Modal.getInstance(el('createGroupModal')).hide();
     switchTab('groups');
@@ -198,7 +198,7 @@ el('confirmJoinGroup').addEventListener('click', function() {
     this.blur();
     const code = el('joinGroupCode').value.trim();
     if(!code) return alert("Please enter a group code.");
-    
+
     get(ref(db, `lms_groups/${code}`)).then(snap => {
         if(snap.exists()) {
             if (groupsData.find(g => g.uid === code)) return alert("You are already in this group!");
@@ -265,11 +265,11 @@ window.loadGroupDetails = function() {
                 const count = Object.keys(data).length;
                 el('modalReqCount').textContent = count;
                 el('modalReqBadge').textContent = count;
-                
+
                 const list  = el('modalRequestsList');
                 const empty = el('modalRequestsEmpty');
                 list.innerHTML = '';
-                
+
                 if (count === 0) {
                     empty.style.display = 'block';
                 } else {
@@ -307,7 +307,7 @@ window.renderModalMembers = function(query = '') {
     list.innerHTML = '';
     const keys = Object.keys(window.gipMembersCache);
     let shown  = 0;
-    
+
     if (keys.length === 0) {
         list.innerHTML = `<div class="text-center text-muted small py-2 bg-white border border-light-subtle rounded-3">No members found.</div>`;
         return;
@@ -316,7 +316,7 @@ window.renderModalMembers = function(query = '') {
     keys.forEach(uid => {
         const name = window.gipMembersCache[uid];
         if(query && !name.toLowerCase().includes(query)) return;
-        
+
         const isMe       = (uid === myUid);
         const col        = colorFor(uid);
         const init       = name.charAt(0).toUpperCase();
@@ -324,7 +324,7 @@ window.renderModalMembers = function(query = '') {
             ? `<span class="badge rounded-pill ms-2" style="background:#fef3c7;color:#b45309;font-size:.55rem;">Admin</span>` : '';
         const meBadge    = isMe
             ? `<span class="badge rounded-pill ms-1" style="background:#f0fdf4;color:#166534;font-size:.55rem;">You</span>` : '';
-            
+
         list.innerHTML += `
             <div class="d-flex align-items-center p-2 bg-white border border-light-subtle rounded-4 mb-2 shadow-sm">
                 <div style="width:36px;height:36px;border-radius:10px;background:${col};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:.85rem;margin-right:10px;">${init}</div>
@@ -335,7 +335,7 @@ window.renderModalMembers = function(query = '') {
             </div>`;
         shown++;
     });
-    
+
     if (shown === 0) list.innerHTML = `<div class="text-center text-muted small py-3 bg-white border border-light-subtle rounded-4">No matching members.</div>`;
 };
 
@@ -455,7 +455,7 @@ function startCall(type) {
         openJitsi(roomName, type);
         return;
     }
-    
+
     const roomId   = myUid < selectedUser.uid ? `${myUid}_${selectedUser.uid}` : `${selectedUser.uid}_${myUid}`;
     const roomName = `ArtisansDM_${roomId.replace(/[^a-zA-Z0-9]/g,'_')}`;
 
@@ -513,35 +513,35 @@ el('searchInput').addEventListener('input', function() { searchQuery = this.valu
 function renderList() {
     const list = el('contactsList');
     list.innerHTML = '';
-    
+
     let sourceData = activeTab === 'groups' ? groupsData : usersData;
     let filtered   = sourceData.filter(u =>
         u.name?.toLowerCase().includes(searchQuery) || (u.display_id && u.display_id.toString().includes(searchQuery))
     );
-    
+
     if (!searchQuery && activeTab !== 'groups') {
         filtered = activeTab === 'contacts'
             ? filtered.filter(u => u.rel_status === 'accepted')
             : filtered.filter(u => u.rel_status === 'pending');
     }
-    
+
     if (!filtered.length) {
         list.innerHTML = `<div style="padding:32px 20px;text-align:center;color:#94a3b8;font-size:.78rem;">
             <i class="fas fa-folder-open" style="font-size:1.5rem;opacity:.3;display:block;margin-bottom:8px;"></i>Nothing found.</div>`;
         return;
     }
-    
+
     filtered.forEach(u => {
         const col        = u.isGroup ? '#8b5cf6' : colorFor(u.uid);
         const isSelected = selectedUser?.uid === u.uid;
         let badge        = '';
-        
+
         if (u.rel_status === 'pending') {
             badge = u.rel_type === 'received'
                 ? `<span class="req-badge" style="background:#fef3c7;color:#b45309;">New</span>`
                 : `<span class="req-badge" style="background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;">Sent</span>`;
         }
-        
+
         const div       = document.createElement('div');
         div.className   = `contact-item${isSelected ? ' selected' : ''}`;
         div.dataset.uid = u.uid;
@@ -562,14 +562,14 @@ function renderList() {
 function openView(uid) {
     selectedUser = (activeTab === 'groups' ? groupsData : usersData).find(u => u.uid === uid);
     if (!selectedUser) return;
-    
+
     renderList();
     if (window.innerWidth <= 768) el('contactsSidebar').classList.add('hidden');
     el('stateEmpty').style.display  = 'none';
     el('stateProfile').classList.add('d-none');
     el('stateChat').style.display   = 'none !important';
     el('stateChat').classList.add('d-none');
-    
+
     if (selectedUser.isGroup || selectedUser.rel_status === 'accepted') showChat();
     else showProfile();
 }
@@ -634,7 +634,7 @@ function showChat() {
     const col = selectedUser.isGroup ? '#8b5cf6' : colorFor(selectedUser.uid);
     el('chatAvatar').textContent      = selectedUser.name.charAt(0).toUpperCase();
     el('chatAvatar').style.background = col;
-    
+
     if (selectedUser.isGroup) {
         el('chatName').textContent   = selectedUser.name;
         el('chatStatus').innerHTML   = `<span class="text-truncate" style="color:#8b5cf6;font-size:.65rem;font-weight:700;"><i class="fas fa-users me-1"></i> Group Chat</span>`;
@@ -676,7 +676,7 @@ function showChat() {
         el('btnCopyGroupCode').style.display = 'none';
         el('groupInfoBtnWrap').style.display = 'none';
     }
-    
+
     el('chatMessages').innerHTML = '';
 
     const refPath = selectedUser.isGroup
@@ -759,33 +759,6 @@ document.addEventListener('click', e => {
         document.querySelector('emoji-picker').style.display = 'none';
 });
 
-// ─── 9. File Upload Logic ─────────────────────────────────────────────────────
-$('#attachBtn').click(() => $('#fileUploadInput').click());
-$('#fileUploadInput').change(function () {
-    const file = this.files[0]; if (!file) return;
-    const btn  = $('#attachBtn');
-    btn.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
-    const fd = new FormData(); fd.append('file', file);
-    
-    $.ajax({
-        url: '/backend/endpoints/upload.php',
-        type: 'POST', data: fd, processData: false, contentType: false,
-        success: res => {
-            if (res.status === 'success') {
-                push(currentMsgRef, {
-                    sender_uid: myUid, sender_name: myName,
-                    text: $('#msgInput').val().trim() || '',
-                    fileUrl: res.fileUrl, fileType: res.fileType, timestamp: Date.now()
-                });
-                $('#msgInput').val('');
-            } else alert(res.message);
-        },
-        complete: () => {
-            $('#fileUploadInput').val('');
-            btn.html('<i class="fas fa-paperclip"></i>').prop('disabled', false);
-        }
-    });
-});
 
 el('chatBackBtn').addEventListener('click',    () => el('contactsSidebar').classList.remove('hidden'));
 el('profileBackBtn').addEventListener('click', () => el('contactsSidebar').classList.remove('hidden'));

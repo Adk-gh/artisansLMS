@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LMS | Direct Messages & Groups</title>
-    
+
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
     <script src="https://meet.jit.si/external_api.js"></script>
-    
+
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
         /* All Custom UI CSS from original file */
@@ -38,19 +38,19 @@
 
         .hide-scroll { scrollbar-width: none; -ms-overflow-style: none; }
         .hide-scroll::-webkit-scrollbar { display: none; }
-        
+
         /* Contacts Sidebar */
         .contacts-sidebar{width:320px;flex-shrink:0;background:#fff;border-right:1px solid #e9ecef;display:flex;flex-direction:column;z-index:10;}
         .contacts-tabs{display:flex;border-bottom:1px solid #e9ecef;flex-shrink:0; overflow-x:auto;}
         .ctab{flex:1;padding:13px 4px;border:none;background:transparent;font-size:.75rem;font-weight:700;color:#94a3b8;border-bottom:2px solid transparent;transition:.2s;cursor:pointer;font-family:'Sora',sans-serif; white-space:nowrap;}
         .ctab.active{color:#0ea5e9;border-bottom-color:#0ea5e9;}
-        
+
         .contacts-search{padding:12px 14px;border-bottom:1px solid #f1f5f9;flex-shrink:0; display:flex; gap:6px;}
         .contacts-search-inner{display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e9ecef;border-radius:10px;padding:8px 12px; flex:1; min-width: 0;}
         .contacts-search-inner i{color:#94a3b8;font-size:.78rem;flex-shrink:0;}
         .contacts-search-inner input{border:none;background:transparent;outline:none;font-size:.8rem;font-family:'Sora',sans-serif;color:#1e293b;width:100%;}
         .contacts-search-inner input::placeholder{color:#94a3b8;}
-        
+
         .btn-create-group { width: 36px; height: 36px; border-radius: 10px; background: #0ea5e9; color: #fff; border: none; display: none; align-items: center; justify-content: center; flex-shrink: 0; transition: .2s; }
         .btn-create-group:hover { background: #0284c7; }
         .btn-join-group { width: 36px; height: 36px; border-radius: 10px; background: #f59e0b; color: #fff; border: none; display: none; align-items: center; justify-content: center; flex-shrink: 0; transition: .2s; }
@@ -85,7 +85,7 @@
         .chat-header-name{font-size:.9rem;font-weight:700;color:#0f172a;}
         .chat-header-status{font-size:.68rem;color:#22c55e;font-weight:700;display:flex;align-items:center;gap:4px;margin-top:2px;}
         .chat-header-status::before{content:'';width:6px;height:6px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 2px #dcfce7;}
-        
+
         .call-btn{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;border:1px solid #e9ecef;background:#f8fafc;color:#475569;cursor:pointer;transition:.2s;font-size:.82rem;flex-shrink:0;}
         .call-btn.audio:hover{background:#22c55e;border-color:#22c55e;color:#fff;}
         .call-btn.video:hover{background:#0ea5e9;border-color:#0ea5e9;color:#fff;}
@@ -174,12 +174,12 @@
             .contacts-sidebar{position:absolute;width:100%;height:100%;transition:transform .3s;}
             .contacts-sidebar.hidden{transform:translateX(-100%);}
             .btn-back{display:flex!important;}
-            
+
             .chat-header { padding: 10px 12px; gap: 8px; }
             .chat-header-avatar { width: 34px; height: 34px; font-size: .75rem; }
             .chat-header-name { font-size: .85rem; }
             .chat-header-status { font-size: .6rem; }
-            
+
             .call-btn { width: 32px; height: 32px; font-size: .75rem; }
             .btn-back { padding: 6px; width: 32px; height: 32px; margin-right: 0 !important; justify-content: center; }
         }
@@ -187,7 +187,7 @@
     </style>
 </head>
 <body class="dm-mode">
-    
+
     <div class="dm-page-wrapper">
 
         <!-- Shared Sidebar (same as courses.html) -->
@@ -252,7 +252,7 @@
                             <div id="chatActionBtns" class="d-flex gap-1 gap-sm-2 align-items-center flex-shrink-0">
                                 <button class="call-btn audio" id="btnAudioCall" title="Audio Call"><i class="fas fa-phone"></i></button>
                                 <button class="call-btn video" id="btnVideoCall" title="Video Call"><i class="fas fa-video"></i></button>
-                                
+
                                 <button class="btn btn-sm btn-light py-1 px-2 shadow-sm" id="btnCopyGroupCode" style="display:none; font-size:0.75rem; border-radius: 8px; font-weight: 600;">
                                     <i class="fas fa-copy text-primary"></i> <span class="d-none d-sm-inline ms-1">Code</span>
                                 </button>
@@ -266,10 +266,9 @@
                         </div>
                         <div class="messages-container custom-scroll" id="chatMessages"></div>
                         <div class="chat-input-area position-relative">
-                            <input type="file" id="fileUploadInput" class="d-none">
+
                             <emoji-picker class="light"></emoji-picker>
                             <div class="chat-input-wrap">
-                                <button class="icon-btn" id="attachBtn" title="Attach File"><i class="fas fa-paperclip"></i></button>
                                 <button class="icon-btn" id="emojiBtn"><i class="far fa-smile"></i></button>
                                 <input type="text" id="msgInput" placeholder="Type a message…">
                                 <button class="send-btn" id="sendBtn"><i class="fas fa-paper-plane"></i></button>
@@ -382,7 +381,7 @@
                         </div>
                         <div id="modalMembersList" class="d-flex flex-column gap-2 custom-scroll" style="max-height: 200px; overflow-y: auto;"></div>
                     </div>
-                    
+
                     <div id="modalDangerSection" class="mt-4 pt-4 border-top" style="display:none; border-color:#e2e8f0;">
                         <button class="btn btn-danger w-100 rounded-pill fw-bold py-2 shadow-sm" onclick="window.deleteCurrentGroup()">
                             <i class="fas fa-trash-alt me-2"></i>Delete Group
@@ -426,7 +425,7 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <script type="module" src="/client/assets/js/modules/messages.js"></script>
 </body>
 </html>
