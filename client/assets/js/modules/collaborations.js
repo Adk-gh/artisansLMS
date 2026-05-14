@@ -337,14 +337,22 @@ function populateRoomInfo(data) {
             </div>`;
     }).join('');
 
-    // Member search
+    // Member search - Fixed for Bootstrap !important conflict
     document.getElementById('memberSearch').addEventListener('input', function () {
         const q = this.value.toLowerCase().trim();
         let found = 0;
         document.querySelectorAll('.member-item').forEach(item => {
             const show = !q || item.dataset.name.includes(q);
-            item.style.display = show ? 'flex' : 'none';
-            if (show) found++;
+
+            // Toggle Bootstrap display classes instead of using style.display
+            if (show) {
+                item.classList.remove('d-none');
+                item.classList.add('d-flex');
+                found++;
+            } else {
+                item.classList.remove('d-flex');
+                item.classList.add('d-none');
+            }
         });
         document.getElementById('memberSearchEmpty').classList.toggle('d-none', found > 0);
     });

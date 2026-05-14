@@ -17,7 +17,6 @@
         /* ── Layout & Sidebar Sync ── */
         @media (min-width: 768px) {
             #content { margin-left: 260px !important; transition: margin-left .28s cubic-bezier(0.4, 0, 0.2, 1); }
-
             /* Responsive offset when sidebar is collapsed globally */
             body.sidebar-collapsed #content { margin-left: 68px !important; }
         }
@@ -38,7 +37,7 @@
             flex-shrink: 0;
             overflow: visible !important;
             position: relative;
-            z-index: 1050 !important; /* Raised to match other pages and clear modals */
+            z-index: 1050 !important;
         }
 
         /* ── Collab-style chat header (back btn + course code + actions) ── */
@@ -76,7 +75,7 @@
         .collab-nav::-webkit-scrollbar { display: none; }
         .collab-nav { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* ── Nav Tabs (matching collaborations.html .chat-tab) ── */
+        /* ── Nav Tabs ── */
         .page-tab {
             display: inline-flex;
             align-items: center;
