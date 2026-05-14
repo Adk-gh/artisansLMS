@@ -127,17 +127,81 @@ $(document).ready(function() {
     function hideError()    { const e=$el('schedError'); if(e) e.style.display = 'none'; }
 
     async function getSchedule() {
-        const url = `${API_BASE}?semester=${encodeURIComponent(S.semester)}&school_year=${encodeURIComponent(S.schoolYear)}`;
-        const r = await fetch(url);
+        // SIMULATED NETWORK DELAY
+        await new Promise(resolve => setTimeout(resolve, 600));
 
-        if (!r.ok) {
-            let errMsg = `HTTP ${r.status}`;
-            try { const j = await r.json(); if (j.message) errMsg = j.message; } catch(e){}
-            throw new Error(errMsg);
+        // MOCK DATA BASED ON YOUR CLASSES
+        const mockData = {
+            stats: {
+                total_sessions: 8,
+                total_hours: 12,
+                unique_subjects: 2,
+                unique_rooms: 3
+            },
+            schedule_by_day: {
+                "Monday": [
+                    {
+                        start_time: "08:00 AM", end_time: "09:30 AM",
+                        subject_code: "CC225", subject_name: "Introduction To Advance Programming",
+                        room_name: "ComLab 1", building: "Main", section: "Section 10"
+                    },
+                    {
+                        start_time: "10:00 AM", end_time: "11:30 AM",
+                        subject_code: "CC225", subject_name: "Introduction To Advance Programming",
+                        room_name: "ComLab 2", building: "Main", section: "Section 13"
+                    }
+                ],
+                "Tuesday": [
+                    {
+                        start_time: "09:00 AM", end_time: "10:30 AM",
+                        subject_code: "CC225", subject_name: "Introduction To Advance Programming",
+                        room_name: "ComLab 1", building: "Main", section: "Section 14"
+                    },
+                    {
+                        start_time: "01:00 PM", end_time: "02:30 PM",
+                        subject_code: "CS101", subject_name: "Programming 101",
+                        room_name: "Lec Hall A", building: "Annex", section: "Section 16"
+                    }
+                ],
+                "Wednesday": [
+                    {
+                        start_time: "08:00 AM", end_time: "09:30 AM",
+                        subject_code: "CC225", subject_name: "Introduction To Advance Programming",
+                        room_name: "ComLab 1", building: "Main", section: "Section 10"
+                    },
+                    {
+                        start_time: "10:00 AM", end_time: "11:30 AM",
+                        subject_code: "CC225", subject_name: "Introduction To Advance Programming",
+                        room_name: "ComLab 2", building: "Main", section: "Section 13"
+                    }
+                ],
+                "Thursday": [
+                    {
+                        start_time: "09:00 AM", end_time: "10:30 AM",
+                        subject_code: "CC225", subject_name: "Introduction To Advance Programming",
+                        room_name: "ComLab 1", building: "Main", section: "Section 14"
+                    },
+                    {
+                        start_time: "01:00 PM", end_time: "02:30 PM",
+                        subject_code: "CS101", subject_name: "Programming 101",
+                        room_name: "Lec Hall A", building: "Annex", section: "Section 16"
+                    }
+                ],
+                "Friday": [],
+                "Saturday": [],
+                "Sunday": []
+            }
+        };
+
+        // If the user tries to look at a different semester, show the empty state
+        if (S.semester !== "1st Semester" || S.schoolYear !== "2025-2026") {
+            return {
+                stats: { total_sessions: 0, total_hours: 0, unique_subjects: 0, unique_rooms: 0 },
+                schedule_by_day: { "Monday": [], "Tuesday": [], "Wednesday": [], "Thursday": [], "Friday": [], "Saturday": [], "Sunday": [] }
+            };
         }
-        const j = await r.json();
-        if (!j.success) throw new Error(j.message || 'API error');
-        return j.data;
+
+        return mockData;
     }
 
     function renderStats(stats) {
