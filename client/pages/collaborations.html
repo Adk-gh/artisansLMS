@@ -16,7 +16,15 @@
 
         /* ── Sidebar offset — desktop only ── */
         @media (min-width: 768px) {
-            #content { margin-left: 260px !important; transition: margin-left .28s; }
+            #content {
+                margin-left: 260px !important;
+                transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            /* When the sidebar shrinks, reduce the margin to match the icon-only width */
+            body.sidebar-collapsed #content {
+                margin-left: 80px !important; /* Adjust if your collapsed sidebar is wider/narrower */
+            }
         }
 
         /* ── Scrollbar Helpers ── */
@@ -218,7 +226,6 @@
 
         <div id="appShell" class="d-flex flex-column h-100 overflow-hidden">
 
-            <!-- ── Selection View ── -->
             <main id="selectionView" class="flex-grow-1 overflow-auto p-3 p-md-4 p-lg-5">
 
                 <div class="view-toggle-bar d-flex flex-wrap justify-content-end align-items-center mb-4 gap-3">
@@ -257,10 +264,8 @@
 
             </main>
 
-            <!-- ── Chat View ── -->
             <div id="chatView" class="flex-column flex-grow-1 overflow-hidden h-100">
 
-                <!-- Responsive Header -->
                 <header class="bg-white border-bottom d-flex align-items-center justify-content-between px-3 py-2 shadow-sm flex-shrink-0 z-3" style="gap:.5rem;">
                     <a href="collaborations.html" id="backBtn" class="btn btn-sm btn-light border text-dark fw-bold d-flex align-items-center gap-1 flex-shrink-0">
                         <i class="fas fa-arrow-left text-muted"></i>
@@ -282,7 +287,6 @@
                     </div>
                 </header>
 
-                <!-- Scrollable Tab Nav -->
                 <nav class="d-flex align-items-center flex-nowrap overflow-x-auto hide-scroll bg-white border-bottom flex-shrink-0 px-2">
                     <a href="#" class="chat-tab text-secondary fw-semibold py-3 px-3 text-nowrap text-decoration-none active" id="tabChatLink">
                         <i class="fas fa-comments me-1"></i><span class="d-none d-sm-inline">Chat</span><span class="d-sm-none">Chat</span>
@@ -305,7 +309,6 @@
                         </div>
                     </div>
 
-                    <!-- Input Bar -->
                     <div id="chatInputBar" class="flex-shrink-0 bg-white border-top p-2 p-md-3 position-relative pb-3">
                         <emoji-picker id="emojiPicker"></emoji-picker>
                         <div class="d-flex align-items-center bg-light border rounded-pill px-2 py-1 shadow-sm">
@@ -322,7 +325,6 @@
                         </div>
                     </div>
 
-                    <!-- Full-screen Call Overlay -->
                     <div id="callUI" class="flex-column p-3">
                         <div class="d-flex justify-content-end mb-2 flex-shrink-0">
                             <button class="btn btn-danger rounded-circle shadow-lg p-2 lh-1" id="leaveLectureBtn"
@@ -334,13 +336,10 @@
                     </div>
 
                 </div>
-            </div><!-- /chatView -->
-
-        </div>
+            </div></div>
     </div>
 </div>
 
-<!-- ── Room Info Offcanvas ── -->
 <div class="offcanvas offcanvas-end border-0 shadow-lg" tabindex="-1" id="roomInfoOffcanvas"
      style="max-width: min(340px, 100vw);">
     <div class="offcanvas-header bg-light border-bottom p-4">
@@ -357,7 +356,7 @@
             <h5 class="fw-bold text-dark mb-1" id="offcanvasCourseCode">--</h5>
             <div class="text-muted small fw-medium mb-2" id="offcanvasCourseName">--</div>
             <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill"
-                  id="offcanvasTerm">--</span>
+                 id="offcanvasTerm">--</span>
         </div>
 
         <div class="d-flex gap-2 p-3 border-bottom bg-light">
@@ -405,7 +404,6 @@
     </div>
 </div>
 
-<!-- ── Room + Resource Request Modal ── -->
 <div class="modal fade" id="roomRequestModal" tabindex="-1">
     <div class="modal-dialog modal-md modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
@@ -433,7 +431,6 @@
 
                 <div id="roomRequestAlert" class="alert d-none mb-3"></div>
 
-                <!-- Room Tab -->
                 <div id="rrTabRoom">
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted text-uppercase">Select Room</label>
@@ -468,7 +465,6 @@
                     </button>
                 </div>
 
-                <!-- Resource Tab -->
                 <div id="rrTabResource" class="d-none">
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted text-uppercase">Search Resource</label>

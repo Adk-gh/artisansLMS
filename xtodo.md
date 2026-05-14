@@ -12,3 +12,5 @@ integrate with schedule.
 ~~make sure that the header is fixed~~&#x20;
 
 ~~have email for instructors~~
+
+add a check for signup if the email is already used for both students table and employees

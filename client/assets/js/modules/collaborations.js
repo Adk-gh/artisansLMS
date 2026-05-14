@@ -4,8 +4,6 @@ import {
     set, onValue, onDisconnect
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-
-
 const API = 'https://artisanslms.onrender.com/backend/index.php';
 
 // ─── Globals ─────────────────────────────────────────────────────────────────
@@ -53,7 +51,15 @@ function showChatView() {
 
 // ─── Bootstrap ───────────────────────────────────────────────────────────────
 $(document).ready(function () {
-    $("#sidebar-container").load("/client/components/sidebar.html");
+    $("#sidebar-container").load("/client/components/sidebar.html", function() {
+        // Toggle the body class when the sidebar toggle button is clicked
+        // Note: Change '#sidebarToggleBtn' if your actual button ID in sidebar.html is different
+        $(document).on('click', '#sidebarToggleBtn', function(e) {
+            e.preventDefault();
+            $('body').toggleClass('sidebar-collapsed');
+        });
+    });
+
     $("#header-container").load("/client/components/header.html", function (res, status) {
         if (status !== 'error') initHeader();
     });
@@ -139,7 +145,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Check session first, then branch
-   // Check session first, then branch
     fetch(API, {
         method: 'POST',
         credentials: 'include',
@@ -167,9 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
-// ═══════════════════════════════════════════════════════════════════════════════
-//  SELECTION GRID
-// ═══════════════════════════════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════════════════════
 //  SELECTION GRID
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -287,10 +289,6 @@ function initChatView() {
         .then(data => {
             if (data.status === 'success') {
                 populateRoomInfo(data);
-
-
-                // ─────────────────────────────────────────────────────────────
-
                 initFirebase();
                 initInputBar();
             } else {
@@ -388,7 +386,6 @@ function initFirebase() {
     onChildAdded(messagesRef, snap => {
         const m   = snap.val();
         const box = document.getElementById('chatMessages');
-
 
         if (m.is_system) {
             box.insertAdjacentHTML('beforeend', `
