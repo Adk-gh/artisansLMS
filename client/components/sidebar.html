@@ -119,7 +119,6 @@
 .role-teacher,
 .role-student { display: none; }
 
-/* ── CHANGED: We now target the body class instead of a sibling selector ── */
 #content {
     margin-left: 260px;
     transition: margin-left .28s cubic-bezier(.4,0,.2,1);
@@ -168,6 +167,7 @@ body.sidebar-collapsed #content { margin-left: 68px; }
     </div>
 
     <div class="sb-nav">
+        <!-- TEACHER PORTAL -->
         <div class="sb-section role-teacher">
             <div class="sb-divider"></div>
             <span class="sb-label">Faculty Portal</span>
@@ -189,24 +189,32 @@ body.sidebar-collapsed #content { margin-left: 68px; }
             </a>
         </div>
 
+        <!-- GENERAL PORTAL -->
         <div class="sb-section" >
             <span class="sb-label">General</span>
+
             <div class="sb-section role-admin">
                 <a href="/client/pages/dashboard.html" class="sb-link" data-label="Dashboard" data-active-page="dashboard.html">
                     <span class="sb-icon"><i class="fas fa-th-large"></i></span>
                     <span class="sb-link-text">Dashboard</span>
                 </a>
             </div>
-            <a href="/client/pages/collaborations.html" class="sb-link" data-label="Classes" data-active-page="collaborations.html">
-                <span class="sb-icon"><i class="fas fa-user-friends"></i></span>
-                <span class="sb-link-text">Classes</span>
-            </a>
+
+            <!-- EXCLUDED ADMIN: Wrapped in role-teacher and role-student -->
+            <div class="role-teacher role-student">
+                <a href="/client/pages/collaborations.html" class="sb-link" data-label="Classes" data-active-page="collaborations.html">
+                    <span class="sb-icon"><i class="fas fa-user-friends"></i></span>
+                    <span class="sb-link-text">Classes</span>
+                </a>
+            </div>
+
             <a href="/client/pages/messages.html" class="sb-link" data-label="Direct Messages" data-active-page="messages.html">
                 <span class="sb-icon"><i class="fas fa-comments"></i></span>
                 <span class="sb-link-text">Direct Messages</span>
             </a>
         </div>
 
+        <!-- STUDENT PORTAL -->
         <div class="sb-section role-student">
             <div class="sb-divider"></div>
             <span class="sb-label">Student Portal</span>
@@ -224,17 +232,10 @@ body.sidebar-collapsed #content { margin-left: 68px; }
             </a>
         </div>
 
+        <!-- SYSTEM ADMIN PORTAL (Task Manager and My Schedule Removed) -->
         <div class="sb-section role-admin">
             <div class="sb-divider"></div>
             <span class="sb-label">System Admin</span>
-            <a href="/client/pages/instructor_assignments.html" class="sb-link" data-label="Task Manager" data-active-page="instructor_assignments.html">
-                <span class="sb-icon"><i class="fas fa-tasks"></i></span>
-                <span class="sb-link-text">Task Manager</span>
-            </a>
-            <a href="/client/pages/instructors.schedule.html" class="sb-link" data-label="My Schedule" data-active-page="instructor_schedule.html">
-                <span class="sb-icon"><i class="fas fa-calendar-week"></i></span>
-                <span class="sb-link-text">My Schedule</span>
-            </a>
             <a href="/client/pages/enrollment.html" class="sb-link" data-label="Student Enrollment" data-active-page="enrollment.html">
                 <span class="sb-icon"><i class="fas fa-link"></i></span>
                 <span class="sb-link-text">Student Enrollment</span>
@@ -278,13 +279,13 @@ body.sidebar-collapsed #content { margin-left: 68px; }
     // ── 1. Restore collapsed state (desktop only) ──
     if (!isMobile() && localStorage.getItem(STORE_KEY) === '1') {
         sidebar.classList.add('collapsed');
-        document.body.classList.add('sidebar-collapsed'); // <-- CHANGED: Sync state to body on load
+        document.body.classList.add('sidebar-collapsed');
     }
 
     if (btnCollapse) {
         btnCollapse.addEventListener('click', () => {
             sidebar.classList.toggle('collapsed');
-            document.body.classList.toggle('sidebar-collapsed'); // <-- CHANGED: Toggle state on body
+            document.body.classList.toggle('sidebar-collapsed');
             localStorage.setItem(STORE_KEY, sidebar.classList.contains('collapsed') ? '1' : '0');
         });
     }
