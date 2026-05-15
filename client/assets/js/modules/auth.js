@@ -1,36 +1,43 @@
 const API = 'https://artisanslms.onrender.com/backend/index.php';
 
+// Helper function to validate email format strictly
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
 $(function () {
     // Populate department dropdown on registration page
-if ($('#department_id').length) {
+    if ($('#department_id').length) {
+        $.ajax({
+            url: API,
+            method: 'POST',
+            xhrFields: { withCredentials: true },
+            contentType: 'application/json',
+            dataType: 'json',
+            data: JSON.stringify({ route: 'auth', action: 'getDepartments' }),
+            success: function (res) {
+                if (res.status === 'success' && res.departments) {
+                    const $select = $('#department_id');
+                    $select.empty().append('<option value="" disabled selected>Select your department</option>');
+                    res.departments.forEach(function (dept) {
+                        $select.append(`<option value="${dept.department_id}">${dept.name}</option>`);
+                    });
+                }
+            },
+            error: function () {
+                $('#department_id').html('<option value="" disabled selected>Failed to load departments</option>');
+            }
+        });
+    }
+
+    // Session check on Login/Register pages
     $.ajax({
         url: API,
         method: 'POST',
         xhrFields: { withCredentials: true },
         contentType: 'application/json',
-        dataType: 'json',
-        data: JSON.stringify({ route: 'auth', action: 'getDepartments' }),
-        success: function (res) {
-            if (res.status === 'success' && res.departments) {
-                const $select = $('#department_id');
-                $select.empty().append('<option value="" disabled selected>Select your department</option>');
-                res.departments.forEach(function (dept) {
-                    $select.append(`<option value="${dept.department_id}">${dept.name}</option>`);
-                });
-            }
-        },
-        error: function () {
-            $('#department_id').html('<option value="" disabled selected>Failed to load departments</option>');
-        }
-    });
-}
-    // Session check on Login/Register pages
-    $.ajax({
-        url: API,
-        method: 'POST', // Changed to POST to match your controller setup
-        xhrFields: { withCredentials: true },
-        contentType: 'application/json',
-        data: JSON.stringify({ route: 'auth', action: 'checkSession' }), // Use checkSession
+        data: JSON.stringify({ route: 'auth', action: 'checkSession' }),
         dataType: 'json',
         success: function (res) {
             if (res.status === 'success' && res.logged_in) {
@@ -40,7 +47,7 @@ if ($('#department_id').length) {
         }
     });
 
-    // Login
+    // --- Login ---
     $('#loginForm').submit(function (e) {
         e.preventDefault();
         $('#alertMsg').addClass('d-none').removeClass('alert-danger alert-success');
@@ -80,14 +87,60 @@ if ($('#department_id').length) {
         });
     });
 
-  // Register
+    // --- Real-Time Password Strength Validation ---
+    let isPasswordStrong = false;
+    $('#regPassword').on('input', function() {
+        const pass = $(this).val();
+
+        // Regex rules
+        const hasLength = pass.length >= 8;
+        const hasUpper = /[A-Z]/.test(pass);
+        const hasNumber = /[0-9]/.test(pass);
+        const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
+
+        // Helper function to toggle UI classes
+        const toggleRule = (elementId, isValid, text) => {
+            if (isValid) {
+                $(`#${elementId}`).removeClass('text-danger').addClass('text-success')
+                                  .html(`<i class="fas fa-check me-1"></i> ${text}`);
+            } else {
+                $(`#${elementId}`).removeClass('text-success').addClass('text-danger')
+                                  .html(`<i class="fas fa-times me-1"></i> ${text}`);
+            }
+        };
+
+        toggleRule('rule-length', hasLength, 'At least 8 characters');
+        toggleRule('rule-upper', hasUpper, 'At least 1 uppercase letter');
+        toggleRule('rule-number', hasNumber, 'At least 1 number');
+        toggleRule('rule-special', hasSpecial, 'At least 1 special character');
+
+        isPasswordStrong = hasLength && hasUpper && hasNumber && hasSpecial;
+    });
+
+    // --- Register ---
     $('#registerForm').submit(function (e) {
         e.preventDefault();
         $('#alertMsg').addClass('d-none').removeClass('alert-danger alert-success');
 
-        const password        = $('#regPassword').val();
+        const email = $('#regEmail').val();
+        const password = $('#regPassword').val();
         const confirmPassword = $('#regConfirmPassword').val();
 
+        // 1. Validate Email Format
+        if (!isValidEmail(email)) {
+            $('#alertMsg').removeClass('d-none alert-success')
+                          .addClass('alert-danger').text('Please enter a valid email address.');
+            return;
+        }
+
+        // 2. Validate Password Strength
+        if (!isPasswordStrong) {
+            $('#alertMsg').removeClass('d-none alert-success')
+                          .addClass('alert-danger').text('Please ensure your password meets all strength requirements.');
+            return;
+        }
+
+        // 3. Validate Passwords Match
         if (password !== confirmPassword) {
             $('#alertMsg').removeClass('d-none alert-success')
                           .addClass('alert-danger').text('Passwords do not match!');
@@ -110,15 +163,19 @@ if ($('#department_id').length) {
                 last_name:     $('#regLastName').val(),
                 dob:           $('#regDOB').val(),
                 gender:        $('#regGender').val(),
-                email:         $('#regEmail').val(),
+                email:         email,
                 password:      password,
-                department_id: $('#department_id').val() // <-- Added this line
+                department_id: $('#department_id').val()
             }),
             success: function (res) {
                 if (res.status === 'success') {
                     $('#alertMsg').removeClass('d-none alert-danger')
                                   .addClass('alert-success').text(res.message);
+
+                    // Reset form and UI
                     $('#registerForm').trigger('reset');
+                    $('#regPassword').trigger('input');
+
                     setTimeout(() => {
                         window.location.href = '/client/pages/login.html';
                     }, 2000);

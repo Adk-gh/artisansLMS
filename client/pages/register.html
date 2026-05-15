@@ -12,7 +12,7 @@
 
     <div class="card border-0 shadow-lg rounded-4 w-100 mx-3" style="max-width: 600px;">
         <div class="card-body p-4 p-md-5">
-            
+
             <div class="text-center mb-4">
                 <div class="mb-3">
                     <img src="/client/assets/img/logo.png" alt="Artisans LMS Logo" class="img-fluid" style="max-width: 70px;">
@@ -24,7 +24,7 @@
             <div id="alertMsg" class="alert d-none py-2 small text-center rounded-3 fw-medium"></div>
 
             <form id="registerForm">
-                
+
                 <div class="row g-3 mb-3">
                     <div class="col-sm-6">
                         <label class="form-label fw-semibold text-secondary small mb-1">First Name</label>
@@ -51,14 +51,15 @@
                         </select>
                     </div>
                 </div>
+
                 <div class="mb-3">
-                        <label for="department_id" class="form-label fw-semibold text-secondary small mb-1">
-                            Department / Program
-                        </label>
-                        <select id="department_id" name="department_id" class="form-select py-2" required>
-                            <option value="" disabled selected>Loading departments...</option>
-                        </select>
-                    </div>
+                    <label for="department_id" class="form-label fw-semibold text-secondary small mb-1">
+                        Department / Program
+                    </label>
+                    <select id="department_id" name="department_id" class="form-select py-2" required>
+                        <option value="" disabled selected>Loading departments...</option>
+                    </select>
+                </div>
 
                 <div class="mb-3">
                     <label class="form-label fw-semibold text-secondary small mb-1">Email Address</label>
@@ -69,6 +70,14 @@
                     <div class="col-sm-6">
                         <label class="form-label fw-semibold text-secondary small mb-1">Password</label>
                         <input type="password" id="regPassword" class="form-control py-2" required placeholder="••••••••">
+
+                        <!-- Password Strength Indicator -->
+                        <div class="mt-2" id="passwordStrengthRules" style="font-size: 0.75rem;">
+                            <span class="d-block text-danger mb-1" id="rule-length"><i class="fas fa-times me-1"></i> At least 8 characters</span>
+                            <span class="d-block text-danger mb-1" id="rule-upper"><i class="fas fa-times me-1"></i> At least 1 uppercase letter</span>
+                            <span class="d-block text-danger mb-1" id="rule-number"><i class="fas fa-times me-1"></i> At least 1 number</span>
+                            <span class="d-block text-danger" id="rule-special"><i class="fas fa-times me-1"></i> At least 1 special character</span>
+                        </div>
                     </div>
                     <div class="col-sm-6">
                         <label class="form-label fw-semibold text-secondary small mb-1">Confirm Password</label>
@@ -85,7 +94,7 @@
                     <a href="/client/pages/login.html" class="text-decoration-none fw-bold text-primary small ms-1">Sign In</a>
                 </div>
             </form>
-            
+
         </div>
     </div>
 
