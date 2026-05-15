@@ -52,11 +52,7 @@
         .sf-select { padding: 9px 32px 9px 12px; border: 1.5px solid #e9ecef; border-radius: 10px; font-size: .8rem; font-family: 'Sora', sans-serif; font-weight: 600; color: #475569; background: #f8fafc; outline: none; cursor: pointer; transition: .2s; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; }
         .sf-select:focus { border-color: #0ea5e9; background-color: #fff; box-shadow: 0 0 0 3px rgba(14,165,233,.08); }
 
-        /*
-         * ── Table card ──
-         * flex:1 + min-height:0 lets this grow to fill remaining main space.
-         * The card itself does NOT scroll — only the inner wrapper does.
-         */
+        /* ── Table card ── */
         .table-card {
             flex: 1;
             min-height: 0;
@@ -69,10 +65,7 @@
             overflow: hidden;
         }
 
-        /*
-         * ── Scrollable tbody wrapper ──
-         * flex:1 + min-height:0 + overflow-y:auto = only THIS scrolls.
-         */
+        /* ── Scrollable tbody wrapper ── */
         .table-scroll-wrapper {
             flex: 1;
             min-height: 0;
@@ -113,7 +106,7 @@
         .class-check-item:hover { background: #f1f5f9; }
         .class-check-item input[type=checkbox] { accent-color: #0ea5e9; width: 15px; height: 15px; flex-shrink: 0; cursor: pointer; }
 
-        /* ── Pagination bar — pinned flush below the table card ── */
+        /* ── Pagination bar ── */
         .pagination-bar {
             flex-shrink: 0;
             background: #fff;
@@ -145,6 +138,10 @@
 
         /* ── Department badge ── */
         .dept-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 20px; font-size: .65rem; font-weight: 700; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        /* Custom Scrollbar for Student Select */
+        #studentSelect::-webkit-scrollbar { width: 6px; }
+        #studentSelect::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
 <body>
@@ -154,14 +151,12 @@
     <div id="header-placeholder"></div>
 
     <main>
-        <!-- Top action row -->
         <div class="d-flex justify-content-end align-items-center mb-3 flex-shrink-0">
             <button class="btn-enroll shadow-sm" data-bs-toggle="modal" data-bs-target="#enrollModal">
                 <i class="fas fa-user-plus me-2"></i>New Enrollment
             </button>
         </div>
 
-        <!-- Search / Filter Bar -->
         <div class="sf-bar">
             <div class="sf-search-wrap">
                 <i class="fas fa-search"></i>
@@ -187,7 +182,6 @@
             </div>
         </div>
 
-        <!-- Scrollable Table — only this inner div scrolls -->
         <div class="table-card shadow-sm">
             <div class="table-scroll-wrapper">
                 <table class="table align-middle mb-0 table-hover">
@@ -206,7 +200,6 @@
             </div>
         </div>
 
-        <!-- Pagination bar — flush below the table card -->
         <div class="pagination-bar shadow-sm" id="paginationWrap">
             <div class="page-info" id="pageInfo">Showing 0–0 of 0 students</div>
             <div class="d-flex gap-1 align-items-center" id="paginationControls"></div>
@@ -215,7 +208,6 @@
     </main>
 </div>
 
-<!-- ── New Enrollment Modal ── -->
 <div class="modal fade" id="enrollModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <form id="enrollForm" class="modal-content border-0 shadow-lg">
@@ -224,20 +216,29 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-4">
+
                 <div class="mb-3">
                     <label class="form-label small fw-bold text-muted text-uppercase">Select Student</label>
-                    <select id="studentSelect" class="form-select bg-light border-0" required>
+
+                    <div class="position-relative mb-2">
+                        <i class="fas fa-search position-absolute top-50 translate-middle-y ms-2 text-muted" style="font-size: .75rem;"></i>
+                        <input type="text" id="modalStudentSearch" class="form-control bg-light border-0 ps-4 shadow-none" placeholder="Search student name or ID..." style="font-size: .85rem;" autocomplete="off">
+                    </div>
+
+                    <select id="studentSelect" class="form-select bg-light border-0 shadow-none" required size="5" style="max-height: 160px; overflow-y: auto;">
                         <option value="">-- Choose Student --</option>
                     </select>
+                    <div id="studentCountHelper" class="form-text small text-muted text-end" style="font-size: 0.65rem;">Showing max 50 results</div>
                 </div>
+
                 <div class="mb-3">
                     <label class="form-label small fw-bold text-muted text-uppercase mb-2">Select Classes</label>
                     <div class="d-flex gap-2 mb-2" id="modalClassFilters" style="display: none !important;">
                         <div class="position-relative flex-grow-1">
                             <i class="fas fa-search position-absolute top-50 translate-middle-y ms-2 text-muted" style="font-size: .75rem;"></i>
-                            <input type="text" id="modalClassSearch" class="form-control bg-light border-0 ps-4" placeholder="Search class or dept..." style="font-size: .85rem;">
+                            <input type="text" id="modalClassSearch" class="form-control bg-light border-0 ps-4 shadow-none" placeholder="Search class or dept..." style="font-size: .85rem;">
                         </div>
-                        <select id="modalClassDept" class="form-select bg-light border-0 w-auto" style="font-size: .85rem; max-width: 160px;">
+                        <select id="modalClassDept" class="form-select bg-light border-0 w-auto shadow-none" style="font-size: .85rem; max-width: 160px;">
                             <option value="">All Depts</option>
                         </select>
                     </div>

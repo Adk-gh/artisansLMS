@@ -1,11 +1,10 @@
-// enrollment.js
-
 let _enrolledData  = {};
 let _allClasses    = [];
 let _allStudents   = [];   // full dataset for pagination
 let _filteredStudents = []; // after filters applied
 let _currentPage   = 1;
 const PAGE_SIZE    = 50;
+let _allStudentsOptions = []; // Stores all options for modal search
 
 // ── Pagination ────────────────────────────────────────────────────────────────
 function renderPagination(total) {
@@ -80,25 +79,25 @@ function applyFiltersAndRender() {
     const q     = $('#enrollSearch').val().toLowerCase().trim();
     const cf    = $('#enrollClassFilter').val();
     const statf = $('#enrollStatusFilter').val();
-    const df    = $('#enrollDeptFilter').val(); // NEW: Get department filter value
+    const df    = $('#enrollDeptFilter').val();
 
     _filteredStudents = _allStudents.filter(student => {
         const name     = (student.name || '').toLowerCase();
         const sid      = String(student.student_id);
-        const sDeptId  = String(student.dept_id || ''); // The student's department ID
+        const sDeptId  = String(student.dept_id || '');
         const count    = student.classes.length;
         const statuses = [...new Set(student.classes.map(c => c.status))];
 
         const nameOk   = !q     || name.includes(q) || sid.includes(q);
         const statusOk = !statf || statuses.includes(statf);
-        const deptOk   = !df    || sDeptId === df; // NEW: Check department match
+        const deptOk   = !df    || sDeptId === df;
 
         let cntOk = true;
         if      (cf === '1') cntOk = count === 1;
         else if (cf === '2') cntOk = count === 2;
         else if (cf === '3') cntOk = count >= 3;
 
-        return nameOk && cntOk && statusOk && deptOk; // Include deptOk in the final check
+        return nameOk && cntOk && statusOk && deptOk;
     });
 
     _currentPage = Math.min(_currentPage, Math.ceil(_filteredStudents.length / PAGE_SIZE)) || 1;
@@ -111,7 +110,6 @@ function applyFiltersAndRender() {
     renderPagination(_filteredStudents.length);
 }
 
-// Keep the old filterEnrollment name so existing event listeners work
 function filterEnrollment() {
     _currentPage = 1;
     applyFiltersAndRender();
@@ -123,7 +121,6 @@ function filterModalClasses() {
     const sid = $('#studentSelect').val();
     if (!sid) return;
 
-    // Get the deptId we stored in the change event
     const targetDept = String($('#studentSelect').data('current-dept') || '');
     const q = $('#modalClassSearch').val().toLowerCase().trim();
     const already = _enrolledData[sid] || [];
@@ -136,7 +133,6 @@ function filterModalClasses() {
         const cid = $wrap.attr('data-class-id');
         const cDept = String($wrap.attr('data-dept') || '');
 
-        // 1. Hide if already enrolled
         if (already.includes(cid)) {
             $wrap.addClass('d-none');
             $wrap.find('input').prop('disabled', true);
@@ -148,9 +144,6 @@ function filterModalClasses() {
         const nameData = $wrap.attr('data-name') || '';
         const matchSearch = !q || nameData.includes(q);
 
-        // 2. STRICT FILTER: The course department MUST match the student's department
-        // If the student has no dept, we show nothing or everything based on your preference.
-        // Here, we force the match:
         const matchDept = (targetDept === "" || cDept === targetDept);
 
         if (matchSearch && matchDept) {
@@ -161,7 +154,7 @@ function filterModalClasses() {
         }
     });
 
-    if (count === 0 && !q && !dept) {
+    if (count === 0 && !q) {
         $helperText.removeClass('d-none').html("<span class='text-danger fw-bold'>This student is already enrolled in all active classes!</span>");
     } else if (count === 0) {
         $helperText.removeClass('d-none').html("<span class='text-muted fst-italic'>No classes match your filter.</span>");
@@ -183,6 +176,14 @@ $(document).ready(function () {
     const enrollEl = document.getElementById('enrollModal');
     if (enrollEl) enrollModalObj = new bootstrap.Modal(enrollEl);
 
+    // Reset search bar when modal is closed
+    if (enrollEl) {
+        enrollEl.addEventListener('hidden.bs.modal', function () {
+            $('#modalStudentSearch').val('');
+            $('#modalStudentSearch').trigger('input');
+        });
+    }
+
     fetchEnrollments();
     fetchFormData();
 
@@ -191,59 +192,89 @@ $(document).ready(function () {
     $('#modalClassDept').on('change', filterModalClasses);
     $('#enrollForm').on('submit', handleEnrollmentSubmit);
 
-   $('#studentSelect').on('change', function () {
-    const $selectedOption = $(this).find('option:selected');
-    const sid = $(this).val();
-    const deptId = $selectedOption.attr('data-dept') || '';
+    // ── Modal Student Search Filter (Max 50) ──
+    $('#modalStudentSearch').on('input', function() {
+        const query = $(this).val().toLowerCase().trim();
+        const $select = $('#studentSelect');
+        const currentVal = $select.val();
 
-    // Store the deptId on the select element for the filter to use later
-    $(this).data('current-dept', deptId);
+        $select.empty();
 
-    const $helperText = $('#enrollmentHelperText');
-    const $filterRow  = $('#modalClassFilters');
+        // Always append the default placeholder option
+        $select.append(_allStudentsOptions.filter('option[value=""]').clone());
 
-    $('#modalClassSearch').val('');
+        let count = 0;
 
-    // Set the dropdown value and lock it
-    $('#modalClassDept').val(deptId).prop('disabled', true);
+        _allStudentsOptions.each(function() {
+            if ($(this).val() === "") return; // Skip placeholder in loop
 
-    if (!sid) {
-        $filterRow.attr('style', 'display: none !important');
-        $('.class-check-wrapper').addClass('d-none');
+            const searchData = $(this).attr('data-search') || '';
+            if (!query || searchData.includes(query)) {
+                if (count < 50) {
+                    $select.append($(this).clone());
+                    count++;
+                }
+            }
+        });
+
+        // Try to keep previous selection active if it's still in the list
+        if ($select.find(`option[value="${currentVal}"]`).length) {
+            $select.val(currentVal);
+        } else {
+            $select.val('');
+            $select.trigger('change');
+        }
+    });
+
+    $('#studentSelect').on('change', function () {
+        const $selectedOption = $(this).find('option:selected');
+        const sid = $(this).val();
+        const deptId = $selectedOption.attr('data-dept') || '';
+
+        $(this).data('current-dept', deptId);
+
+        const $helperText = $('#enrollmentHelperText');
+        const $filterRow  = $('#modalClassFilters');
+
+        $('#modalClassSearch').val('');
+        $('#modalClassDept').val(deptId).prop('disabled', true);
+
+        if (!sid) {
+            $filterRow.attr('style', 'display: none !important');
+            $('.class-check-wrapper').addClass('d-none');
+            $('.class-checkbox').prop('checked', false);
+            $helperText.removeClass('d-none').text('Select a student to view available classes.');
+            return;
+        }
+
+        $filterRow.attr('style', 'display: flex !important');
+        $helperText.addClass('d-none');
         $('.class-checkbox').prop('checked', false);
-        $helperText.removeClass('d-none').text('Select a student to view available classes.');
-        return;
-    }
 
-    $filterRow.attr('style', 'display: flex !important');
-    $helperText.addClass('d-none');
-    $('.class-checkbox').prop('checked', false);
-
-    filterModalClasses();
-});
+        filterModalClasses();
+    });
 
     // ── API ───────────────────────────────────────────────────────────────────
-   function fetchEnrollments() {
-    $.ajax({
-        url: `${API_URL}?action=get_all`,
-        method: 'GET',
-        dataType: 'json',
-        success: function (json) {
-            if (json.status === 'success') {
-                _allStudents = json.data;
-                _archivesData = json.archives;
+    function fetchEnrollments() {
+        $.ajax({
+            url: `${API_URL}?action=get_all`,
+            method: 'GET',
+            dataType: 'json',
+            success: function (json) {
+                if (json.status === 'success') {
+                    _allStudents = json.data;
+                    _archivesData = json.archives;
 
-                // NEW: Populate the main Department Filter dropdown
-                if (json.departments) {
-                    let dHtml = '<option value="">All Departments</option>';
-                    json.departments.forEach(d => {
-                        dHtml += `<option value="${d.department_id}">${d.name}</option>`;
-                    });
-                    $('#enrollDeptFilter').html(dHtml);
-                }
+                    if (json.departments) {
+                        let dHtml = '<option value="">All Departments</option>';
+                        json.departments.forEach(d => {
+                            dHtml += `<option value="${d.department_id}">${d.name}</option>`;
+                        });
+                        $('#enrollDeptFilter').html(dHtml);
+                    }
 
-                applyFiltersAndRender();
-            } else {
+                    applyFiltersAndRender();
+                } else {
                     showToast(json.message || 'Failed to load enrollments.', 'error');
                 }
             },
@@ -296,6 +327,7 @@ $(document).ready(function () {
                     if (enrollModalObj) enrollModalObj.hide();
                     $('#enrollForm')[0].reset();
                     $('#studentSelect').trigger('change');
+                    $('#modalStudentSearch').val(''); // Clear modal search
                     fetchEnrollments();
                     fetchFormData();
                 } else {
@@ -325,16 +357,31 @@ $(document).ready(function () {
         });
     };
 
-function populateStudentSelect(students) {
-    let html = '<option value="">-- Choose Student --</option>';
-    students.forEach(s => {
-        // ADD data-dept="${s.department_id || ''}" BELOW
-        html += `<option value="${s.student_id}" data-dept="${s.department_id || ''}">
-                    ${s.last_name}, ${s.first_name} (ID: ${s.student_id})
-                 </option>`;
-    });
-    $('#studentSelect').html(html);
-}
+    function populateStudentSelect(students) {
+        let html = '<option value="">-- Choose Student --</option>';
+        students.forEach(s => {
+            const searchString = `${s.first_name} ${s.last_name} ${s.student_id}`.toLowerCase();
+            html += `<option value="${s.student_id}" data-dept="${s.department_id || ''}" data-search="${searchString}">
+                        ${s.last_name}, ${s.first_name} (ID: ${s.student_id})
+                     </option>`;
+        });
+
+        const $select = $('#studentSelect');
+        $select.html(html);
+
+        // Clone and save ALL options to memory
+        _allStudentsOptions = $select.find('option').clone();
+
+        // Immediately limit the initial DOM display to 50 items
+        $select.empty();
+        let count = 0;
+        _allStudentsOptions.each(function() {
+            if ($(this).val() === "" || count < 50) {
+                $select.append($(this).clone());
+                if ($(this).val() !== "") count++;
+            }
+        });
+    }
 
     function populateClassCheckboxes() {
         const $list = $('#checkboxList');
@@ -401,12 +448,12 @@ function renderTablePage(pageData, totalFiltered) {
     $tbody.empty();
 
     if (totalFiltered === 0) {
-        $tbody.html(`<tr><td colspan="3" class="text-center py-5 text-muted small">No enrollments found.</td></tr>`);
+        $tbody.html(`<tr><td colspan="4" class="text-center py-5 text-muted small">No enrollments found.</td></tr>`);
         return;
     }
 
     if (pageData.length === 0) {
-        $tbody.html(`<tr><td colspan="3" class="text-center py-5 text-muted small">No students on this page.</td></tr>`);
+        $tbody.html(`<tr><td colspan="4" class="text-center py-5 text-muted small">No students on this page.</td></tr>`);
         return;
     }
 
