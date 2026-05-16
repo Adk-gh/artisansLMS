@@ -56,7 +56,12 @@
 </header>
 
 <!-- ── Logout Confirmation Modal ── -->
-<div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmLabel" aria-hidden="true">
+<style>
+    #logoutConfirmModal { z-index: 99999 !important; }
+    .modal-backdrop { z-index: 99998 !important; }
+</style>
+
+<div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmLabel" aria-hidden="true" style="z-index: 99999;">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
         <div class="modal-content border-0 rounded-4 overflow-hidden" style="font-family: 'Sora', sans-serif;">
 
