@@ -1,7 +1,7 @@
 <header class="d-flex justify-content-between align-items-center px-3 px-md-4 py-3 bg-white border-bottom shadow-sm">
-    
+
     <div class="d-flex align-items-center gap-2 gap-md-3 flex-grow-1 overflow-hidden">
-        
+
         <button class="btn btn-light d-md-none border text-secondary d-flex align-items-center justify-content-center" onclick="if(window.openSidebar) window.openSidebar();" aria-label="Open menu">
             <i class="fas fa-bars"></i>
         </button>
@@ -44,8 +44,9 @@
             </li>
             <li><hr class="dropdown-divider mx-3"></li>
             <li class="pb-1">
+                <!-- ── UPDATED: Opens confirmation modal instead of logging out directly ── -->
                 <a class="dropdown-item py-2 d-flex align-items-center gap-2 text-danger fw-medium"
-                   href="#" id="logoutBtn">
+                   href="#" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal">
                     <i class="fas fa-sign-out-alt text-danger"></i> Logout
                 </a>
             </li>
@@ -53,3 +54,54 @@
     </div>
 
 </header>
+
+<!-- ── Logout Confirmation Modal ── -->
+<div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
+        <div class="modal-content border-0 rounded-4 overflow-hidden" style="font-family: 'Sora', sans-serif;">
+
+            <!-- Top bar -->
+            <div style="background: #0f172a; padding: 22px 24px; display: flex; align-items: center; gap: 12px;">
+                <div style="width:36px; height:36px; border-radius:10px; background:rgba(239,68,68,.15); border:1px solid rgba(239,68,68,.25); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                    <i class="fas fa-sign-out-alt" style="color:#f87171; font-size:.85rem;"></i>
+                </div>
+                <div>
+                    <div style="font-size:.95rem; font-weight:800; color:#fff; line-height:1.2;" id="logoutConfirmLabel">Sign Out</div>
+                    <div style="font-size:.72rem; color:#94a3b8; margin-top:2px;">Artisans LMS</div>
+                </div>
+                <button type="button" data-bs-dismiss="modal" aria-label="Close"
+                    style="margin-left:auto; width:28px; height:28px; border-radius:7px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.12); color:#94a3b8; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:.75rem; transition:.2s;"
+                    onmouseover="this.style.background='rgba(255,255,255,.15)';this.style.color='#fff';"
+                    onmouseout="this.style.background='rgba(255,255,255,.08)';this.style.color='#94a3b8';">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div style="padding: 24px; text-align: center;">
+                <p style="font-size:.88rem; color:#475569; margin:0; line-height:1.6;">
+                    Are you sure you want to sign out of your account?<br>
+                    <span style="font-size:.78rem; color:#94a3b8;">You will be redirected to the login page.</span>
+                </p>
+            </div>
+
+            <!-- Footer buttons -->
+            <div style="padding: 0 24px 24px; display:flex; gap:10px;">
+                <button type="button" data-bs-dismiss="modal"
+                    style="flex:1; padding:11px; border-radius:10px; border:1.5px solid #e2e8f0; background:#f8fafc; color:#475569; font-size:.82rem; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:.2s;"
+                    onmouseover="this.style.background='#f1f5f9';"
+                    onmouseout="this.style.background='#f8fafc';">
+                    Cancel
+                </button>
+                <!-- ── id="logoutBtn" moved here so the existing JS handler still works ── -->
+                <button type="button" id="logoutBtn"
+                    style="flex:1; padding:11px; border-radius:10px; border:none; background:#ef4444; color:#fff; font-size:.82rem; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:.2s;"
+                    onmouseover="this.style.background='#dc2626';"
+                    onmouseout="this.style.background='#ef4444';">
+                    <i class="fas fa-sign-out-alt me-1"></i> Yes, Sign Out
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
