@@ -239,7 +239,7 @@
     </main>
 </div>
 
-<!-- Modals -->
+<!-- ── Add Student Modal ── -->
 <div class="modal fade" id="addStudentModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
         <form id="addStudentForm" class="modal-content">
@@ -267,6 +267,18 @@
                             <input type="email" name="email" placeholder="johndoe@email.com" title="Email Address" required>
                         </div>
                     </div>
+
+                    <!-- ── NEW: Department Dropdown ── -->
+                    <div class="col-12">
+                        <div class="modal-field">
+                            <label>Department</label>
+                            <select name="department_id" id="add_department_id" title="Department">
+                                <option value="">Select Department…</option>
+                                <!-- Populated dynamically from DB via populateDeptFilter() -->
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="col-6">
                         <div class="modal-field">
                             <label>Date of Birth</label>
@@ -301,6 +313,7 @@
     </div>
 </div>
 
+<!-- ── Edit Student Modal ── -->
 <div class="modal fade" id="editStudentModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
         <form id="editStudentForm" class="modal-content">
@@ -329,6 +342,18 @@
                             <input type="email" title="Email Address" id="edit_email" required>
                         </div>
                     </div>
+
+                    <!-- ── Department Dropdown ── -->
+                    <div class="col-12">
+                        <div class="modal-field">
+                            <label>Department</label>
+                            <select id="edit_department_id" title="Department">
+                                <option value="">Select Department…</option>
+                                <!-- Populated dynamically from DB via populateDeptFilter() -->
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="col-6">
                         <div class="modal-field">
                             <label>Date of Birth</label>

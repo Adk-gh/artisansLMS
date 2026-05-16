@@ -72,6 +72,9 @@ $(document).ready(function() {
                 (gLow === 'female' || gLow === 'f') ? 'F' : 'Other'
             );
         }
+
+        // ── NEW: Pre-select the student's current department ──
+        $('#edit_department_id').val($(this).data('department_id') || '');
     });
 
     // ── API CALLS ──
@@ -104,12 +107,13 @@ $(document).ready(function() {
     function handleAddSubmit(e) {
         e.preventDefault();
         const data = {
-            fname:    $('#addStudentForm [name="fname"]').val(),
-            lname:    $('#addStudentForm [name="lname"]').val(),
-            email:    $('#addStudentForm [name="email"]').val(),
-            dob:      $('#addStudentForm [name="dob"]').val(),
-            gender:   $('#addStudentForm [name="gender"]').val(),
-            password: $('#addStudentForm [name="password"]').val()
+            fname:         $('#addStudentForm [name="fname"]').val(),
+            lname:         $('#addStudentForm [name="lname"]').val(),
+            email:         $('#addStudentForm [name="email"]').val(),
+            dob:           $('#addStudentForm [name="dob"]').val(),
+            gender:        $('#addStudentForm [name="gender"]').val(),
+            password:      $('#addStudentForm [name="password"]').val(),
+            department_id: $('#addStudentForm [name="department_id"]').val() // ── NEW ──
         };
 
         $.ajax({
@@ -139,7 +143,8 @@ $(document).ready(function() {
             lname:      $('#edit_lname').val(),
             email:      $('#edit_email').val(),
             dob:        $('#edit_dob').val(),
-            gender:     $('#edit_gender').val()
+            gender:        $('#edit_gender').val(),
+            department_id: $('#edit_department_id').val() // ── NEW ──
         };
 
         $.ajax({
@@ -189,16 +194,39 @@ $(document).ready(function() {
         $('#statNew').text(stats.new);
     }
 
+    // ── UPDATED: Also populates the Add Student modal department dropdown ──
     function populateDeptFilter(departments) {
-        const $sel = $('#studentDeptFilter');
-        if ($sel.find('option').length > 1) return;
+        const $sel      = $('#studentDeptFilter');
+        const $addDept  = $('#add_department_id');
+        const $editDept = $('#edit_department_id'); // ── NEW ──
 
-        let html = '<option value="">All Departments</option>';
-        (departments || []).forEach(d => {
-            html += `<option value="${d.department_id}">${d.name}</option>`;
-        });
-        $sel.html(html);
-        if (activeDept) $sel.val(activeDept);
+        // Only rebuild if the filter dropdown hasn't been populated yet
+        if ($sel.find('option').length <= 1) {
+            let filterHtml = '<option value="">All Departments</option>';
+            (departments || []).forEach(d => {
+                filterHtml += `<option value="${d.department_id}">${d.name}</option>`;
+            });
+            $sel.html(filterHtml);
+            if (activeDept) $sel.val(activeDept);
+        }
+
+        // Add modal dropdown
+        if ($addDept.find('option').length <= 1) {
+            let addHtml = '<option value="">Select Department…</option>';
+            (departments || []).forEach(d => {
+                addHtml += `<option value="${d.department_id}">${d.name}</option>`;
+            });
+            $addDept.html(addHtml);
+        }
+
+        // ── NEW: Edit modal dropdown ──
+        if ($editDept.find('option').length <= 1) {
+            let editHtml = '<option value="">Select Department…</option>';
+            (departments || []).forEach(d => {
+                editHtml += `<option value="${d.department_id}">${d.name}</option>`;
+            });
+            $editDept.html(editHtml);
+        }
     }
 
     // ── FILTERING & PAGINATION ──
@@ -213,7 +241,7 @@ $(document).ready(function() {
             let gkey = { m: 'm', male: 'm', f: 'f', female: 'f' }[g] || 'other';
             const genderMatch = activeGender === 'all' || gkey === activeGender;
 
-            // ⚡ ADDED: Local Department Match
+            // ⚡ Local Department Match
             const deptMatch = !activeDept || String(row.department_id) === String(activeDept);
 
             return textMatch && genderMatch && deptMatch;
@@ -287,6 +315,7 @@ $(document).ready(function() {
                             data-id="${row.student_id}" data-fname="${safeFname}"
                             data-lname="${safeLname}" data-email="${safeEmail}"
                             data-dob="${row.dob || ''}" data-gender="${row.gender || ''}"
+                            data-department_id="${row.department_id || ''}"
                             title="Edit Student">
                             <i class="fas fa-edit"></i>
                         </button>
