@@ -52,8 +52,6 @@ function showChatView() {
 // ─── Bootstrap ───────────────────────────────────────────────────────────────
 $(document).ready(function () {
     $("#sidebar-container").load("/client/components/sidebar.html", function() {
-        // Toggle the body class when the sidebar toggle button is clicked
-        // Note: Change '#sidebarToggleBtn' if your actual button ID in sidebar.html is different
         $(document).on('click', '#sidebarToggleBtn', function(e) {
             e.preventDefault();
             $('body').toggleClass('sidebar-collapsed');
@@ -68,7 +66,6 @@ $(document).ready(function () {
 // ─── Header init ─────────────────────────────────────────────────────────────
 function initHeader() {
 
-    // ── Page Title ────────────────────────────────────────────────────────
     const PAGE_TITLES = {
         'dashboard.html':              { title: 'Dashboard',              subtitle: 'Overview of your academic progress and activities.' },
         'collaborations.html':         { title: 'Collaboration Spaces',   subtitle: 'Select a class to enter the live chat and video space.' },
@@ -96,7 +93,6 @@ function initHeader() {
     $('#headerPageSubtitle').text(page.subtitle);
     document.title = 'LMS | ' + page.title;
 
-    // ── User Session ──────────────────────────────────────────────────────
     $.ajax({
         url: API,
         method: 'POST',
@@ -125,7 +121,6 @@ function initHeader() {
         error() { window.location.href = '/client/pages/login.html'; }
     });
 
-    // ── Logout ────────────────────────────────────────────────────────────
     $(document).on('click', '#logoutBtn', function (e) {
         e.preventDefault();
         $.ajax({
@@ -139,12 +134,10 @@ function initHeader() {
 // ─── Entry point ─────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
 
-    // Restore saved view preference (only relevant for selection view)
     if (!classId && localStorage.getItem('classViewPref') === 'list') {
         window.toggleView('list');
     }
 
-    // Check session first, then branch
     fetch(API, {
         method: 'POST',
         credentials: 'include',
@@ -158,9 +151,9 @@ document.addEventListener('DOMContentLoaded', () => {
             isTeacher   = (currentUser.role === 'teacher' || currentUser.role === 'admin');
 
             if (classId) {
-                initChatView();     // has ?class_id=  → show chat
+                initChatView();
             } else {
-                initSelectionGrid(); // no param        → show class picker
+                initSelectionGrid();
             }
         } else {
             window.location.href = '/client/pages/login.html';
@@ -182,12 +175,10 @@ function initSelectionGrid() {
         credentials: 'include'
     })
         .then(async r => {
-            // Grab the raw text FIRST before trying to read it as JSON
             const text = await r.text();
             try {
                 return JSON.parse(text);
             } catch (e) {
-                // If it fails, print the ugly HTML/PHP warning to the console
                 console.error("🚨 RAW PHP RESPONSE THAT CRASHED THE JSON:", text);
                 throw new Error("Backend returned HTML or a PHP Warning instead of clean JSON.");
             }
@@ -203,7 +194,6 @@ function initSelectionGrid() {
         })
         .catch(err => {
             console.error("Fetch Error:", err);
-            // Replace the infinite spinner with an actual error message on screen
             document.getElementById('gridViewContainer').innerHTML =
                 `<div class="col-12 text-center py-5">
                     <div class="alert alert-danger shadow-sm border-0 d-inline-block text-start">
@@ -275,11 +265,8 @@ function renderList(classes) {
 function initChatView() {
     showChatView();
 
-    // Wire up tab hrefs — include class_id so the other pages know which class
     document.getElementById('tabModulesLink').href = `modules.html?class_id=${classId}`;
     document.getElementById('tabTasksLink').href   = `todo.html?class_id=${classId}`;
-
-    // Chat tab stays on this page — just prevents default
     document.getElementById('tabChatLink').addEventListener('click', e => e.preventDefault());
 
     fetch(`${API}?route=collaborations&action=get_class_details&class_id=${classId}`, {
@@ -298,12 +285,42 @@ function initChatView() {
         });
 }
 
-// ─── Room Info Offcanvas ──────────────────────────────────────────────────────
+// ─── Room Info ────────────────────────────────────────────────────────────────
 function populateRoomInfo(data) {
     const c = data.class_info;
     const t = data.teacher;
 
-    document.getElementById('chatCourseCode').textContent      = c.course_code;
+    // ── Course code element — set text then inject Section badge beside it ──
+    const courseCodeEl = document.getElementById('chatCourseCode');
+    if (courseCodeEl) {
+        courseCodeEl.textContent = c.course_code;
+
+        // Remove any stale badge from a previous render
+        const parent = courseCodeEl.parentElement;
+        const stale  = parent.querySelector('.chat-section-badge');
+        if (stale) stale.remove();
+
+        // Build and insert the Section badge right after the course code
+        const badge = document.createElement('span');
+        badge.className  = 'chat-section-badge';
+        badge.style.cssText = [
+            'font-family:"JetBrains Mono",monospace',
+            'font-size:.65rem',
+            'font-weight:600',
+            'background:rgba(255,255,255,.10)',
+            'color:rgba(255,255,255,.65)',
+            'border:1px solid rgba(255,255,255,.18)',
+            'border-radius:6px',
+            'padding:2px 8px',
+            'margin-left:8px',
+            'vertical-align:middle',
+            'white-space:nowrap',
+            'display:inline-block',
+        ].join(';');
+        badge.innerHTML = `<i class="fas fa-hashtag" style="font-size:.5rem;opacity:.65;margin-right:3px;"></i>Section ${classId}`;
+        courseCodeEl.insertAdjacentElement('afterend', badge);
+    }
+
     document.getElementById('chatSecureRoomName').textContent  = c.course_code;
     document.getElementById('offcanvasAvatar').textContent     = c.course_code.substring(0, 2).toUpperCase();
     document.getElementById('offcanvasCourseCode').textContent = c.course_code;
@@ -318,7 +335,7 @@ function populateRoomInfo(data) {
     document.getElementById('teacherAvatar').src =
         `https://ui-avatars.com/api/?name=${encodeURIComponent(t.first_name + '+' + t.last_name)}&background=f59e0b&color=fff&bold=true`;
 
-    // Member list
+    // ── Member list ───────────────────────────────────────────────────────────
     const mList = document.getElementById('memberListContainer');
     mList.innerHTML = data.members.map(m => {
         const isMe = m.student_id == currentUser.id;
@@ -337,14 +354,12 @@ function populateRoomInfo(data) {
             </div>`;
     }).join('');
 
-    // Member search - Fixed for Bootstrap !important conflict
+    // ── Member search ─────────────────────────────────────────────────────────
     document.getElementById('memberSearch').addEventListener('input', function () {
         const q = this.value.toLowerCase().trim();
         let found = 0;
         document.querySelectorAll('.member-item').forEach(item => {
             const show = !q || item.dataset.name.includes(q);
-
-            // Toggle Bootstrap display classes instead of using style.display
             if (show) {
                 item.classList.remove('d-none');
                 item.classList.add('d-flex');
@@ -358,7 +373,7 @@ function populateRoomInfo(data) {
     });
 }
 
-// ─── Input bar: emoji + attach + enter-to-send ────────────────────────────────
+// ─── Input bar ────────────────────────────────────────────────────────────────
 function initInputBar() {
     const picker   = document.getElementById('emojiPicker');
     const emojiBtn = document.getElementById('emojiBtn');

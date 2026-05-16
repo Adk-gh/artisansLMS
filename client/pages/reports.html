@@ -35,6 +35,10 @@
         /* Ensure dropdowns aren't clipped */
         #header-placeholder { position: relative; z-index: 1050; }
 
+        /* ── Header Utilities ── */
+        .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }
+
         /* ── Report Elements ── */
         .stat-pill {
             background: white; border: 1px solid #e2e8f0; border-radius: 14px;
@@ -71,6 +75,56 @@
             display: flex; align-items: center; justify-content: center;
             font-weight: 700; font-size: .78rem; flex-shrink: 0;
         }
+
+        /* ════════════════════════════════════════════
+            PRINT STYLES
+        ════════════════════════════════════════════ */
+        @media print {
+            /* Force exact background colors to render */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            /* Hide unnecessary UI */
+            #sidebar-placeholder,
+            #header-placeholder,
+            .btn-print {
+                display: none !important;
+            }
+
+            /* Reset Layout */
+            html, body, #content, main {
+                height: auto !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: visible !important;
+                background: white !important;
+            }
+
+            main { padding: 0.5in !important; }
+
+            /* Simplify UI elements */
+            .shadow-sm { box-shadow: none !important; }
+            .report-card, .stat-pill {
+                border: 1px solid #cbd5e1 !important;
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            /* Force Grid Layouts (Prevents mobile stacking on print) */
+            .row { display: flex !important; flex-wrap: wrap !important; }
+            .col-lg-3 { width: 25% !important; flex: 0 0 25% !important; max-width: 25% !important; }
+            .col-md-4 { width: 33.333333% !important; flex: 0 0 33.333333% !important; max-width: 33.333333% !important; }
+            .col-lg-4 { width: 33.333333% !important; flex: 0 0 33.333333% !important; max-width: 33.333333% !important; }
+            .col-6 { width: 50% !important; flex: 0 0 50% !important; max-width: 50% !important; }
+            .col-12 { width: 100% !important; flex: 0 0 100% !important; max-width: 100% !important; }
+
+            /* Table adjustments */
+            table { page-break-inside: auto; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+        }
     </style>
 </head>
 <body>
@@ -82,6 +136,13 @@
             <div id="header-placeholder" class="flex-shrink-0"></div>
 
             <main class="container-fluid p-4 p-md-5">
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="fw-bold m-0 text-dark d-none d-print-block">System Analytics Report</h4>
+                    <button class="btn btn-dark fw-bold rounded-pill px-4 shadow-sm btn-print hover-lift ms-auto" onclick="window.print()">
+                        <i class="fas fa-print me-2"></i> Print Report
+                    </button>
+                </div>
 
                 <div class="row g-3 mb-5">
                     <div class="col-6 col-lg-3">

@@ -44,10 +44,10 @@ $(document).ready(function() {
         applyFilters();
     };
 
-    // Department dropdown filter (triggers backend query)
+    // ⚡ INSTANT LOCAL FILTER: Department dropdown
     $('#studentDeptFilter').on('change', function() {
         activeDept = $(this).val();
-        fetchStudents(activeDept);
+        applyFilters(); // Changed from fetchStudents() to instant local filter
     });
 
     // Form Submissions
@@ -123,7 +123,7 @@ $(document).ready(function() {
                     showToast(json.message, "success");
                     if (addModalObj) addModalObj.hide();
                     $('#addStudentForm')[0].reset();
-                    fetchStudents(activeDept);
+                    fetchStudents(); // Re-fetch all to ensure data consistency
                 } else {
                     showToast(json.message, "error");
                 }
@@ -152,7 +152,7 @@ $(document).ready(function() {
                 if (json.status === 'success') {
                     showToast(json.message, "success");
                     if (editModalObj) editModalObj.hide();
-                    fetchStudents(activeDept);
+                    fetchStudents(); // Re-fetch all
                 } else {
                     showToast(json.message, "error");
                 }
@@ -172,7 +172,7 @@ $(document).ready(function() {
             success: function(json) {
                 if (json.status === 'success') {
                     showToast(json.message, "archived");
-                    fetchStudents(activeDept);
+                    fetchStudents(); // Re-fetch all
                 } else {
                     showToast(json.message, "error");
                 }
@@ -213,7 +213,10 @@ $(document).ready(function() {
             let gkey = { m: 'm', male: 'm', f: 'f', female: 'f' }[g] || 'other';
             const genderMatch = activeGender === 'all' || gkey === activeGender;
 
-            return textMatch && genderMatch;
+            // ⚡ ADDED: Local Department Match
+            const deptMatch = !activeDept || String(row.department_id) === String(activeDept);
+
+            return textMatch && genderMatch && deptMatch;
         });
 
         _currentPage = 1;
@@ -382,7 +385,7 @@ const AUTH_API = 'https://artisanslms.onrender.com/backend/index.php';
 
 function initHeader() {
     const PAGE_TITLES = {
-        'dashboard.html':              { title: 'Dashboard',              subtitle: 'Overview of your academic progress and activities.' },
+        'dashboard.html':              { title: 'Dashboard',               subtitle: 'Overview of your academic progress and activities.' },
         'collaborations.html':         { title: 'Collaboration Spaces',   subtitle: 'Select a class to enter the live chat and video space.' },
         'messages.html':               { title: 'Direct Messages',        subtitle: 'Communicate privately with instructors and peers.' },
         'my_grades.html':              { title: 'My Grades',              subtitle: 'Track your academic performance and feedback.' },

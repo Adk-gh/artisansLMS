@@ -14,14 +14,13 @@
 
         #content { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* ── Main layout: fixed height, flex column ── */
         main {
             flex: 1;
+            min-height: 0;          /* critical: allows flex child to shrink */
             display: flex;
             flex-direction: column;
             overflow: hidden;
             padding: 1.5rem !important;
-            min-height: 0;
         }
 
         /* ── File Viewer ── */
@@ -49,7 +48,6 @@
 
         /* ── Toast ── */
         .toast-bar { position: fixed; top: 20px; right: 20px; z-index: 9999; padding: 12px 20px; border-radius: 10px; font-size: .8rem; font-weight: 600; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 20px rgba(0,0,0,.12); animation: slideIn .3s ease; transition: opacity .5s; }
-        .toast-arch { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
         @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
 
         /* ── View Toggle ── */
@@ -72,12 +70,11 @@
         .sf-count { font-size: .75rem; font-weight: 700; color: #94a3b8; white-space: nowrap; margin-left: auto; }
         .sf-count span { color: #0ea5e9; font-size: .85rem; }
 
-        /* ── Shared scrollable view wrapper ── */
-        /* Both grid and list live inside this single growing wrapper */
+        /* ── Shared view wrapper: grows to fill remaining space ── */
         #viewWrapper {
             flex: 1;
-            min-height: 0;      /* critical: lets flex child shrink below content size */
-            overflow: hidden;   /* clipping container; children handle their own scroll */
+            min-height: 0;      /* critical */
+            overflow: hidden;
             position: relative;
         }
 
@@ -86,7 +83,7 @@
             display: flex;
             flex-wrap: wrap;
             align-content: flex-start;
-            gap: 1.5rem;        /* replaces Bootstrap g-4 */
+            gap: 1.5rem;
             height: 100%;
             overflow-y: auto;
             overflow-x: hidden;
@@ -97,32 +94,26 @@
         #gridView::-webkit-scrollbar { width: 6px; }
         #gridView::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
 
-        /* grid card widths — mirrors Bootstrap col-md-6 col-xl-4 */
-        .course-card-container {
-            flex: 0 0 calc(33.333% - 1rem);
-            min-width: 260px;
-            box-sizing: border-box;
-        }
-        @media (max-width: 1199px) {
-            .course-card-container { flex: 0 0 calc(50% - 0.75rem); }
-        }
-        @media (max-width: 767px) {
-            .course-card-container { flex: 0 0 100%; }
-        }
+        .course-card-container { flex: 0 0 calc(33.333% - 1rem); min-width: 260px; box-sizing: border-box; }
+        @media (max-width: 1199px) { .course-card-container { flex: 0 0 calc(50% - 0.75rem); } }
+        @media (max-width: 767px)  { .course-card-container { flex: 0 0 100%; } }
 
         /* ── TABLE VIEW ── */
         #tableView {
-            display: none;
+            display: none;          /* toggled to flex by JS */
             flex-direction: column;
             height: 100%;
+            min-height: 0;          /* critical: allows inner scroll */
             background: #fff;
             border-radius: 16px;
             border: 1px solid #e2e8f0;
             overflow: hidden;
         }
 
+        /* Scrollable tbody area */
         .table-scroll-wrapper {
             flex: 1;
+            min-height: 0;
             overflow-y: auto;
             overflow-x: hidden;
             scrollbar-width: thin;
@@ -131,7 +122,7 @@
         .table-scroll-wrapper::-webkit-scrollbar { width: 6px; }
         .table-scroll-wrapper::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
 
-        /* Sticky Header */
+        /* Sticky thead */
         .course-table thead th {
             position: sticky;
             top: 0;
@@ -154,16 +145,17 @@
 
         /* ── Pagination ── */
         .pagination-bar {
-            background: #fff; border: 1px solid #e9ecef;
+            flex-shrink: 0;
+            background: #fff;
+            border: 1px solid #e9ecef;
             border-radius: 14px;
-            padding: 10px 20px; display: flex; align-items: center; justify-content: space-between;
-            flex-shrink: 0; margin-top: 12px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 12px;
         }
-        .page-btn {
-            display: inline-flex; align-items: center; justify-content: center;
-            width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0;
-            background: #fff; font-size: .75rem; font-weight: 700; cursor: pointer; transition: .2s;
-        }
+        .page-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; font-size: .75rem; font-weight: 700; cursor: pointer; transition: .2s; }
         .page-btn.active { background: #1e293b; color: #fff; border-color: #1e293b; }
         .page-btn:hover:not(.active):not(:disabled) { background: #f1f5f9; }
         .page-btn:disabled { opacity: .4; cursor: default; }
@@ -176,12 +168,16 @@
     <div id="header-placeholder"></div>
 
     <main>
-        <!-- Top bar: view toggle + add course -->
+        <!-- Top bar -->
         <div class="d-flex flex-wrap justify-content-end align-items-center mb-3 gap-3 flex-shrink-0">
             <div class="d-flex gap-3 align-items-center flex-wrap">
                 <div class="btn-group view-toggle shadow-sm" role="group">
-                    <button type="button" class="btn active" id="btnGrid" onclick="toggleView('grid')"><i class="fas fa-th-large me-1"></i> Grid</button>
-                    <button type="button" class="btn" id="btnList" onclick="toggleView('list')"><i class="fas fa-list me-1"></i> List</button>
+                    <button type="button" class="btn active" id="btnGrid" onclick="toggleView('grid')">
+                        <i class="fas fa-th-large me-1"></i> Grid
+                    </button>
+                    <button type="button" class="btn" id="btnList" onclick="toggleView('list')">
+                        <i class="fas fa-list me-1"></i> List
+                    </button>
                 </div>
                 <button class="btn-course" data-bs-toggle="modal" data-bs-target="#addCourseModal">
                     <i class="fas fa-plus-circle me-2"></i> Add Course
@@ -209,12 +205,12 @@
             <div class="sf-count" id="courseCount">Showing <span id="courseCountNum">0</span> courses</div>
         </div>
 
-        <!-- Single growing wrapper that holds both views -->
+        <!-- View Wrapper -->
         <div id="viewWrapper">
 
             <!-- GRID VIEW -->
             <div id="gridView">
-                <!-- cards injected here by JS -->
+                <!-- cards injected by JS -->
             </div>
 
             <!-- No results: grid -->
@@ -224,7 +220,7 @@
                 <div class="text-muted small">Try a different name, department, units, or material filter</div>
             </div>
 
-            <!-- TABLE VIEW -->
+            <!-- TABLE / LIST VIEW -->
             <div id="tableView">
                 <div class="table-scroll-wrapper">
                     <table class="table course-table mb-0">
@@ -237,7 +233,7 @@
                             </tr>
                         </thead>
                         <tbody id="courseTableBody">
-                            <tr><td colspan="4" class="text-center py-5 text-muted">Loading Courses...</td></tr>
+                            <tr><td colspan="4" class="text-center py-5 text-muted">Loading Courses…</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -256,7 +252,6 @@
             <div class="small fw-bold text-muted" id="paginationInfo">Page 1 of 1</div>
             <div class="d-flex gap-1" id="paginationControls"></div>
         </div>
-
     </main>
 </div>
 
@@ -377,7 +372,8 @@
                     <div class="drop-icon"><i class="fas fa-cloud-upload-alt"></i></div>
                     <div class="fw-bold text-muted small" id="dropZoneLabel">Click to browse or drag & drop</div>
                     <div class="text-muted mt-1 small" id="dropZoneFileName"></div>
-                    <input type="file" id="res_file_input" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.mp4,.zip">
+                    <input type="file" id="res_file_input"
+                           accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.jpg,.jpeg,.png,.mp4,.zip">
                 </div>
                 <div id="uploadProgressWrap" class="mt-3">
                     <div class="d-flex justify-content-between mb-1">
@@ -385,12 +381,14 @@
                         <small class="text-muted" id="uploadPct">0%</small>
                     </div>
                     <div class="progress">
-                        <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" id="uploadProgressBar" style="width:0%"></div>
+                        <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated"
+                             id="uploadProgressBar" style="width:0%"></div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer border-0 pt-0 px-4 pb-4">
-                <button class="btn btn-primary w-100 fw-bold py-2 rounded-3" id="uploadSubmitBtn" onclick="submitResourceUpload()">
+                <button class="btn btn-primary w-100 fw-bold py-2 rounded-3"
+                        id="uploadSubmitBtn" onclick="submitResourceUpload()">
                     <i class="fas fa-upload me-2"></i> Push File
                 </button>
             </div>

@@ -26,39 +26,48 @@ function resolveFilePath(path) {
     return '/artisansLMS/client/assets/uploads/resources/' + clean.replace(/^resources\//, '');
 }
 
-// ── GLOBAL PAGINATION STATE ──
-let _allCoursesRaw = [];
+// ── GLOBAL PAGINATION STATE ───────────────────────────────────────────────────
+let _allCoursesRaw   = [];
 let _filteredCourses = [];
-let _currentPage = 1;
-const _itemsPerPage = 50;
+let _currentPage     = 1;
+const _itemsPerPage  = 50;
 
-$(document).ready(function() {
-    const API_URL = '../../backend/endpoints/courses.php';
-    let addModalObj = null;
+$(document).ready(function () {
+    const API_URL    = '../../backend/endpoints/courses.php';
+    let addModalObj  = null;
     let editModalObj = null;
 
     // ═════════════════════════════════════════════════════════════════════════
     // 1. GLOBAL EXPORTS
     // ═════════════════════════════════════════════════════════════════════════
 
-    window.toggleView = function(viewType) {
+    window.toggleView = function (viewType) {
         const isList = (viewType === 'list');
-        $('#gridView').css('display', isList ? 'none' : 'flex');
-        $('#tableView').css('display', isList ? 'block' : 'none');
+
+        // Both views share height:100% inside #viewWrapper — show only one at a time
+        if (isList) {
+            $('#gridView').hide();
+            $('#noResultsGrid').removeClass('show').hide();
+            $('#tableView').css('display', 'flex');
+        } else {
+            $('#tableView').hide();
+            $('#gridView').css('display', 'flex');
+        }
+
         $('#btnGrid').toggleClass('active', !isList);
         $('#btnList').toggleClass('active', isList);
         localStorage.setItem('courseViewPref', viewType);
-        filterCourses(); // Re-render to show correct empty states if needed
+        filterCourses();
     };
 
-    window.viewFile = function(path, name) {
+    window.viewFile = function (path, name) {
         const fullPath = resolveFilePath(path);
         $('#viewFileName').text(name);
         $('#fileViewerFrame').attr('src', fullPath);
         new bootstrap.Modal(document.getElementById('viewFileModal')).show();
     };
 
-    window.archiveCourse = function(courseId) {
+    window.archiveCourse = function (courseId) {
         if (!confirm('Archive this course? All related classes and materials will be archived.')) return;
         $.ajax({
             url: `${API_URL}?action=archive`,
@@ -66,23 +75,19 @@ $(document).ready(function() {
             xhrFields: { withCredentials: true },
             contentType: 'application/json',
             data: JSON.stringify({ course_id: courseId }),
-            success: function(json) {
-                if (json.status === 'success') {
-                    showToast(json.message, "archived");
-                    fetchCourses();
-                } else {
-                    showToast(json.message, "error");
-                }
+            success: function (json) {
+                if (json.status === 'success') { showToast(json.message, 'archived'); fetchCourses(); }
+                else showToast(json.message, 'error');
             }
         });
     };
 
     // ── FIREBASE DELETE RESOURCE ──────────────────────────────────────────────
-    window.deleteResource = async function(resourceId, fileName, btn) {
+    window.deleteResource = async function (resourceId, fileName, btn) {
         if (!confirm(`Permanently delete "${fileName}"?`)) return;
         const origHtml = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        btn.disabled = true;
+        btn.innerHTML  = '<i class="fas fa-spinner fa-spin"></i>';
+        btn.disabled   = true;
 
         try {
             const fd = new FormData();
@@ -90,36 +95,32 @@ $(document).ready(function() {
             fd.append('resource_id', resourceId);
 
             const response = await fetch(API_URL, { method: 'POST', body: fd });
-            const res = await response.json();
+            const res      = await response.json();
 
             if (res.status === 'success') {
                 if (res.file_path && res.file_path.includes('firebasestorage')) {
-                    try {
-                        const fileRef = ref(storage, res.file_path);
-                        await deleteObject(fileRef);
-                    } catch (fbErr) {
-                        console.warn("Deleted from DB, but failed to delete from Firebase Storage:", fbErr);
-                    }
+                    try { await deleteObject(ref(storage, res.file_path)); }
+                    catch (fbErr) { console.warn('Deleted from DB, Firebase delete failed:', fbErr); }
                 }
-                $('.res-item-' + resourceId).fadeOut(300, function() { $(this).remove(); });
-                showToast("File deleted successfully.", "success");
+                $('.res-item-' + resourceId).fadeOut(300, function () { $(this).remove(); });
+                showToast('File deleted successfully.', 'success');
             } else {
                 throw new Error(res.message);
             }
         } catch (err) {
-            showToast(err.message || "Network Error.", "error");
+            showToast(err.message || 'Network Error.', 'error');
             btn.innerHTML = origHtml;
-            btn.disabled = false;
+            btn.disabled  = false;
         }
     };
 
     // ── FIREBASE UPLOAD RESOURCE ──────────────────────────────────────────────
-    window.submitResourceUpload = function() {
+    window.submitResourceUpload = function () {
         const fileInput = document.getElementById('res_file_input');
-        const file = fileInput ? fileInput.files[0] : null;
-        const courseId = $('#res_course_id').val();
-        const custName = $('#res_custom_name').val().trim() || file?.name;
-        const desc = $('#res_file_desc').val().trim();
+        const file      = fileInput ? fileInput.files[0] : null;
+        const courseId  = $('#res_course_id').val();
+        const custName  = $('#res_custom_name').val().trim() || file?.name;
+        const desc      = $('#res_file_desc').val().trim();
 
         if (!file) { alert('Please select a file to upload.'); return; }
 
@@ -130,24 +131,24 @@ $(document).ready(function() {
         const btn          = document.getElementById('uploadSubmitBtn');
 
         $(progressWrap).show();
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading to Cloud...';
+        btn.disabled   = true;
+        btn.innerHTML  = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading to Cloud...';
 
         const safeFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
-        const storageRef = ref(storage, `course_resources/course_${courseId}/${safeFileName}`);
-        const uploadTask = uploadBytesResumable(storageRef, file);
+        const storageRef   = ref(storage, `course_resources/course_${courseId}/${safeFileName}`);
+        const uploadTask   = uploadBytesResumable(storageRef, file);
 
         uploadTask.on('state_changed',
             (snapshot) => {
                 const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
-                bar.style.width = pct + '%';
+                bar.style.width      = pct + '%';
                 pctLabel.textContent = pct + '%';
                 if (pct === 100) statusText.textContent = 'Saving to database...';
             },
             (error) => {
-                showToast('Upload failed: ' + error.message, "error");
+                showToast('Upload failed: ' + error.message, 'error');
                 bar.classList.replace('bg-primary', 'bg-danger');
-                btn.disabled = false;
+                btn.disabled  = false;
                 btn.innerHTML = '<i class="fas fa-upload me-2"></i> Push File';
             },
             async () => {
@@ -162,18 +163,17 @@ $(document).ready(function() {
                     fd.append('file_url', downloadURL);
 
                     const response = await fetch(API_URL, { method: 'POST', body: fd });
-                    const res = await response.json();
+                    const res      = await response.json();
 
                     if (res.status !== 'success') throw new Error(res.message || 'Database save failed.');
 
-                    showToast("File uploaded successfully!", "success");
+                    showToast('File uploaded successfully!', 'success');
                     bootstrap.Modal.getInstance(document.getElementById('uploadModal')).hide();
                     fetchCourses();
-
                 } catch (err) {
-                    showToast(err.message, "error");
+                    showToast(err.message, 'error');
                     bar.classList.replace('bg-primary', 'bg-danger');
-                    btn.disabled = false;
+                    btn.disabled  = false;
                     btn.innerHTML = '<i class="fas fa-upload me-2"></i> Push File';
                 }
             }
@@ -184,29 +184,29 @@ $(document).ready(function() {
     // 2. CORE APPLICATION SETUP
     // ═════════════════════════════════════════════════════════════════════════
 
-    $("#sidebar-placeholder").load("../components/sidebar.html");
-    $("#header-placeholder").load("../components/header.html", function(res, status) {
+    $('#sidebar-placeholder').load('../components/sidebar.html');
+    $('#header-placeholder').load('../components/header.html', function (res, status) {
         if (status !== 'error') initHeader();
     });
 
-    const addEl = document.getElementById('addCourseModal');
-    if (addEl) addModalObj = new bootstrap.Modal(addEl);
+    const addEl  = document.getElementById('addCourseModal');
+    if (addEl)  addModalObj  = new bootstrap.Modal(addEl);
     const editEl = document.getElementById('editCourseModal');
     if (editEl) editModalObj = new bootstrap.Modal(editEl);
 
-    let savedView = localStorage.getItem('courseViewPref') || 'grid';
+    const savedView = localStorage.getItem('courseViewPref') || 'grid';
     window.toggleView(savedView);
 
     fetchCourses();
 
-    // ── EVENT LISTENERS ──
+    // ── EVENT LISTENERS ───────────────────────────────────────────────────────
     $('#courseSearch').on('input', filterCourses);
     $('#courseUnitsFilter, #courseMaterialFilter, #courseDeptFilter').on('change', filterCourses);
 
     $('#addCourseForm').on('submit', handleAddSubmit);
     $('#editCourseForm').on('submit', handleEditSubmit);
 
-    $(document).on('click', '.edit-course-btn', function() {
+    $(document).on('click', '.edit-course-btn', function () {
         $('#edit_course_id').val($(this).data('id'));
         $('#edit_course_code').val($(this).data('code'));
         $('#edit_course_name').val($(this).data('name'));
@@ -216,7 +216,7 @@ $(document).ready(function() {
         if (editModalObj) editModalObj.show();
     });
 
-    $(document).on('click', '.upload-btn', function() {
+    $(document).on('click', '.upload-btn', function () {
         $('#res_course_id').val($(this).data('course-id'));
         $('#res_custom_name, #res_file_desc, #res_file_input').val('');
         $('#dropZoneLabel').text('Click to browse or drag & drop');
@@ -230,17 +230,17 @@ $(document).ready(function() {
         new bootstrap.Modal(document.getElementById('uploadModal')).show();
     });
 
-    $('#viewFileModal').on('hidden.bs.modal', function() {
+    $('#viewFileModal').on('hidden.bs.modal', function () {
         $('#fileViewerFrame').attr('src', '');
     });
 
-    // Drag and Drop Logic
+    // ── Drag and Drop ─────────────────────────────────────────────────────────
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('res_file_input');
 
     if (dropZone && fileInput) {
-        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('dragover'); });
+        dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', ()  => { dropZone.classList.remove('dragover'); });
         dropZone.addEventListener('drop', e => {
             e.preventDefault();
             dropZone.classList.remove('dragover');
@@ -249,8 +249,7 @@ $(document).ready(function() {
                 updateDropZoneLabel(e.dataTransfer.files[0]);
             }
         });
-
-        fileInput.addEventListener('change', function() {
+        fileInput.addEventListener('change', function () {
             if (this.files.length) updateDropZoneLabel(this.files[0]);
         });
     }
@@ -264,45 +263,44 @@ $(document).ready(function() {
         }
     }
 
-    // ── API AND DATA FUNCTIONS ──
+    // ── API ───────────────────────────────────────────────────────────────────
     function fetchCourses() {
         $.ajax({
             url: `${API_URL}?action=get_all`,
             method: 'GET',
             dataType: 'json',
-            success: function(json) {
+            success: function (json) {
                 if (json.status === 'success') {
                     populateFilters(json.units, json.departments);
                     _allCoursesRaw = json.data || [];
-                    filterCourses(); // Automatically applies filters and renders page 1
+                    filterCourses();
                 } else {
-                    showToast(json.message || "Failed to load courses.", "error");
+                    showToast(json.message || 'Failed to load courses.', 'error');
                 }
             }
         });
     }
 
-    // ── FILTERING & PAGINATION ──
+    // ── FILTERING & PAGINATION ────────────────────────────────────────────────
     function filterCourses() {
-        const q = $('#courseSearch').val().toLowerCase().trim();
-        const unit = $('#courseUnitsFilter').val() ? $('#courseUnitsFilter').val().toString() : '';
-        const mat = $('#courseMaterialFilter').val();
+        const q          = $('#courseSearch').val().toLowerCase().trim();
+        const unit       = $('#courseUnitsFilter').val() ? $('#courseUnitsFilter').val().toString() : '';
+        const mat        = $('#courseMaterialFilter').val();
         const activeDept = $('#courseDeptFilter').val() ? $('#courseDeptFilter').val().toString() : '';
 
         _filteredCourses = _allCoursesRaw.filter(c => {
-            const items = c.resources || c.materials || [];
-            const hasMats = items.length > 0 ? 'has' : 'none';
+            const items       = c.resources || c.materials || [];
+            const hasMats     = items.length > 0 ? 'has' : 'none';
+            const nameAttr    = (c.name         || '').toLowerCase();
+            const codeAttr    = (c.course_code  || '').toLowerCase();
+            const deptNameAttr = (c.dept_name   || '').toLowerCase();
+            const unitAttr    = (c.credits      || '').toString();
+            const deptAttr    = (c.department_id || '').toString();
 
-            const nameAttr = (c.name || '').toLowerCase();
-            const codeAttr = (c.course_code || '').toLowerCase();
-            const deptNameAttr = (c.dept_name || '').toLowerCase();
-            const unitAttr = (c.credits || '').toString();
-            const deptAttr = (c.department_id || '').toString();
-
-            const matchesSearch = !q || nameAttr.includes(q) || codeAttr.includes(q) || deptNameAttr.includes(q);
-            const matchesUnit = !unit || unitAttr === unit;
-            const matchesMat = !mat || hasMats === mat;
-            const matchesDept = !activeDept || deptAttr === activeDept;
+            const matchesSearch = !q          || nameAttr.includes(q) || codeAttr.includes(q) || deptNameAttr.includes(q);
+            const matchesUnit   = !unit       || unitAttr  === unit;
+            const matchesMat    = !mat        || hasMats   === mat;
+            const matchesDept   = !activeDept || deptAttr  === activeDept;
 
             return matchesSearch && matchesUnit && matchesMat && matchesDept;
         });
@@ -317,10 +315,10 @@ $(document).ready(function() {
         $grid.empty();
         $list.empty();
 
-        const total = _filteredCourses.length;
-        $('#courseCountNum').text(total);
-
+        const total       = _filteredCourses.length;
         const currentView = localStorage.getItem('courseViewPref') || 'grid';
+
+        $('#courseCountNum').text(total);
         $('#noResultsGrid').toggleClass('show', total === 0 && currentView === 'grid');
         $('#noResultsList').toggleClass('show', total === 0 && currentView === 'list');
 
@@ -330,15 +328,15 @@ $(document).ready(function() {
             return;
         }
 
-        const start = (_currentPage - 1) * _itemsPerPage;
+        const start    = (_currentPage - 1) * _itemsPerPage;
         const pageData = _filteredCourses.slice(start, start + _itemsPerPage);
 
         pageData.forEach(c => {
-            const items = c.resources || c.materials || [];
-            const safeName = (c.name || '').replace(/'/g, "&apos;");
-            const safeCode = (c.course_code || '').replace(/'/g, "&apos;");
-            const safeDesc = (c.description || '').replace(/'/g, "&apos;");
-            const deptId = (c.department_id || '').toString();
+            const items    = c.resources || c.materials || [];
+            const safeName = (c.name         || '').replace(/'/g, '&apos;');
+            const safeCode = (c.course_code  || '').replace(/'/g, '&apos;');
+            const safeDesc = (c.description  || '').replace(/'/g, '&apos;');
+            const deptId   = (c.department_id || '').toString();
             const deptName = c.dept_name || '';
 
             let matHtmlList = '';
@@ -346,18 +344,31 @@ $(document).ready(function() {
                 items.forEach(f => {
                     matHtmlList += `
                     <div class="resource-item res-item-${f.resource_id} d-flex justify-content-between align-items-center py-1">
-                        <span onclick="viewFile('${f.file_path}', '${f.file_name.replace(/'/g, "\\'")}')" class="file-link flex-grow-1 pe-2" style="font-size:.75rem;">
+                        <span onclick="viewFile('${f.file_path}','${f.file_name.replace(/'/g, "\\'")}') "
+                              class="file-link flex-grow-1 pe-2" style="font-size:.75rem;">
                             <i class="fas fa-file-alt me-1 text-danger"></i>${f.file_name}
                         </span>
-                        <button class="btn btn-link text-danger p-0 ms-2" onclick="deleteResource(${f.resource_id}, '${f.file_name.replace(/'/g, "\\'")}', this)"><i class="fas fa-times-circle"></i></button>
+                        <button class="btn btn-link text-danger p-0 ms-2"
+                                onclick="deleteResource(${f.resource_id},'${f.file_name.replace(/'/g, "\\'")}',this)">
+                            <i class="fas fa-times-circle"></i>
+                        </button>
                     </div>`;
                 });
             } else {
                 matHtmlList = `<div class="text-muted small fst-italic py-1">No materials yet.</div>`;
             }
 
-            const deptBadge = deptName ? `<span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 mb-2 d-inline-flex align-items-center text-truncate" style="font-size:.65rem;max-width:100%;overflow:hidden;"><i class="fas fa-building me-1 flex-shrink-0"></i><span class="text-truncate" title="${deptName}">${deptName}</span></span>` : '';
+            // ── Dept badge ──
+            const deptBadge = deptName
+                ? `<span class="badge bg-secondary-subtle text-secondary rounded-pill px-2 mb-2"
+                          style="font-size:.65rem;display:inline-flex;align-items:center;gap:4px;
+                                 width:fit-content;max-width:140px;overflow:hidden;
+                                 text-overflow:ellipsis;white-space:nowrap;">
+                       <i class="fas fa-building flex-shrink-0"></i>${deptName}
+                   </span>`
+                : '';
 
+            // ── Grid card ──
             $grid.append(`
             <div class="col-md-6 col-xl-4 course-card-container">
                 <div class="stat-card border-top border-info border-4 shadow-sm h-100 d-flex flex-column bg-white rounded-3 p-4">
@@ -366,34 +377,60 @@ $(document).ready(function() {
                         <small class="fw-bold text-muted">${c.credits} Units</small>
                     </div>
                     ${deptBadge}
-                    <h5 class="fw-bold text-dark mt-1" style="min-height:3rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${c.name}</h5>
-                    <p class="text-muted small mb-3" style="min-height:2.5rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${c.description || 'No description available.'}</p>
+                    <h5 class="fw-bold text-dark mt-1"
+                        style="min-height:3rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+                        ${c.name}
+                    </h5>
+                    <p class="text-muted small mb-3"
+                       style="min-height:2.5rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+                        ${c.description || 'No description available.'}
+                    </p>
                     <div class="bg-light p-3 rounded-3 mb-4 flex-grow-1">
                         <div class="list-group list-group-flush">${matHtmlList}</div>
                     </div>
                     <div class="mt-auto pt-3 border-top d-flex align-items-center justify-content-between gap-2">
-                        <button class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-bold upload-btn" data-course-id="${c.course_id}" data-course-name="${safeName}">Upload</button>
+                        <button class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-bold upload-btn"
+                                data-course-id="${c.course_id}" data-course-name="${safeName}">Upload</button>
                         <div class="d-flex gap-2">
-                            <button class="btn-edit-course edit-course-btn" data-id="${c.course_id}" data-code="${safeCode}" data-name="${safeName}" data-credits="${c.credits}" data-desc="${safeDesc}" data-dept="${deptId}"><i class="fas fa-edit"></i></button>
-                            <button class="btn-archive-course" onclick="archiveCourse(${c.course_id})"><i class="fas fa-archive"></i></button>
+                            <button class="btn-edit-course edit-course-btn"
+                                    data-id="${c.course_id}" data-code="${safeCode}" data-name="${safeName}"
+                                    data-credits="${c.credits}" data-desc="${safeDesc}" data-dept="${deptId}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-archive-course" onclick="archiveCourse(${c.course_id})">
+                                <i class="fas fa-archive"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>`);
 
+            // ── List row ──
             $list.append(`
             <tr class="course-table-row">
                 <td class="ps-4">
                     <span class="badge bg-info-subtle text-info rounded-pill px-2 mb-1">${c.course_code}</span>
                     <div class="fw-bold text-dark mt-1">${c.name}</div>
-                    ${deptName ? `<span class="badge bg-secondary-subtle text-secondary mt-1" style="font-size:.65rem;">${deptName}</span>` : ''}
+                    ${deptName ? `<span class="badge bg-secondary-subtle text-secondary mt-1"
+                                        style="font-size:.65rem;width:fit-content;">${deptName}</span>` : ''}
                 </td>
-                <td><p class="text-muted mb-0 small" style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">${c.description || 'No description.'}</p></td>
+                <td>
+                    <p class="text-muted mb-0 small"
+                       style="display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">
+                        ${c.description || 'No description.'}
+                    </p>
+                </td>
                 <td><div class="bg-light p-2 rounded-3 border">${matHtmlList}</div></td>
                 <td class="text-end pe-4 align-middle">
                     <div class="d-flex flex-column gap-2 align-items-end">
-                        <button class="btn-edit-course edit-course-btn" data-id="${c.course_id}" data-code="${safeCode}" data-name="${safeName}" data-credits="${c.credits}" data-desc="${safeDesc}" data-dept="${deptId}"><i class="fas fa-edit me-1"></i> Edit</button>
-                        <button type="button" class="btn-archive-course" onclick="archiveCourse(${c.course_id})"><i class="fas fa-archive me-1"></i> Archive</button>
+                        <button class="btn-edit-course edit-course-btn"
+                                data-id="${c.course_id}" data-code="${safeCode}" data-name="${safeName}"
+                                data-credits="${c.credits}" data-desc="${safeDesc}" data-dept="${deptId}">
+                            <i class="fas fa-edit me-1"></i> Edit
+                        </button>
+                        <button type="button" class="btn-archive-course" onclick="archiveCourse(${c.course_id})">
+                            <i class="fas fa-archive me-1"></i> Archive
+                        </button>
                     </div>
                 </td>
             </tr>`);
@@ -406,52 +443,58 @@ $(document).ready(function() {
         const totalPages = Math.ceil(totalItems / _itemsPerPage) || 1;
         $('#paginationInfo').text(`Page ${_currentPage} of ${totalPages}`);
 
-        let html = `<button class="page-btn" ${_currentPage === 1 ? 'disabled' : ''} onclick="changePage(${_currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
+        let html = `<button class="page-btn" ${_currentPage === 1 ? 'disabled' : ''}
+                            onclick="changePage(${_currentPage - 1})">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>`;
 
         for (let i = 1; i <= totalPages; i++) {
             if (i === 1 || i === totalPages || (i >= _currentPage - 1 && i <= _currentPage + 1)) {
-                html += `<button class="page-btn ${i === _currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>`;
+                html += `<button class="page-btn ${i === _currentPage ? 'active' : ''}"
+                                 onclick="changePage(${i})">${i}</button>`;
             } else if (i === _currentPage - 2 || i === _currentPage + 2) {
-                html += `<span class="px-2 text-muted">...</span>`;
+                html += `<span class="px-2 text-muted">…</span>`;
             }
         }
 
-        html += `<button class="page-btn" ${_currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${_currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
+        html += `<button class="page-btn" ${_currentPage === totalPages ? 'disabled' : ''}
+                         onclick="changePage(${_currentPage + 1})">
+                     <i class="fas fa-chevron-right"></i>
+                 </button>`;
 
         $('#paginationControls').html(html);
     }
 
-    window.changePage = function(p) {
+    window.changePage = function (p) {
         _currentPage = p;
         renderTablePage();
-        $('#gridView, .table-scroll-wrapper').scrollTop(0); // Scroll wrappers to top
+        $('#gridView, .table-scroll-wrapper').scrollTop(0);
     };
 
-    // ── FORM SUBMISSIONS ──
+    // ── FORM SUBMISSIONS ──────────────────────────────────────────────────────
     function handleAddSubmit(e) {
         e.preventDefault();
         const data = {
-            code: $('#addCourseForm [name="code"]').val(),
-            name: $('#addCourseForm [name="name"]').val(),
-            credits: $('#addCourseForm [name="credits"]').val(),
-            description: $('#addCourseForm [name="description"]').val(),
+            code:          $('#addCourseForm [name="code"]').val(),
+            name:          $('#addCourseForm [name="name"]').val(),
+            credits:       $('#addCourseForm [name="credits"]').val(),
+            description:   $('#addCourseForm [name="description"]').val(),
             department_id: $('#addCourseForm [name="department_id"]').val()
         };
-
         $.ajax({
             url: `${API_URL}?action=create`,
             method: 'POST',
             xhrFields: { withCredentials: true },
             contentType: 'application/json',
             data: JSON.stringify(data),
-            success: function(json) {
+            success: function (json) {
                 if (json.status === 'success') {
-                    showToast(json.message, "success");
+                    showToast(json.message, 'success');
                     if (addModalObj) addModalObj.hide();
                     $('#addCourseForm')[0].reset();
                     fetchCourses();
                 } else {
-                    showToast(json.message, "error");
+                    showToast(json.message, 'error');
                 }
             }
         });
@@ -460,27 +503,26 @@ $(document).ready(function() {
     function handleEditSubmit(e) {
         e.preventDefault();
         const data = {
-            course_id: $('#edit_course_id').val(),
-            code: $('#edit_course_code').val(),
-            name: $('#edit_course_name').val(),
-            credits: $('#edit_course_credits').val(),
-            description: $('#edit_course_desc').val(),
+            course_id:     $('#edit_course_id').val(),
+            code:          $('#edit_course_code').val(),
+            name:          $('#edit_course_name').val(),
+            credits:       $('#edit_course_credits').val(),
+            description:   $('#edit_course_desc').val(),
             department_id: $('#edit_course_dept').val()
         };
-
         $.ajax({
             url: `${API_URL}?action=update`,
             method: 'POST',
             xhrFields: { withCredentials: true },
             contentType: 'application/json',
             data: JSON.stringify(data),
-            success: function(json) {
+            success: function (json) {
                 if (json.status === 'success') {
-                    showToast(json.message, "success");
+                    showToast(json.message, 'success');
                     if (editModalObj) editModalObj.hide();
                     fetchCourses();
                 } else {
-                    showToast(json.message, "error");
+                    showToast(json.message, 'error');
                 }
             }
         });
@@ -491,11 +533,10 @@ $(document).ready(function() {
         (units || []).forEach(u => uHtml += `<option value="${u}">${u} Units</option>`);
         $('#courseUnitsFilter').html(uHtml);
 
-        let dHtml = '<option value="">-- No Department --</option>';
+        let dHtml      = '<option value="">-- No Department --</option>';
         let filterHtml = '<option value="">All Departments</option>';
-
         (departments || []).forEach(d => {
-            dHtml += `<option value="${d.department_id}">${d.name}</option>`;
+            dHtml      += `<option value="${d.department_id}">${d.name}</option>`;
             filterHtml += `<option value="${d.department_id}">${d.name}</option>`;
         });
 
@@ -508,18 +549,21 @@ $(document).ready(function() {
 
     function showToast(msg, type) {
         $('#toast').remove();
-        let bgClass = "background:#dcfce7; color:#15803d; border:1px solid #bbf7d0;";
-        let iconClass = "fa-check-circle";
+        let bgClass   = 'background:#dcfce7; color:#15803d; border:1px solid #bbf7d0;';
+        let iconClass = 'fa-check-circle';
 
-        if (type === "error") {
-            bgClass = "background:#fee2e2; color:#be123c; border:1px solid #fecdd3;";
-            iconClass = "fa-exclamation-triangle";
-        } else if (type === "archived") {
-            bgClass = "background:#fff7ed; color:#c2410c; border:1px solid #fed7aa;";
-            iconClass = "fa-archive";
+        if (type === 'error') {
+            bgClass   = 'background:#fee2e2; color:#be123c; border:1px solid #fecdd3;';
+            iconClass = 'fa-exclamation-triangle';
+        } else if (type === 'archived') {
+            bgClass   = 'background:#fff7ed; color:#c2410c; border:1px solid #fed7aa;';
+            iconClass = 'fa-archive';
         }
 
-        $('body').append(`<div id="toast" class="toast-bar" style="${bgClass}; z-index: 9999;"><i class="fas ${iconClass} me-2"></i> ${msg}</div>`);
+        $('body').append(`
+            <div id="toast" class="toast-bar" style="${bgClass}; z-index:9999;">
+                <i class="fas ${iconClass} me-2"></i> ${msg}
+            </div>`);
         setTimeout(() => $('#toast').fadeOut(() => $('#toast').remove()), 3500);
     }
 });
@@ -531,19 +575,19 @@ const AUTH_API = 'https://artisanslms.onrender.com/backend/index.php';
 
 function initHeader() {
     const PAGE_TITLES = {
-        'dashboard.html':              { title: 'Dashboard',              subtitle: 'Overview of your academic progress.' },
-        'courses.html':                { title: 'Course Management',      subtitle: 'Create, edit, and organize system courses and materials.' },
-        'students.html':               { title: 'Manage Students',        subtitle: 'Manage student profiles, accounts, and records.' },
-        'instructors.html':            { title: 'Master Instructors',     subtitle: 'Manage faculty accounts, profiles, and subject loads.' },
-        'enrollment.html':             { title: 'Student Enrollment',     subtitle: 'Manage and track student class enrollments.' },
-        'classes.html':                { title: 'Class Management',       subtitle: 'Create and manage class sections by course.' },
-        'reports.html':                { title: 'System Reports',         subtitle: 'Generate insights and analytics on system activity.' },
-        'profile.html':                { title: 'My Profile',             subtitle: 'Manage your personal information and account settings.' },
-        'archived.html':               { title: 'Archives',               subtitle: 'All archived records are stored here. Restore or permanently delete them.' }
+        'dashboard.html':   { title: 'Dashboard',         subtitle: 'Overview of your academic progress.' },
+        'courses.html':     { title: 'Course Management', subtitle: 'Create, edit, and organize system courses and materials.' },
+        'students.html':    { title: 'Manage Students',   subtitle: 'Manage student profiles, accounts, and records.' },
+        'instructors.html': { title: 'Master Instructors',subtitle: 'Manage faculty accounts, profiles, and subject loads.' },
+        'enrollment.html':  { title: 'Student Enrollment',subtitle: 'Manage and track student class enrollments.' },
+        'classes.html':     { title: 'Class Management',  subtitle: 'Create and manage class sections by course.' },
+        'reports.html':     { title: 'System Reports',    subtitle: 'Generate insights and analytics on system activity.' },
+        'profile.html':     { title: 'My Profile',        subtitle: 'Manage your personal information and account settings.' },
+        'archived.html':    { title: 'Archives',          subtitle: 'All archived records are stored here. Restore or permanently delete them.' }
     };
 
     const currentPage = window.location.pathname.split('/').pop() || 'courses.html';
-    const page = PAGE_TITLES[currentPage] || { title: 'Artisans LMS', subtitle: 'Learning Management System' };
+    const page        = PAGE_TITLES[currentPage] || { title: 'Artisans LMS', subtitle: 'Learning Management System' };
 
     $('#headerPageTitle').text(page.title);
     $('#headerPageSubtitle').text(page.subtitle);
@@ -555,11 +599,10 @@ function initHeader() {
         xhrFields: { withCredentials: true },
         contentType: 'application/json',
         data: JSON.stringify({ route: 'auth', action: 'checkSession' }),
-        success: function(res) {
+        success: function (res) {
             if (res.status === 'success' && res.logged_in) {
-                const u = res.user;
+                const u   = res.user;
                 const avt = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=e2e8f0&color=475569`;
-
                 $('#headerUserName, #dropdownUserName').text(u.name);
                 $('#headerUserRole, #dropdownUserRole').text(u.role || 'Admin');
                 $('#headerAvatar, #dropdownAvatar').attr('src', avt);
@@ -568,22 +611,16 @@ function initHeader() {
                 window.location.href = '/client/pages/login.html';
             }
         },
-        error: function() {
-            window.location.href = '/client/pages/login.html';
-        }
+        error: function () { window.location.href = '/client/pages/login.html'; }
     });
 
-    $(document).on('click', '#logoutBtn', function(e) {
+    $(document).on('click', '#logoutBtn', function (e) {
         e.preventDefault();
         $.ajax({
-            url: AUTH_API,
-            method: 'POST',
-            xhrFields: { withCredentials: true },
+            url: AUTH_API, method: 'POST', xhrFields: { withCredentials: true },
             contentType: 'application/json',
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
-            complete: function() {
-                window.location.href = '/client/pages/login.html';
-            }
+            complete: function () { window.location.href = '/client/pages/login.html'; }
         });
     });
 }

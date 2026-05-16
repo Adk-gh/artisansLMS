@@ -283,7 +283,7 @@ const AUTH_API = 'https://artisanslms.onrender.com/backend/index.php';
 
 function initHeader() {
     const PAGE_TITLES = {
-        'dashboard.html':              { title: 'Dashboard',              subtitle: 'Overview of your academic progress and activities.' },
+        'dashboard.html':              { title: 'Dashboard',               subtitle: 'Overview of your academic progress and activities.' },
         'collaborations.html':         { title: 'Collaboration Spaces',   subtitle: 'Select a class to enter the live chat and video space.' },
         'messages.html':               { title: 'Direct Messages',        subtitle: 'Communicate privately with instructors and peers.' },
         'my_grades.html':              { title: 'My Grades',              subtitle: 'Track your academic performance and feedback.' },

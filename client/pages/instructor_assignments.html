@@ -25,7 +25,7 @@
             flex-shrink: 0;
             overflow: visible !important;
             position: relative;
-            z-index: 1050 !important; /* Matches previous pages to clear tables/modals */
+            z-index: 1050 !important;
         }
 
         /* ── Hover Lift ── */
@@ -71,10 +71,6 @@
         .scrollable-list::-webkit-scrollbar { width: 5px; }
         .scrollable-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 
-        /* ════════════════════════════════════════════
-            MOBILE CARD VIEW
-        ════════════════════════════════════════════ */
-
         .desktop-table-wrap { display: flex; flex-direction: column; flex: 1; min-height: 0; }
         .mobile-card-list   { display: none; }
 
@@ -107,8 +103,7 @@
         .task-card:active { box-shadow: 0 3px 12px rgba(0,0,0,.1); transform: scale(0.98); }
 
         @media (max-width: 767.98px) {
-            #mobClassFilter,
-            #mobTypeFilter { font-size: .82rem; padding: .45rem .75rem; }
+            #mobClassFilter, #mobTypeFilter { font-size: .82rem; padding: .45rem .75rem; }
         }
 
         @media (max-width: 575.98px) {
@@ -138,7 +133,6 @@
             <div id="header-container" class="flex-shrink-0"></div>
 
             <main class="container-fluid p-3 p-md-4 p-lg-5 d-flex flex-column">
-
                 <div id="alertsContainer" class="flex-shrink-0"></div>
 
                 <div class="d-flex justify-content-end align-items-start flex-wrap gap-3 mb-3 flex-shrink-0">
@@ -220,7 +214,6 @@
                         <div class="text-muted mt-2 small fw-bold">Loading tasks...</div>
                     </div>
                 </div>
-
             </main>
         </div>
     </div>
@@ -313,11 +306,11 @@
                                            class="form-control form-control-sm border-0 text-center fw-bold p-0"
                                            style="width:36px;font-size:.85rem;" title="Multiple choice count">
                                     <button type="button" class="btn btn-sm p-0 d-flex align-items-center justify-content-center text-muted"
-                                            style="width:24px;height:24px;" onclick="adjustCount('mc',1)" title="Increase">
+                                             style="width:24px;height:24px;" onclick="adjustCount('mc',1)" title="Increase">
                                         <i class="fas fa-plus" style="font-size:.65rem;"></i>
                                     </button>
                                     <button type="button" class="btn btn-sm btn-primary rounded-pill fw-bold px-3 py-1"
-                                            style="font-size:.78rem;" onclick="addQBulk('multiple_choice','mc')" title="Add MC">Add</button>
+                                             style="font-size:.78rem;" onclick="addQBulk('multiple_choice','mc')" title="Add MC">Add</button>
                                 </div>
                                 <div class="d-flex align-items-center gap-1 border rounded-pill bg-white shadow-sm px-2 py-1">
                                     <span class="small fw-bold text-success ps-1 pe-1" style="white-space:nowrap;">
@@ -331,11 +324,11 @@
                                            class="form-control form-control-sm border-0 text-center fw-bold p-0"
                                            style="width:36px;font-size:.85rem;" title="True/false count">
                                     <button type="button" class="btn btn-sm p-0 d-flex align-items-center justify-content-center text-muted"
-                                            style="width:24px;height:24px;" onclick="adjustCount('tf',1)" title="Increase">
+                                             style="width:24px;height:24px;" onclick="adjustCount('tf',1)" title="Increase">
                                         <i class="fas fa-plus" style="font-size:.65rem;"></i>
                                     </button>
                                     <button type="button" class="btn btn-sm btn-success rounded-pill fw-bold px-3 py-1"
-                                            style="font-size:.78rem;" onclick="addQBulk('true_false','tf')" title="Add T/F">Add</button>
+                                             style="font-size:.78rem;" onclick="addQBulk('true_false','tf')" title="Add T/F">Add</button>
                                 </div>
                             </div>
                         </div>
@@ -415,6 +408,24 @@
                 </div>
                 <div class="modal-footer border-top-0 bg-light p-3 d-flex gap-2 rounded-bottom-4">
                     <div id="mtm-actions" class="w-100 d-flex gap-2"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="systemPromptModal" tabindex="-1" aria-hidden="true" style="z-index: 1100;">
+        <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 400px;">
+            <div class="modal-content border-0 shadow-lg rounded-4 bg-light">
+                <div class="modal-header bg-dark text-white border-0 py-2 px-4">
+                    <h6 class="modal-title fw-bold small" id="sysModalTitle">System Update</h6>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" title="Close Modal"></button>
+                </div>
+                <div class="modal-body p-4 bg-white text-center">
+                    <div class="text-secondary small fw-medium" id="sysModalBody"></div>
+                </div>
+                <div class="modal-footer border-top-0 bg-light p-3 d-flex justify-content-end gap-2 rounded-bottom-4">
+                    <button type="button" class="btn btn-light btn-sm fw-bold px-3 border rounded-pill" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-dark btn-sm fw-bold px-3 rounded-pill" id="sysModalConfirmBtn">Confirm</button>
                 </div>
             </div>
         </div>

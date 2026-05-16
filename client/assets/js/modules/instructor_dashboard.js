@@ -166,11 +166,32 @@ function renderClasses(classes) {
         return `
         <div class="col-sm-6 col-xl-4">
             <a href="collaborations.html?class_id=${c.class_id}" class="class-card shadow-sm">
-                <div class="d-flex align-items-center justify-content-between mb-2">
+
+                <!-- Top row: course code + term + section number -->
+                <div class="d-flex align-items-center justify-content-between mb-2 gap-2 flex-wrap">
                     <span class="course-code">${esc(c.course_code)}</span>
-                    <span class="class-meta">${esc(c.semester)} ${c.year}</span>
+                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                        <span class="class-meta">${esc(c.semester)} ${c.year}</span>
+                        <span style="
+                            font-family: 'JetBrains Mono', monospace;
+                            font-size: .65rem;
+                            font-weight: 600;
+                            background: #f8fafc;
+                            color: #64748b;
+                            border: 1px solid #e2e8f0;
+                            border-radius: 6px;
+                            padding: 2px 7px;
+                            white-space: nowrap;
+                        ">
+                            <i class="fas fa-hashtag" style="font-size:.55rem;opacity:.5;margin-right:2px;"></i>Section ${c.class_id}
+                        </span>
+                    </div>
                 </div>
+
+                <!-- Course name -->
                 <div class="course-name">${esc(c.course_name)}</div>
+
+                <!-- Stat pills -->
                 <div class="class-pills">
                     <span class="class-pill" style="background:#f0fdf4;color:#16a34a;">
                         <i class="fas fa-users me-1" style="font-size:.6rem;"></i>${c.student_count} students
@@ -182,6 +203,8 @@ function renderClasses(classes) {
                         <i class="fas fa-brain me-1" style="font-size:.6rem;"></i>${c.quiz_count} quizzes
                     </span>
                 </div>
+
+                <!-- Enrollment progress -->
                 <div class="mt-3">
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <span style="font-size:.68rem;color:#94a3b8;font-weight:600;">Enrollment</span>
@@ -191,6 +214,7 @@ function renderClasses(classes) {
                         <div class="progress-bar" style="width:${studentPct}%;background:${color};border-radius:99px;"></div>
                     </div>
                 </div>
+
             </a>
         </div>`;
     }).join(''));
@@ -281,27 +305,106 @@ function renderActivity(activity) {
         el.html('<div class="empty-state"><i class="fas fa-stream"></i>No recent activity.</div>');
         return;
     }
-    el.html(activity.map(a => `
-    <div class="act-item">
-        <div class="act-dot"></div>
-        <div style="min-width:0;">
-            <div style="font-size:.8rem;font-weight:600;color:#0f172a;">
-                ${esc(a.first_name)} ${esc(a.last_name)}
-                <span style="font-weight:400;color:#64748b;">submitted</span>
+
+    const html = `
+    <div style="
+        max-height: 340px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 transparent;
+        padding-right: 2px;
+    " class="act-feed-scroll">
+        ${activity.map(a => `
+        <div class="act-item" style="
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f1f5f9;
+        ">
+            <div style="
+                width: 8px; height: 8px; border-radius: 50%;
+                background: #38bdf8; margin-top: 6px; flex-shrink: 0;
+            "></div>
+            <div style="min-width: 0; flex: 1;">
+
+                <!-- Student name + verb -->
+                <div style="font-size: .82rem; line-height: 1.3;">
+                    <span style="font-weight: 700; color: #0f172a;">${esc(a.first_name)} ${esc(a.last_name)}</span>
+                    <span style="font-weight: 400; color: #94a3b8;"> submitted</span>
+                </div>
+
+                <!-- Task name — prominent -->
+                <div style="
+                    font-size: .88rem;
+                    font-weight: 700;
+                    color: #1e40af;
+                    margin-top: 3px;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                ">
+                    <span style="
+                        font-family: 'JetBrains Mono', monospace;
+                        font-size: .65rem;
+                        font-weight: 600;
+                        background: #eff6ff;
+                        color: #2563eb;
+                        border-radius: 4px;
+                        padding: 1px 6px;
+                        margin-right: 5px;
+                        vertical-align: middle;
+                    ">${esc(a.course_code)}</span>${esc(a.task_title)}
+                </div>
+
+                <!-- Timestamp + grade -->
+                <div style="display: flex; align-items: center; gap: 6px; margin-top: 5px; flex-wrap: wrap;">
+                    <span style="
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 4px;
+                        font-size: .72rem;
+                        font-weight: 600;
+                        color: #475569;
+                        background: #f1f5f9;
+                        border-radius: 6px;
+                        padding: 2px 8px;
+                    ">
+                        <i class="fas fa-clock" style="font-size: .6rem; opacity: .65;"></i>
+                        ${fmtTime(a.submit_date)}
+                    </span>
+                    ${a.grade ? `
+                    <span style="
+                        background: #dcfce7;
+                        color: #166534;
+                        border-radius: 6px;
+                        padding: 2px 8px;
+                        font-size: .72rem;
+                        font-weight: 700;
+                    ">${esc(a.grade)}</span>` : ''}
+                </div>
+
             </div>
-            <div style="font-size:.72rem;color:#94a3b8;margin-top:1px;">
-                <span style="font-family:'JetBrains Mono',monospace;font-size:.65rem;background:#eff6ff;color:#2563eb;border-radius:4px;padding:1px 6px;">${esc(a.course_code)}</span>
-                &nbsp;${esc(a.task_title)}
-                ${a.grade ? `<span style="margin-left:4px;background:#dcfce7;color:#166534;border-radius:4px;padding:1px 6px;font-weight:700;">${esc(a.grade)}</span>` : ''}
-            </div>
-            <div style="font-size:.68rem;color:#cbd5e1;margin-top:2px;">${fmtTime(a.submit_date)}</div>
-        </div>
-    </div>`).join(''));
+        </div>`).join('')}
+    </div>`;
+
+    el.html(html);
+
+    // Thin scrollbar for webkit
+    const style = document.createElement('style');
+    style.textContent = `
+        .act-feed-scroll::-webkit-scrollbar { width: 4px; }
+        .act-feed-scroll::-webkit-scrollbar-track { background: transparent; }
+        .act-feed-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+    `;
+    if (!document.getElementById('act-feed-style')) {
+        style.id = 'act-feed-style';
+        document.head.appendChild(style);
+    }
 }
 
 // ─── Active Classes + Firebase Live Status ────────────────────────────────────
 
-// Badge HTML helpers
 function liveBadge() {
     return `<span class="badge bg-success bg-opacity-10 text-success border border-success-subtle rounded-pill d-inline-flex align-items-center gap-1">
                 <span class="spinner-grow text-success" style="width:6px;height:6px;" role="status"></span> Live
@@ -350,7 +453,6 @@ function renderActiveClasses(classes) {
 }
 
 // ─── Firebase live status watcher ────────────────────────────────────────────
-
 function watchLiveStatuses(classIds) {
     Promise.all([
         import('https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js'),
@@ -372,7 +474,6 @@ function watchLiveStatuses(classIds) {
 
         classIds.forEach(classId => {
             const statusRef = ref(db, `lms_classes/${classId}/status`);
-
             onValue(statusRef, snap => {
                 const isLive = snap.val()?.is_live === true;
                 const badge  = document.querySelector(`.class-status-badge[data-class-id="${classId}"]`);

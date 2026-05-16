@@ -19,6 +19,38 @@ $(document).ready(function() {
         return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
+    // Helper to trigger custom system warning modal instead of window.alert/confirm
+    function showSystemModal(options) {
+        const modalEl = document.getElementById('systemPromptModal');
+        if (!modalEl) {
+            // Fallback if modal container isn't loaded yet
+            if (options.confirm) {
+                if (confirm(options.message)) options.onConfirm();
+            } else {
+                alert(options.message);
+            }
+            return;
+        }
+
+        $('#sysModalTitle').html(options.title || '<i class="fas fa-exclamation-triangle text-warning me-2"></i> System Message');
+        $('#sysModalBody').text(options.message);
+
+        const confirmBtn = $('#sysModalConfirmBtn');
+        if (options.confirm) {
+            confirmBtn.show().removeClass().addClass(`btn btn-${options.confirmClass || 'dark'} fw-bold px-4 rounded-pill shadow-sm`);
+            confirmBtn.text(options.confirmText || 'Confirm');
+            confirmBtn.off('click').on('click', function() {
+                bootstrap.Modal.getInstance(modalEl).hide();
+                if (typeof options.onConfirm === 'function') options.onConfirm();
+            });
+        } else {
+            confirmBtn.hide();
+        }
+
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        modal.show();
+    }
+
     function fetchData() {
         $.ajax({
             url: '/backend/endpoints/instructor_assignments.php',
@@ -60,11 +92,9 @@ $(document).ready(function() {
             mobHtml += `<option value="${c.class_id}">${label}</option>`;
         });
 
-        // Apply to both desktop dropdown and mobile dropdown
         $('#deskClassFilter').html(deskHtml);
         $('#mobClassFilter').html(mobHtml);
 
-        // Type Pill Click Listener
         $('.filter-pill[data-filter-type="type"]').off('click').on('click', function() {
             const val = $(this).data('val');
             $('.filter-pill[data-filter-type="type"]').removeClass('active btn-dark text-white').addClass('btn-outline-secondary');
@@ -75,42 +105,36 @@ $(document).ready(function() {
             renderTable();
         });
 
-        // Desktop Class Dropdown Listener
         $('#deskClassFilter').off('change').on('change', function() {
             currentFilterClass = $(this).val();
-            $('#mobClassFilter').val(currentFilterClass); // Sync mobile
+            $('#mobClassFilter').val(currentFilterClass);
             renderTable();
         });
 
-        // Mobile Class Dropdown Listener
         $('#mobClassFilter').off('change').on('change', function() {
             currentFilterClass = $(this).val();
-            $('#deskClassFilter').val(currentFilterClass); // Sync desktop
+            $('#deskClassFilter').val(currentFilterClass);
             renderTable();
         });
 
-        // Mobile Type Dropdown Listener
         $('#mobTypeFilter').off('change').on('change', function() {
             currentFilterType = $(this).val();
             $(`.filter-pill[data-filter-type="type"][data-val="${currentFilterType}"]`).click();
         });
     }
 
-function renderTable() {
+    function renderTable() {
         const body = $('#taskTableBody');
         let html = '';
         let visibleCount = 0;
 
         let cntTypeAll=0, cntAssign=0, cntAct=0, cntQuiz=0;
-
-        // 1. Create an array to hold the formatted tasks for the mobile view
         let mobileTasks = [];
 
         allTasks.forEach(t => {
             const matchClass = currentFilterClass === 'all' || t.class_id == currentFilterClass;
             const matchType = currentFilterType === 'all' || t.real_type === currentFilterType;
 
-            // Only count types if the class matches the current filter
             if (matchClass) {
                 cntTypeAll++;
                 if (t.real_type === 'assignment') cntAssign++;
@@ -134,7 +158,6 @@ function renderTable() {
 
                 const responses = t.is_quiz ? `${t.attempt_count} attempted` : `${t.sub_count} submitted`;
 
-                // Build desktop HTML
                 html += `
                 <tr>
                     <td class="ps-4">
@@ -155,17 +178,15 @@ function renderTable() {
                     </td>
                 </tr>`;
 
-                // 2. Push formatted data to the mobile array
                 mobileTasks.push({
                     id: t.assignment_id,
                     title: escHtml(t.title),
-                    type: t.real_type, // 'assignment', 'activity', or 'quiz'
+                    type: t.real_type,
                     classCode: escHtml(t.course_code),
                     classTerm: `${escHtml(t.semester)} ${escHtml(t.year)}`,
                     dueDate: dueStr,
                     isDue: past,
                     responsesLabel: responses,
-                    // Pass the exact Javascript commands to the mobile action buttons
                     onViewFn: `window.location.href='todo.html?class_id=${t.class_id}'`,
                     onReassignFn: `openReassign(${t.assignment_id}, '${t.real_type}', '${escHtml(t.title).replace(/'/g, "\\'")}', ${t.class_id})`,
                     onDeleteFn: `deleteTask(${t.assignment_id}, '${t.real_type}')`
@@ -184,7 +205,6 @@ function renderTable() {
         $('#cnt-type-activity').text(cntAct);
         $('#cnt-type-quiz').text(cntQuiz);
 
-        // 3. Trigger the mobile rendering function we set up in the HTML
         if (typeof window.renderMobileCards === 'function') {
             window.renderMobileCards(mobileTasks);
         }
@@ -193,7 +213,6 @@ function renderTable() {
     function populateModals() {
         let clsHtml = '';
         allClasses.forEach(c => {
-            // Using class_id as Section Number
             clsHtml += `
             <label class="cls-item d-flex align-items-center gap-3 p-3 rounded-3 bg-white" id="cb_lbl_${c.class_id}">
                 <input type="checkbox" name="class_ids[]" value="${c.class_id}" class="form-check-input mt-0" onchange="$(this).closest('.cls-item').toggleClass('chk', this.checked)">
@@ -208,10 +227,18 @@ function renderTable() {
     }
 
     window.deleteTask = function(id, type) {
-        if (!confirm('Delete this task and all submissions?')) return;
-        $.post('/backend/endpoints/instructor_assignments.php', { action: 'delete_task', task_id: id, task_type: type }, function(res) {
-            if(res.status==='success') { showAlert('success', 'Task deleted.'); fetchData(); }
-        }, 'json');
+        showSystemModal({
+            title: '<i class="fas fa-trash text-danger me-2"></i> Delete Assignment',
+            message: 'Are you sure you want to delete this task and all student submissions permanently?',
+            confirm: true,
+            confirmText: 'Delete Everything',
+            confirmClass: 'danger',
+            onConfirm: function() {
+                $.post('/backend/endpoints/instructor_assignments.php', { action: 'delete_task', task_id: id, task_type: type }, function(res) {
+                    if(res.status==='success') { showAlert('success', 'Task deleted.'); fetchData(); }
+                }, 'json');
+            }
+        });
     };
 
     window.openReassign = function(id, type, title, currentClassId) {
@@ -239,7 +266,11 @@ function renderTable() {
         const btn = $('#reassignSubmitBtn');
         const cids = [];
         $('input[name="new_class_ids[]"]:checked').each(function() { cids.push($(this).val()); });
-        if(cids.length === 0) { alert('Select at least one class.'); return; }
+
+        if(cids.length === 0) {
+            showSystemModal({ message: 'Please select at least one target class to copy this assignment to.' });
+            return;
+        }
 
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Assigning...');
         $.post('/backend/endpoints/instructor_assignments.php', {
@@ -250,7 +281,7 @@ function renderTable() {
                 showAlert('success', res.message);
                 fetchData();
             } else {
-                alert(res.message);
+                showSystemModal({ message: res.message });
             }
             btn.prop('disabled', false).html('<i class="fas fa-share-nodes me-2"></i> Assign to Selected Classes');
         }, 'json');
@@ -274,7 +305,7 @@ function renderTable() {
         for (let i = 0; i < count; i++) {
             qs.push({ type: type, text: '', choices: { A:'', B:'', C:'', D:'' }, correct: type === 'true_false' ? 'TRUE' : 'A', points: 1 });
         }
-        document.getElementById(key + '-count').value = 1; // reset after adding
+        document.getElementById(key + '-count').value = 1;
         renderQs();
     };
 
@@ -306,15 +337,28 @@ function renderTable() {
         const isQuiz = $('input[name="task_type"]:checked').val() === 'quiz';
         const cids = [];
         $('input[name="class_ids[]"]:checked').each(function() { cids.push($(this).val()); });
-        if(cids.length === 0) { alert('Select at least one class.'); return; }
+
+        if(cids.length === 0) {
+            showSystemModal({ message: 'Select at least one class to assign this task to.' });
+            return;
+        }
 
         if (isQuiz) {
-            if (qs.length === 0) { alert('Add at least one question.'); return; }
+            if (qs.length === 0) {
+                showSystemModal({ message: 'Please add at least one question to your quiz structure.' });
+                return;
+            }
             for (let i = 0; i < qs.length; i++) {
-                if (!qs[i].text.trim()) { alert(`Question ${i+1} has no text.`); return; }
+                if (!qs[i].text.trim()) {
+                    showSystemModal({ message: `Question ${i+1} has no text parameters. Provide a valid question description.` });
+                    return;
+                }
                 if (qs[i].type==='multiple_choice') {
                     for(const k of['A','B','C','D']){
-                        if(!qs[i].choices[k].trim()){alert(`Question ${i+1}: Choice ${k} is empty.`);return;}
+                        if(!qs[i].choices[k].trim()){
+                            showSystemModal({ message: `Question ${i+1}: Choice ${k} is currently empty.` });
+                            return;
+                        }
                     }
                 }
             }
@@ -330,7 +374,12 @@ function renderTable() {
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Creating...');
 
         $.ajax({
-            url: '/backend/endpoints/instructor_assignments.php', type: 'POST', data: formData, contentType: false, processData: false, dataType: 'json',
+            url: '/backend/endpoints/instructor_assignments.php',
+            type: 'POST',
+            data: formData,
+            contentType: false,
+            processData: false,
+            dataType: 'json',
             success: function(res) {
                 if(res.status==='success') {
                     $('#createModal').modal('hide');
@@ -340,11 +389,13 @@ function renderTable() {
                     showAlert('success', res.message);
                     fetchData();
                 }
-                else { alert(res.message); }
+                else {
+                    showSystemModal({ message: res.message });
+                }
                 btn.prop('disabled', false).html('<i class="fas fa-paper-plane me-2"></i> Post to Selected Classes');
             },
             error: function() {
-                alert('Network Error');
+                showSystemModal({ message: 'Network connection error while trying to register the assignment.' });
                 btn.prop('disabled', false).html('<i class="fas fa-paper-plane me-2"></i> Post to Selected Classes');
             }
         });
@@ -362,7 +413,7 @@ const API = 'https://artisanslms.onrender.com/backend/index.php';
 
 function initHeader() {
     const PAGE_TITLES = {
-        'dashboard.html':              { title: 'Dashboard',              subtitle: 'Overview of your academic progress and activities.' },
+        'dashboard.html':              { title: 'Dashboard',               subtitle: 'Overview of your academic progress and activities.' },
         'collaborations.html':         { title: 'Collaboration Spaces',   subtitle: 'Select a class to enter the live chat and video space.' },
         'messages.html':               { title: 'Direct Messages',        subtitle: 'Communicate privately with instructors and peers.' },
         'my_grades.html':              { title: 'My Grades',              subtitle: 'Track your academic performance and feedback.' },

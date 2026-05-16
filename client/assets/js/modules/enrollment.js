@@ -1,10 +1,10 @@
-let _enrolledData  = {};
-let _allClasses    = [];
-let _allStudents   = [];   // full dataset for pagination
-let _filteredStudents = []; // after filters applied
-let _currentPage   = 1;
-const PAGE_SIZE    = 50;
-let _allStudentsOptions = []; // Stores all options for modal search
+let _enrolledData     = {};
+let _allClasses       = [];
+let _allStudents      = [];
+let _filteredStudents = [];
+let _currentPage      = 1;
+const PAGE_SIZE       = 50;
+let _allStudentsOptions = [];
 
 // ── Pagination ────────────────────────────────────────────────────────────────
 function renderPagination(total) {
@@ -13,10 +13,7 @@ function renderPagination(total) {
     const $controls  = $('#paginationControls');
     const $info      = $('#pageInfo');
 
-    if (total === 0) {
-        $wrap.hide();
-        return;
-    }
+    if (total === 0) { $wrap.hide(); return; }
 
     $wrap.css('display', 'flex');
 
@@ -26,15 +23,13 @@ function renderPagination(total) {
 
     let html = '';
 
-    // Prev button
     html += `<button class="page-btn" id="prevPage" ${_currentPage === 1 ? 'disabled' : ''}>
                 <i class="fas fa-chevron-left" style="font-size:.7rem;"></i>
              </button>`;
 
-    // Page number buttons — show max 5 around current
-    const maxBtns  = 5;
-    let   startPg  = Math.max(1, _currentPage - Math.floor(maxBtns / 2));
-    let   endPg    = Math.min(totalPages, startPg + maxBtns - 1);
+    const maxBtns = 5;
+    let startPg   = Math.max(1, _currentPage - Math.floor(maxBtns / 2));
+    let endPg     = Math.min(totalPages, startPg + maxBtns - 1);
     if (endPg - startPg < maxBtns - 1) startPg = Math.max(1, endPg - maxBtns + 1);
 
     if (startPg > 1) {
@@ -51,14 +46,12 @@ function renderPagination(total) {
         html += `<button class="page-btn" data-page="${totalPages}">${totalPages}</button>`;
     }
 
-    // Next button
     html += `<button class="page-btn" id="nextPage" ${_currentPage === totalPages ? 'disabled' : ''}>
                 <i class="fas fa-chevron-right" style="font-size:.7rem;"></i>
              </button>`;
 
     $controls.html(html);
 
-    // Events
     $controls.find('[data-page]').on('click', function () {
         _currentPage = parseInt($(this).data('page'));
         applyFiltersAndRender();
@@ -82,18 +75,23 @@ function applyFiltersAndRender() {
     const df    = $('#enrollDeptFilter').val();
 
     _filteredStudents = _allStudents.filter(student => {
-        const name     = (student.name || '').toLowerCase();
-        const sid      = String(student.student_id);
-        const sDeptId  = String(student.dept_id || '');
-        const count    = student.classes.length;
+        const name    = (student.name || '').toLowerCase();
+        const sid     = String(student.student_id);
+        const sDeptId = String(student.dept_id || '');
+        const count   = student.classes.length;
         const statuses = [...new Set(student.classes.map(c => c.status))];
 
-        const nameOk   = !q     || name.includes(q) || sid.includes(q);
+        // Split name into parts so "juan" matches "Dj, Juan"
+        const nameParts = name.split(/[\s,]+/).filter(Boolean);
+        const nameOk    = !q || name.includes(q) || sid.includes(q)
+                          || nameParts.some(part => part.includes(q));
+
         const statusOk = !statf || statuses.includes(statf);
         const deptOk   = !df    || sDeptId === df;
 
         let cntOk = true;
-        if      (cf === '1') cntOk = count === 1;
+        if      (cf === '0') cntOk = count === 0;
+        else if (cf === '1') cntOk = count === 1;
         else if (cf === '2') cntOk = count === 2;
         else if (cf === '3') cntOk = count >= 3;
 
@@ -102,7 +100,7 @@ function applyFiltersAndRender() {
 
     _currentPage = Math.min(_currentPage, Math.ceil(_filteredStudents.length / PAGE_SIZE)) || 1;
 
-    const start   = (_currentPage - 1) * PAGE_SIZE;
+    const start    = (_currentPage - 1) * PAGE_SIZE;
     const pageData = _filteredStudents.slice(start, start + PAGE_SIZE);
 
     $('#enrollCountNum').text(_filteredStudents.length);
@@ -121,16 +119,16 @@ function filterModalClasses() {
     const sid = $('#studentSelect').val();
     if (!sid) return;
 
-    const targetDept = String($('#studentSelect').data('current-dept') || '');
-    const q = $('#modalClassSearch').val().toLowerCase().trim();
-    const already = _enrolledData[sid] || [];
-    let count = 0;
+    const targetDept = String($('#modalClassDept').val() || '');
+    const q          = $('#modalClassSearch').val().toLowerCase().trim();
+    const already    = _enrolledData[sid] || [];
+    let count        = 0;
 
     const $helperText = $('#enrollmentHelperText');
 
     $('.class-check-wrapper').each(function () {
         const $wrap = $(this);
-        const cid = $wrap.attr('data-class-id');
+        const cid   = $wrap.attr('data-class-id');
         const cDept = String($wrap.attr('data-dept') || '');
 
         if (already.includes(cid)) {
@@ -141,10 +139,9 @@ function filterModalClasses() {
 
         $wrap.find('input').prop('disabled', false);
 
-        const nameData = $wrap.attr('data-name') || '';
+        const nameData    = $wrap.attr('data-name') || '';
         const matchSearch = !q || nameData.includes(q);
-
-        const matchDept = (targetDept === "" || cDept === targetDept);
+        const matchDept   = !targetDept || cDept === targetDept;
 
         if (matchSearch && matchDept) {
             $wrap.removeClass('d-none');
@@ -155,9 +152,35 @@ function filterModalClasses() {
     });
 
     if (count === 0 && !q) {
-        $helperText.removeClass('d-none').html("<span class='text-danger fw-bold'>This student is already enrolled in all active classes!</span>");
+        // Distinguish: truly fully enrolled vs dept has no classes
+        const totalUnenrolled = _allClasses.filter(c => !already.includes(String(c.class_id))).length;
+
+        if (totalUnenrolled === 0) {
+            $helperText.removeClass('d-none').html(
+                "<span class='text-danger fw-bold'>" +
+                "<i class='fas fa-check-double me-1'></i>" +
+                "This student is already enrolled in all active classes!" +
+                "</span>"
+            );
+        } else {
+            // Dept filter active but no classes for that dept
+            $helperText.removeClass('d-none').html(
+                "<span class='text-warning fw-bold'>" +
+                "<i class='fas fa-exclamation-triangle me-1'></i>" +
+                "No classes found for this student's department. " +
+                "<a href='#' id='showAllDeptClasses' style='color:#0ea5e9;'>Show all departments?</a>" +
+                "</span>"
+            );
+            $('#showAllDeptClasses').off('click').on('click', function (e) {
+                e.preventDefault();
+                $('#modalClassDept').val('');
+                filterModalClasses();
+            });
+        }
     } else if (count === 0) {
-        $helperText.removeClass('d-none').html("<span class='text-muted fst-italic'>No classes match your filter.</span>");
+        $helperText.removeClass('d-none').html(
+            "<span class='text-muted fst-italic'>No classes match your search.</span>"
+        );
     } else {
         $helperText.addClass('d-none');
     }
@@ -176,7 +199,6 @@ $(document).ready(function () {
     const enrollEl = document.getElementById('enrollModal');
     if (enrollEl) enrollModalObj = new bootstrap.Modal(enrollEl);
 
-    // Reset search bar when modal is closed
     if (enrollEl) {
         enrollEl.addEventListener('hidden.bs.modal', function () {
             $('#modalStudentSearch').val('');
@@ -187,37 +209,29 @@ $(document).ready(function () {
     fetchEnrollments();
     fetchFormData();
 
-    $('#enrollSearch, #enrollClassFilter, #enrollStatusFilter').on('input change', filterEnrollment);
+    $('#enrollSearch, #enrollClassFilter, #enrollStatusFilter, #enrollDeptFilter').on('input change', filterEnrollment);
     $('#modalClassSearch').on('input', filterModalClasses);
     $('#modalClassDept').on('change', filterModalClasses);
     $('#enrollForm').on('submit', handleEnrollmentSubmit);
 
-    // ── Modal Student Search Filter (Max 50) ──
-    $('#modalStudentSearch').on('input', function() {
-        const query = $(this).val().toLowerCase().trim();
+    // ── Modal Student Search Filter (Max 50) ──────────────────────────────────
+    $('#modalStudentSearch').on('input', function () {
+        const query  = $(this).val().toLowerCase().trim();
         const $select = $('#studentSelect');
         const currentVal = $select.val();
 
         $select.empty();
-
-        // Always append the default placeholder option
         $select.append(_allStudentsOptions.filter('option[value=""]').clone());
 
         let count = 0;
-
-        _allStudentsOptions.each(function() {
-            if ($(this).val() === "") return; // Skip placeholder in loop
-
+        _allStudentsOptions.each(function () {
+            if ($(this).val() === '') return;
             const searchData = $(this).attr('data-search') || '';
             if (!query || searchData.includes(query)) {
-                if (count < 50) {
-                    $select.append($(this).clone());
-                    count++;
-                }
+                if (count < 50) { $select.append($(this).clone()); count++; }
             }
         });
 
-        // Try to keep previous selection active if it's still in the list
         if ($select.find(`option[value="${currentVal}"]`).length) {
             $select.val(currentVal);
         } else {
@@ -226,9 +240,10 @@ $(document).ready(function () {
         }
     });
 
+    // ── Student Select Change ─────────────────────────────────────────────────
     $('#studentSelect').on('change', function () {
         const $selectedOption = $(this).find('option:selected');
-        const sid = $(this).val();
+        const sid    = $(this).val();
         const deptId = $selectedOption.attr('data-dept') || '';
 
         $(this).data('current-dept', deptId);
@@ -237,7 +252,6 @@ $(document).ready(function () {
         const $filterRow  = $('#modalClassFilters');
 
         $('#modalClassSearch').val('');
-        $('#modalClassDept').val(deptId).prop('disabled', true);
 
         if (!sid) {
             $filterRow.attr('style', 'display: none !important');
@@ -247,9 +261,13 @@ $(document).ready(function () {
             return;
         }
 
+        // Set dept filter to student's dept but keep it ENABLED so admin can override
+        $('#modalClassDept').val(deptId).prop('disabled', false);
+
         $filterRow.attr('style', 'display: flex !important');
         $helperText.addClass('d-none');
         $('.class-checkbox').prop('checked', false);
+        $('#selectedCount').hide();
 
         filterModalClasses();
     });
@@ -262,7 +280,7 @@ $(document).ready(function () {
             dataType: 'json',
             success: function (json) {
                 if (json.status === 'success') {
-                    _allStudents = json.data;
+                    _allStudents  = json.data;
                     _archivesData = json.archives;
 
                     if (json.departments) {
@@ -327,7 +345,7 @@ $(document).ready(function () {
                     if (enrollModalObj) enrollModalObj.hide();
                     $('#enrollForm')[0].reset();
                     $('#studentSelect').trigger('change');
-                    $('#modalStudentSearch').val(''); // Clear modal search
+                    $('#modalStudentSearch').val('');
                     fetchEnrollments();
                     fetchFormData();
                 } else {
@@ -361,7 +379,9 @@ $(document).ready(function () {
         let html = '<option value="">-- Choose Student --</option>';
         students.forEach(s => {
             const searchString = `${s.first_name} ${s.last_name} ${s.student_id}`.toLowerCase();
-            html += `<option value="${s.student_id}" data-dept="${s.department_id || ''}" data-search="${searchString}">
+            html += `<option value="${s.student_id}"
+                        data-dept="${s.department_id || ''}"
+                        data-search="${searchString}">
                         ${s.last_name}, ${s.first_name} (ID: ${s.student_id})
                      </option>`;
         });
@@ -369,24 +389,22 @@ $(document).ready(function () {
         const $select = $('#studentSelect');
         $select.html(html);
 
-        // Clone and save ALL options to memory
         _allStudentsOptions = $select.find('option').clone();
 
-        // Immediately limit the initial DOM display to 50 items
         $select.empty();
         let count = 0;
-        _allStudentsOptions.each(function() {
-            if ($(this).val() === "" || count < 50) {
+        _allStudentsOptions.each(function () {
+            if ($(this).val() === '' || count < 50) {
                 $select.append($(this).clone());
-                if ($(this).val() !== "") count++;
+                if ($(this).val() !== '') count++;
             }
         });
     }
 
     function populateClassCheckboxes() {
         const $list = $('#checkboxList');
-        let cHtml = '';
-        let depts  = {};
+        let cHtml   = '';
+        let depts   = {};
 
         _allClasses.forEach(c => {
             const deptId   = c.department_id || '';
@@ -401,7 +419,10 @@ $(document).ready(function () {
                     <input class="form-check-input class-checkbox" type="checkbox" value="${c.class_id}">
                     <div class="ms-2">
                         <div class="fw-bold small" style="color:#1e293b;">${c.course_code} - ${c.name}</div>
-                        <div class="text-muted" style="font-size: 0.72rem;">Prof. ${c.last_name} &bull; <span class="badge bg-secondary-subtle text-secondary" style="font-size:.6rem">${deptName}</span></div>
+                        <div class="text-muted" style="font-size: 0.72rem;">
+                            Prof. ${c.last_name} &bull;
+                            <span class="badge bg-secondary-subtle text-secondary" style="font-size:.6rem">${deptName}</span>
+                        </div>
                     </div>
                 </label>`;
         });
@@ -420,10 +441,6 @@ $(document).ready(function () {
         });
     }
 
-    function buildCheckboxList(sid) {
-        $('#selectedCount').hide();
-    }
-
     function showToast(msg, type) {
         $('#toast').remove();
         const ok     = type === 'success';
@@ -440,7 +457,7 @@ $(document).ready(function () {
     }
 });
 
-// ── Table Renderer (page slice only) ─────────────────────────────────────────
+// ── Table Renderer ────────────────────────────────────────────────────────────
 let _archivesData = {};
 
 function renderTablePage(pageData, totalFiltered) {
@@ -460,63 +477,77 @@ function renderTablePage(pageData, totalFiltered) {
     pageData.forEach(student => {
         const sid        = student.student_id;
         const classCount = student.classes.length;
-        const statuses   = [...new Set(student.classes.map(c => c.status))].join(',');
         const archiveHtml = buildArchiveHtml(sid, _archivesData);
 
         let classesHtml = '';
-        student.classes.forEach(cls => {
-            const dateStr = cls.enroll_date
-                ? new Date(cls.enroll_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                : '<span class="text-danger">No Date</span>';
 
-            const statusMap = {
-                'Pending Finance': `<span class="status-badge status-pending"><i class="fas fa-clock" style="font-size:.6rem;"></i> Pending Finance</span>`,
-                'Approved':        `<span class="status-badge status-approved"><i class="fas fa-check-circle" style="font-size:.6rem;"></i> Approved</span>`,
-                'Rejected':        `<span class="status-badge status-rejected"><i class="fas fa-times-circle" style="font-size:.6rem;"></i> Rejected</span>`
-            };
-            const statusBadge = statusMap[cls.status] || '';
-
-            const safeStudentName = (student.name || '').replace(/'/g, "\\'");
-            const safeCourseCode  = (cls.course_code || '').replace(/'/g, "\\'");
-
-            let actionBtns = '';
-            if (cls.status === 'Approved') {
-                actionBtns = `<button type="button" class="btn-drop"
-                    onclick="handleDrop(${cls.enrollment_id},'${safeStudentName}','${safeCourseCode}')">
-                    <i class="fas fa-archive"></i> Drop
-                </button>`;
-            } else if (cls.status === 'Pending Finance') {
-                actionBtns = `<span class="finance-notice" style="font-size:.65rem;">
-                    <i class="fas fa-university"></i> Awaiting Finance
-                </span>`;
-            }
-
-            classesHtml += `
+        if (classCount === 0) {
+            classesHtml = `
             <tr>
-                <td class="ps-3 py-2">
-                    <div class="d-flex align-items-center flex-wrap gap-2">
-                        <span class="badge bg-info-subtle text-info" style="min-width:70px;text-align:center;">${cls.course_code}</span>
-                        <span class="small fw-medium text-dark">${cls.course_name}</span>
-                    </div>
+                <td colspan="6" class="text-center py-3 text-muted small fst-italic">
+                    <i class="fas fa-inbox me-1"></i>No active enrollments. Use <strong>New Enrollment</strong> to enroll this student.
                 </td>
-                <td class="small text-muted py-2">Prof. ${cls.prof}</td>
-                <td class="py-2" style="font-family:'JetBrains Mono',monospace;font-size:.68rem;color:#64748b;">${cls.semester} ${cls.year}</td>
-                <td class="py-2">${statusBadge}</td>
-                <td class="small text-muted py-2">${dateStr}</td>
-                <td class="text-end pe-3 py-2">${actionBtns}</td>
             </tr>`;
-        });
+        } else {
+            student.classes.forEach(cls => {
+                const dateStr = cls.enroll_date
+                    ? new Date(cls.enroll_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    : '<span class="text-danger">No Date</span>';
 
+                const statusMap = {
+                    'Pending Finance': `<span class="status-badge status-pending"><i class="fas fa-clock" style="font-size:.6rem;"></i> Pending Finance</span>`,
+                    'Approved':        `<span class="status-badge status-approved"><i class="fas fa-check-circle" style="font-size:.6rem;"></i> Approved</span>`,
+                    'Rejected':        `<span class="status-badge status-rejected"><i class="fas fa-times-circle" style="font-size:.6rem;"></i> Rejected</span>`
+                };
+                const statusBadge = statusMap[cls.status] || '';
+
+                const safeStudentName = (student.name || '').replace(/'/g, "\\'");
+                const safeCourseCode  = (cls.course_code || '').replace(/'/g, "\\'");
+
+                let actionBtns = '';
+                if (cls.status === 'Approved') {
+                    actionBtns = `<button type="button" class="btn-drop"
+                        onclick="handleDrop(${cls.enrollment_id},'${safeStudentName}','${safeCourseCode}')">
+                        <i class="fas fa-archive"></i> Drop
+                    </button>`;
+                } else if (cls.status === 'Pending Finance') {
+                    actionBtns = `<span class="finance-notice" style="font-size:.65rem;">
+                        <i class="fas fa-university"></i> Awaiting Finance
+                    </span>`;
+                }
+
+                classesHtml += `
+                <tr>
+                    <td class="ps-3 py-2">
+                        <div class="d-flex align-items-center flex-wrap gap-2">
+                            <span class="badge bg-info-subtle text-info" style="min-width:70px;text-align:center;">${cls.course_code}</span>
+                            <span class="small fw-medium text-dark">${cls.course_name}</span>
+                        </div>
+                    </td>
+                    <td class="small text-muted py-2">Prof. ${cls.prof}</td>
+                    <td class="py-2" style="font-family:'JetBrains Mono',monospace;font-size:.68rem;color:#64748b;">${cls.semester} ${cls.year}</td>
+                    <td class="py-2">${statusBadge}</td>
+                    <td class="small text-muted py-2">${dateStr}</td>
+                    <td class="text-end pe-3 py-2">${actionBtns}</td>
+                </tr>`;
+            });
+        }
+
+        // Summary badge
         const hasPending  = student.classes.some(c => c.status === 'Pending Finance');
         const hasRejected = student.classes.some(c => c.status === 'Rejected');
-        const summaryBadge = hasPending
+        const summaryBadge = classCount === 0
+            ? `<span class="status-badge" style="background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;">
+                   <i class="fas fa-minus-circle" style="font-size:.6rem;"></i> Not Enrolled
+               </span>`
+            : hasPending
             ? `<span class="status-badge status-pending"><i class="fas fa-clock" style="font-size:.6rem;"></i> Has Pending</span>`
             : hasRejected
             ? `<span class="status-badge status-rejected"><i class="fas fa-times-circle" style="font-size:.6rem;"></i> Has Rejected</span>`
             : `<span class="status-badge status-approved"><i class="fas fa-check-circle" style="font-size:.6rem;"></i> All Approved</span>`;
 
         $tbody.append(`
-            <tbody class="student-row-wrap" ...>
+            <tbody class="student-row-wrap">
             <tr class="collapse-toggle" data-bs-toggle="collapse" data-bs-target="#student-${sid}">
                 <td class="ps-4 py-3">
                     <div class="fw-bold text-dark">${student.name}</div>
@@ -524,12 +555,13 @@ function renderTablePage(pageData, totalFiltered) {
                 </td>
                 <td class="py-3">
                     <span class="dept-badge" title="${student.dept_name}">
-                        <i class="fas fa-university me-1" style="font-size: .6rem;"></i>
+                        <i class="fas fa-university me-1" style="font-size:.6rem;"></i>
                         ${student.dept_name || 'Unassigned'}
                     </span>
                 </td>
                 <td class="py-3">
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-bold me-2" style="min-width:90px;text-align:center;">
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-bold me-2"
+                          style="min-width:90px;text-align:center;">
                         ${classCount} ${classCount === 1 ? 'Class' : 'Classes'}
                     </span>
                     ${summaryBadge}
@@ -569,7 +601,7 @@ function renderTablePage(pageData, totalFiltered) {
                     </div>
                 </td>
             </tr>
-        </tbody>`);
+            </tbody>`);
     });
 }
 
@@ -579,7 +611,10 @@ function buildArchiveHtml(sid, archivesData) {
     let rows = '';
     archivesData[sid].forEach(dr => {
         const dateStr = dr.archived_at
-            ? new Date(dr.archived_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true })
+            ? new Date(dr.archived_at).toLocaleString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric',
+                hour: 'numeric', minute: 'numeric', hour12: true
+              })
             : 'N/A';
         rows += `
         <tr>
@@ -620,7 +655,7 @@ function buildArchiveHtml(sid, archivesData) {
     </div>`;
 }
 
-// ─── Header ───────────────────────────────────────────────────────────────────
+// ── Header ────────────────────────────────────────────────────────────────────
 const AUTH_API = 'https://artisanslms.onrender.com/backend/index.php';
 
 function initHeader() {
@@ -682,7 +717,8 @@ function initHeader() {
     $(document).on('click', '#logoutBtn', function (e) {
         e.preventDefault();
         $.ajax({
-            url: AUTH_API, method: 'POST', contentType: 'application/json', dataType: 'json', xhrFields: { withCredentials: true },
+            url: AUTH_API, method: 'POST', contentType: 'application/json',
+            dataType: 'json', xhrFields: { withCredentials: true },
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
             complete: function () { window.location.href = '/client/pages/login.html'; }
         });

@@ -300,29 +300,6 @@ $(document).ready(function() {
             });
             html += `</tbody></table></div>`;
         }
-        else if (tab === 'instructors') {
-            html += `<div class="table-responsive"><table class="table align-middle mb-0 text-nowrap table-hover">
-                <thead><tr><th class="ps-4">ID</th><th>Name</th><th>Email</th><th>Department</th><th>Position</th><th>Archived By</th><th>Archived At</th><th class="text-end pe-4">Actions</th></tr></thead><tbody>`;
-            records.forEach(r => {
-                const d = r.data;
-                const searchStr = `${d.first_name||''} ${d.last_name||''} ${d.email||''} ${d.dept_name||''} ${d.pos_title||''} ${r.archiver_name}`.toLowerCase();
-                html += `<tr class="arch-row" data-search="${searchStr}" data-date="${r.archived_at}">
-                    <td class="ps-4" style="font-family:'JetBrains Mono',monospace;font-size:.75rem;color:#64748b;">EMP-${String(d.employee_id||0).padStart(4,'0')}</td>
-                    <td><div class="fw-bold text-dark">${d.first_name||''} ${d.last_name||''}</div><span class="badge bg-light text-muted border mt-1"><i class="fas fa-archive me-1"></i> Archived</span></td>
-                    <td class="small text-muted">${d.email||'—'}</td>
-                    <td class="small text-muted">${d.dept_name||'—'}</td>
-                    <td class="small text-muted">${d.pos_title||'—'}</td>
-                    <td><span class="small text-muted"><i class="fas fa-user-shield me-1"></i>${r.archiver_name}</span></td>
-                    <td class="small text-muted">${formatDate(r.archived_at)}</td>
-                    <td class="text-end pe-4">
-                        <div class="d-flex align-items-center justify-content-end gap-2">
-                            <button class="btn-action btn-restore" onclick="restoreRecord(${r.archive_id})"><i class="fas fa-undo"></i> <span class="d-none d-md-inline">Restore</span></button>
-                            <button class="btn-action btn-delete" onclick="purgeRecord(${r.archive_id})"><i class="fas fa-trash"></i> <span class="d-none d-md-inline">Delete</span></button>
-                        </div>
-                    </td></tr>`;
-            });
-            html += `</tbody></table></div>`;
-        }
 
         // ── ENROLLMENTS ──────────────────────────────────────────
         else if (tab === 'enrollments') {

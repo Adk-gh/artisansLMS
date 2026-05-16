@@ -1,13 +1,12 @@
 // classes.js
 
-// ─── Avatar Colors (matches students.js) ─────────────────────────────────────
+// ─── Avatar Colors ────────────────────────────────────────────────────────────
 const AVATAR_COLORS = [
     '#0ea5e9','#22c55e','#f59e0b','#f43f5e',
     '#8b5cf6','#06b6d4','#ec4899','#14b8a6',
     '#f97316','#6366f1'
 ];
 
-// Derive a stable color index from a string (instructor name / id)
 function avatarColor(seed) {
     let hash = 0;
     for (let i = 0; i < seed.length; i++) hash = seed.charCodeAt(i) + ((hash << 5) - hash);
@@ -17,7 +16,6 @@ function avatarColor(seed) {
 // ─── Pagination State ─────────────────────────────────────────────────────────
 const PAGE_SIZE = 50;
 let currentPage = 1;
-let allSectionsCache = []; // holds the full flat list after renderTable builds it
 
 function filterClasses() {
     const q    = $('#classSearch').val().toLowerCase().trim();
@@ -25,46 +23,37 @@ function filterClasses() {
     const term = $('#classTermFilter').val().toLowerCase();
     const cap  = $('#classCapFilter').val();
 
-    // Apply filter flags to every row-wrap
     let filtered = [];
-    $('.class-row-wrap').each(function() {
+    $('.class-row-wrap').each(function () {
         const $row    = $(this);
-        const name    = ($row.attr('data-name')  || '').toLowerCase();
-        const rowTerm = ($row.attr('data-term')  || '').toLowerCase();
-        const rowDept = $row.attr('data-dept')   || '';
-        const isOpen  = $row.attr('data-open')  === '1';
-        const isFull  = $row.attr('data-full')  === '1';
+        const name    = ($row.attr('data-name') || '').toLowerCase();
+        const rowTerm = ($row.attr('data-term') || '').toLowerCase();
+        const rowDept =  $row.attr('data-dept') || '';
+        const isOpen  =  $row.attr('data-open') === '1';
+        const isFull  =  $row.attr('data-full') === '1';
 
         const nameOk = !q    || name.includes(q);
         const termOk = !term || rowTerm.includes(term);
         const deptOk = !dept || rowDept === dept;
         let   capOk  = true;
-        if (cap === 'open') capOk = isOpen;
+        if      (cap === 'open') capOk = isOpen;
         else if (cap === 'full') capOk = isFull;
 
-        const matches = nameOk && termOk && deptOk && capOk;
-        $row.data('matches', matches);
-        if (matches) filtered.push($row);
+        if (nameOk && termOk && deptOk && capOk) filtered.push($row);
     });
 
-    // Reset to page 1 whenever filter changes
     currentPage = 1;
     applyPagination(filtered);
 }
 
-/**
- * Given the list of matched rows, show only the current page slice
- * and rebuild the pagination bar.
- */
 function applyPagination(matchedRows) {
-    const total     = matchedRows.length;
+    const total      = matchedRows.length;
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-    currentPage     = Math.min(currentPage, totalPages);
+    currentPage      = Math.min(currentPage, totalPages);
 
     const start = (currentPage - 1) * PAGE_SIZE;
     const end   = start + PAGE_SIZE;
 
-    // Hide all rows, then show only this page's slice
     $('.class-row-wrap').addClass('hidden');
     matchedRows.forEach(($row, idx) => {
         if (idx >= start && idx < end) $row.removeClass('hidden');
@@ -72,14 +61,17 @@ function applyPagination(matchedRows) {
 
     $('#classCountNum').text(total);
 
-   $('#classNoResults').toggle(total === 0);
+    // Show/hide no-results row correctly as table-row
+    if (total === 0) {
+        $('#classNoResults').css('display', 'table-row');
+    } else {
+        $('#classNoResults').hide();
+    }
 
-    // Pagination info text
     const showingFrom = total === 0 ? 0 : start + 1;
     const showingTo   = Math.min(end, total);
     $('#paginationInfo').text(`Showing ${showingFrom}–${showingTo} of ${total} sections`);
 
-    // Build page buttons
     buildPageButtons(totalPages);
 }
 
@@ -87,33 +79,27 @@ function buildPageButtons(totalPages) {
     const $ctrl = $('#paginationControls');
     $ctrl.empty();
 
-    // Prev
     const $prev = $(`<button class="page-btn" title="Previous">&lsaquo;</button>`);
     if (currentPage === 1) $prev.prop('disabled', true).css('opacity', '.4');
-    $prev.on('click', function() { if (currentPage > 1) { currentPage--; refilter(); } });
+    $prev.on('click', function () { if (currentPage > 1) { currentPage--; refilter(); } });
     $ctrl.append($prev);
 
-    // Page numbers — show at most 7 buttons with ellipsis
     const pages = pagesToShow(currentPage, totalPages);
     let last = 0;
     pages.forEach(p => {
-        if (p - last > 1) {
-            $ctrl.append(`<span class="page-btn" style="cursor:default;border:none;">…</span>`);
-        }
+        if (p - last > 1) $ctrl.append(`<span class="page-btn" style="cursor:default;border:none;">…</span>`);
         const $btn = $(`<button class="page-btn${p === currentPage ? ' active' : ''}">${p}</button>`);
-        $btn.on('click', function() { currentPage = p; refilter(); });
+        $btn.on('click', function () { currentPage = p; refilter(); });
         $ctrl.append($btn);
         last = p;
     });
 
-    // Next
     const $next = $(`<button class="page-btn" title="Next">&rsaquo;</button>`);
     if (currentPage === totalPages) $next.prop('disabled', true).css('opacity', '.4');
-    $next.on('click', function() { if (currentPage < totalPages) { currentPage++; refilter(); } });
+    $next.on('click', function () { if (currentPage < totalPages) { currentPage++; refilter(); } });
     $ctrl.append($next);
 }
 
-/** Decide which page numbers to display (max ~7, with ellipsis gaps). */
 function pagesToShow(cur, total) {
     if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
     const set = new Set([1, total, cur]);
@@ -121,7 +107,6 @@ function pagesToShow(cur, total) {
     return [...set].filter(p => p >= 1 && p <= total).sort((a, b) => a - b);
 }
 
-/** Re-run the filter logic and paginate without resetting currentPage. */
 function refilter() {
     const q    = $('#classSearch').val().toLowerCase().trim();
     const dept = $('#classDeptFilter').val();
@@ -129,36 +114,34 @@ function refilter() {
     const cap  = $('#classCapFilter').val();
 
     let filtered = [];
-    $('.class-row-wrap').each(function() {
+    $('.class-row-wrap').each(function () {
         const $row    = $(this);
-        const name    = ($row.attr('data-name')  || '').toLowerCase();
-        const rowTerm = ($row.attr('data-term')  || '').toLowerCase();
-        const rowDept = $row.attr('data-dept')   || '';
-        const isOpen  = $row.attr('data-open')  === '1';
-        const isFull  = $row.attr('data-full')  === '1';
+        const name    = ($row.attr('data-name') || '').toLowerCase();
+        const rowTerm = ($row.attr('data-term') || '').toLowerCase();
+        const rowDept =  $row.attr('data-dept') || '';
+        const isOpen  =  $row.attr('data-open') === '1';
+        const isFull  =  $row.attr('data-full') === '1';
 
         const nameOk = !q    || name.includes(q);
         const termOk = !term || rowTerm.includes(term);
         const deptOk = !dept || rowDept === dept;
         let   capOk  = true;
-        if (cap === 'open') capOk = isOpen;
+        if      (cap === 'open') capOk = isOpen;
         else if (cap === 'full') capOk = isFull;
 
-        const matches = nameOk && termOk && deptOk && capOk;
-        if (matches) filtered.push($row);
+        if (nameOk && termOk && deptOk && capOk) filtered.push($row);
     });
 
     applyPagination(filtered);
 }
 
-$(document).ready(function() {
-    // ── Load UI Components ──
-    $("#sidebar-placeholder").load("../components/sidebar.html");
-    $("#header-placeholder").load("../components/header.html", function(res, status) {
+$(document).ready(function () {
+    $('#sidebar-placeholder').load('../components/sidebar.html');
+    $('#header-placeholder').load('../components/header.html', function (res, status) {
         if (status !== 'error') initHeader();
     });
 
-    const API_URL = '../../backend/endpoints/classes.php';
+    const API_URL    = '../../backend/endpoints/classes.php';
     let addModalObj  = null;
     let editModalObj = null;
 
@@ -167,21 +150,16 @@ $(document).ready(function() {
     const editEl = document.getElementById('editClassModal');
     if (editEl) editModalObj = new bootstrap.Modal(editEl);
 
-    // ── INITIAL LOAD ──
     fetchClasses();
     fetchFormData();
 
-    // ── EVENT LISTENERS ──
     $('#classSearch').on('input', filterClasses);
-    $('#classDeptFilter').on('change', filterClasses);
-    $('#classTermFilter').on('change', filterClasses);
-    $('#classCapFilter').on('change', filterClasses);
+    $('#classDeptFilter, #classTermFilter, #classCapFilter').on('change', filterClasses);
 
     $('#addClassForm').on('submit', handleAddSubmit);
     $('#editClassForm').on('submit', handleEditSubmit);
 
-    // Delegate edit click
-    $(document).on('click', '.edit-class-btn', function() {
+    $(document).on('click', '.edit-class-btn', function () {
         $('#edit_class_id').val($(this).data('id'));
         $('#edit_course_id').val($(this).data('course'));
         $('#edit_instructor_id').val($(this).data('instructor'));
@@ -190,24 +168,24 @@ $(document).ready(function() {
         $('#edit_capacity').val($(this).data('capacity'));
     });
 
-    // ── API CALLS ──
+    // ── API ───────────────────────────────────────────────────────────────────
 
     function fetchClasses() {
         $.ajax({
             url: `${API_URL}?action=get_all`,
             method: 'GET',
             dataType: 'json',
-            success: function(json) {
+            success: function (json) {
                 if (json.status === 'success') {
                     populateDeptDropdown(json.departments);
                     renderTable(json.data);
                 } else {
-                    showToast(json.message || "Failed to load classes.", "error");
+                    showToast(json.message || 'Failed to load classes.', 'error');
                 }
             },
-            error: function(xhr, status, error) {
-                console.error("AJAX Error fetchClasses:", xhr.responseText || error);
-                showToast("Server error loading classes.", "error");
+            error: function (xhr) {
+                console.error('fetchClasses error:', xhr.responseText);
+                showToast('Server error loading classes.', 'error');
             }
         });
     }
@@ -217,7 +195,7 @@ $(document).ready(function() {
             url: `${API_URL}?action=get_form_data`,
             method: 'GET',
             dataType: 'json',
-            success: function(json) {
+            success: function (json) {
                 if (json.status === 'success') {
                     populateSelects(json.courses, json.instructors, json.semesters);
                 }
@@ -234,7 +212,6 @@ $(document).ready(function() {
             year:           $('#add_year').val(),
             max_enrollment: $('#add_capacity').val()
         };
-
         $.ajax({
             url: `${API_URL}?action=create`,
             method: 'POST',
@@ -242,14 +219,14 @@ $(document).ready(function() {
             contentType: 'application/json',
             data: JSON.stringify(data),
             dataType: 'json',
-            success: function(json) {
+            success: function (json) {
                 if (json.status === 'success') {
-                    showToast(json.message, "success");
+                    showToast(json.message, 'success');
                     if (addModalObj) addModalObj.hide();
                     $('#addClassForm')[0].reset();
                     fetchClasses();
                 } else {
-                    showToast(json.message, "error");
+                    showToast(json.message, 'error');
                 }
             }
         });
@@ -265,7 +242,6 @@ $(document).ready(function() {
             year:           $('#edit_year').val(),
             max_enrollment: $('#edit_capacity').val()
         };
-
         $.ajax({
             url: `${API_URL}?action=update`,
             method: 'POST',
@@ -273,21 +249,20 @@ $(document).ready(function() {
             contentType: 'application/json',
             data: JSON.stringify(data),
             dataType: 'json',
-            success: function(json) {
+            success: function (json) {
                 if (json.status === 'success') {
-                    showToast(json.message, "success");
+                    showToast(json.message, 'success');
                     if (editModalObj) editModalObj.hide();
                     fetchClasses();
                 } else {
-                    showToast(json.message, "error");
+                    showToast(json.message, 'error');
                 }
             }
         });
     }
 
-    window.archiveClass = function(classId) {
+    window.archiveClass = function (classId) {
         if (!confirm(`Are you sure you want to archive Section #${classId}?\nThis will remove related enrollments and assignments.`)) return;
-
         $.ajax({
             url: `${API_URL}?action=archive`,
             method: 'POST',
@@ -295,18 +270,14 @@ $(document).ready(function() {
             contentType: 'application/json',
             data: JSON.stringify({ class_id: classId }),
             dataType: 'json',
-            success: function(json) {
-                if (json.status === 'success') {
-                    showToast(json.message, "success");
-                    fetchClasses();
-                } else {
-                    showToast(json.message, "error");
-                }
+            success: function (json) {
+                showToast(json.message, json.status === 'success' ? 'success' : 'error');
+                if (json.status === 'success') fetchClasses();
             }
         });
     };
 
-    // ── DOM RENDERING ──
+    // ── DOM RENDERING ─────────────────────────────────────────────────────────
 
     function populateDeptDropdown(departments) {
         let html = '<option value="">All Departments</option>';
@@ -317,17 +288,14 @@ $(document).ready(function() {
     }
 
     function populateSelects(courses, instructors, semesters) {
-        // Courses
         let cHtml = '<option value="">-- Select Course --</option>';
         courses.forEach(c => cHtml += `<option value="${c.course_id}">${c.course_code} - ${c.name}</option>`);
         $('#add_course_id, #edit_course_id').html(cHtml);
 
-        // Instructors
         let iHtml = '<option value="">-- Select Faculty --</option>';
         instructors.forEach(i => iHtml += `<option value="${i.employee_id}">Prof. ${i.first_name} ${i.last_name}</option>`);
         $('#add_instructor_id, #edit_instructor_id').html(iHtml);
 
-        // Term filter dropdown
         let sHtml = '<option value="">All Terms</option>';
         semesters.forEach(s => sHtml += `<option value="${s.semester} ${s.year}">${s.semester} ${s.year}</option>`);
         $('#classTermFilter').html(sHtml);
@@ -336,7 +304,7 @@ $(document).ready(function() {
     function renderTable(groupedData) {
         const $tbody = $('#classBody');
         $tbody.empty();
-        currentPage = 1; // reset on fresh load
+        currentPage = 1;
 
         const allSections = [];
         groupedData.forEach(group => {
@@ -353,14 +321,20 @@ $(document).ready(function() {
         });
 
         if (allSections.length === 0) {
-            $tbody.html(`<tr><td colspan="5" class="text-center py-5 text-muted small">No active classes found.</td></tr>`);
+            $tbody.html(`
+                <tr>
+                    <td colspan="5" style="text-align:center;padding:3rem 0;">
+                        <i class="fas fa-inbox d-block fs-3 text-muted opacity-25 mb-2"></i>
+                        <div class="fw-bold text-muted">No active classes found</div>
+                        <div class="text-muted small">Create a new class section to get started</div>
+                    </td>
+                </tr>`);
             $('#classCountNum').text(0);
             $('#paginationInfo').text('Showing 0–0 of 0 sections');
             $('#paginationControls').empty();
             return;
         }
 
-        // Render ALL rows into the DOM (hidden by default); pagination will reveal the right slice
         allSections.forEach(sec => {
             const cur      = parseInt(sec.current_students);
             const max      = parseInt(sec.max_enrollment);
@@ -369,22 +343,21 @@ $(document).ready(function() {
             const barColor    = isFull ? 'bg-danger'   : 'bg-success';
             const pct         = Math.min((cur / Math.max(1, max)) * 100, 100);
             const termStr     = `${sec.semester} ${sec.year}`;
-            const deptBadge   = sec.dept_name
-                ? `<span class="badge bg-secondary-subtle text-secondary border mt-1" style="font-size:.65rem;">
+
+            const deptBadge = sec.dept_name
+                ? `<span class="badge bg-secondary-subtle text-secondary border mt-1"
+                          style="font-size:.65rem;width:fit-content;">
                        <i class="fas fa-building me-1"></i>${sec.dept_name}
                    </span>`
                 : '';
 
-            // ── Colorful square initials avatar (same system as students) ──
-            const firstName  = sec.first_name || '';
-            const lastName   = sec.last_name  || '';
-            const initials   = ((firstName.charAt(0) || '') + (lastName.charAt(0) || '')).toUpperCase();
-            const seed       = `${firstName} ${lastName}`.trim() || String(sec.instructor_id);
-            const bgColor    = avatarColor(seed);
+            const firstName = sec.first_name || '';
+            const lastName  = sec.last_name  || '';
+            const initials  = ((firstName.charAt(0) || '') + (lastName.charAt(0) || '')).toUpperCase();
+            const seed      = `${firstName} ${lastName}`.trim() || String(sec.instructor_id);
+            const bgColor   = avatarColor(seed);
 
-            const avatarHtml = `<div class="instructor-avatar" style="background:${bgColor};">${initials}</div>`;
-
-            const rowHtml = `
+            $tbody.append(`
             <tr class="class-row-wrap hidden"
                 data-name="${(sec.course_name + ' ' + sec.course_code).toLowerCase()}"
                 data-term="${termStr.toLowerCase()}"
@@ -397,14 +370,16 @@ $(document).ready(function() {
                     ${deptBadge}
                 </td>
                 <td class="py-3">
-                    <span class="badge fw-bold me-2" style="font-family:'JetBrains Mono',monospace;background:#1e293b;color:#fff;font-size:.72rem;padding:5px 10px;border-radius:8px;">
+                    <span class="badge fw-bold me-2"
+                          style="font-family:'JetBrains Mono',monospace;background:#1e293b;color:#fff;
+                                 font-size:.72rem;padding:5px 10px;border-radius:8px;">
                         #${sec.class_id}
                     </span>
                     <span class="small text-muted fw-medium">${termStr}</span>
                 </td>
                 <td class="py-3">
                     <div class="d-flex align-items-center gap-2">
-                        ${avatarHtml}
+                        <div class="instructor-avatar" style="background:${bgColor};">${initials}</div>
                         <span class="small fw-bold text-dark">Prof. ${lastName}</span>
                     </div>
                 </td>
@@ -427,43 +402,40 @@ $(document).ready(function() {
                             title="Edit Section">
                             <i class="fas fa-edit"></i> Edit
                         </button>
-                        <button type="button" class="btn-action btn-archive" onclick="archiveClass(${sec.class_id})">
+                        <button type="button" class="btn-action btn-archive"
+                                onclick="archiveClass(${sec.class_id})">
                             <i class="fas fa-archive"></i> Archive
                         </button>
                     </div>
                 </td>
-            </tr>`;
-
-            $tbody.append(rowHtml);
+            </tr>`);
         });
 
+        // No-results row — uses display:table-row when shown, never display:block
         $tbody.append(`
-            <tr class="no-results-row" id="classNoResults">
-                <td colspan="5" class="text-center py-5">
+            <tr id="classNoResults" style="display:none;">
+                <td colspan="5" style="text-align:center;padding:3rem 0;border:none;">
                     <i class="fas fa-search d-block fs-3 text-muted opacity-25 mb-2"></i>
                     <div class="fw-bold text-muted">No classes match your search</div>
                     <div class="text-muted small">Try a different name, department, term, or capacity filter</div>
                 </td>
-            </tr>
-        `);
+            </tr>`);
 
-        // Trigger initial filter + paginate (shows first page)
         filterClasses();
     }
 
     function showToast(msg, type) {
         $('#toast').remove();
-        const isSuccess = type === "success";
-        const bgColor   = isSuccess ? '#dcfce7' : '#fee2e2';
-        const color     = isSuccess ? '#15803d' : '#be123c';
-        const border    = isSuccess ? '#bbf7d0' : '#fecdd3';
-        const icon      = isSuccess ? 'fa-check-circle' : 'fa-exclamation-triangle';
-
-        const toastHtml = `
-            <div id="toast" class="toast-bar" style="background:${bgColor}; color:${color}; border:1px solid ${border};">
+        const ok     = type === 'success';
+        const bg     = ok ? '#dcfce7' : '#fee2e2';
+        const color  = ok ? '#15803d' : '#be123c';
+        const border = ok ? '#bbf7d0' : '#fecdd3';
+        const icon   = ok ? 'fa-check-circle' : 'fa-exclamation-triangle';
+        $('body').append(`
+            <div id="toast" class="toast-bar"
+                 style="background:${bg};color:${color};border:1px solid ${border};">
                 <i class="fas ${icon}"></i> ${msg}
-            </div>`;
-        $('body').append(toastHtml);
+            </div>`);
         setTimeout(() => $('#toast').css('opacity', '0'), 3500);
         setTimeout(() => $('#toast').remove(), 4000);
     }
@@ -510,12 +482,11 @@ function initHeader() {
         contentType: 'application/json',
         dataType: 'json',
         data: JSON.stringify({ route: 'auth', action: 'checkSession' }),
-        success: function(res) {
+        success: function (res) {
             if (res.status === 'success' && res.logged_in) {
                 const u     = res.user;
                 const smAvt = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=e2e8f0&color=475569`;
                 const lgAvt = smAvt + '&size=128';
-
                 $('#headerUserName').text(u.name);
                 $('#headerUserRole').text(u.role || 'Admin');
                 $('#headerAvatar').attr({ src: smAvt, alt: u.name });
@@ -527,17 +498,16 @@ function initHeader() {
                 window.location.href = '/client/pages/login.html';
             }
         },
-        error: function() {
-            window.location.href = '/client/pages/login.html';
-        }
+        error: function () { window.location.href = '/client/pages/login.html'; }
     });
 
-    $(document).on('click', '#logoutBtn', function(e) {
+    $(document).on('click', '#logoutBtn', function (e) {
         e.preventDefault();
         $.ajax({
-            url: AUTH_API, method: 'POST', contentType: 'application/json', dataType: 'json',
+            url: AUTH_API, method: 'POST', contentType: 'application/json',
+            dataType: 'json', xhrFields: { withCredentials: true },
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
-            complete: function() { window.location.href = '/client/pages/login.html'; }
+            complete: function () { window.location.href = '/client/pages/login.html'; }
         });
     });
 }

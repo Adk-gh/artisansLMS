@@ -183,29 +183,6 @@ window.generatePassword = function (employeeId) {
     });
 };
 
-    // ── Archive Instructor ──────────────────────────────────────────────────
-    window.archiveInstructor = function (id, name, classCount) {
-        let msg = `Archive ${name}?\n`;
-        msg += classCount > 0
-            ? `⚠️ They have ${classCount} assigned class(es) which will also be removed.`
-            : `Their record will be saved to Archives.`;
-
-        if (!confirm(msg)) return;
-
-        $.ajax({
-            url        : `${API_URL}?action=archive`,
-            method     : 'POST',
-            xhrFields  : { withCredentials: true },
-            contentType: 'application/json',
-            data       : JSON.stringify({ archive_id: id }),
-            dataType   : 'json',
-            success    : function (json) {
-                showToast(json.message, json.status === 'success' ? 'archived' : 'error');
-                if (json.status === 'success') fetchInstructors();
-            }
-        });
-    };
-
     // ════════════════════════════════════════════════════════════════════════
     // VIEW TOGGLE
     // ════════════════════════════════════════════════════════════════════════
@@ -297,8 +274,6 @@ window.generatePassword = function (employeeId) {
         let listHtml = '';
 
         pageData.forEach(row => {
-            const safeFname = (row.first_name || '').replace(/'/g, '&apos;').replace(/"/g, '&quot;');
-            const safeLname = (row.last_name  || '').replace(/'/g, '&apos;').replace(/"/g, '&quot;');
             const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(row.first_name + '+' + row.last_name)}&background=0ea5e9&color=fff&bold=true`;
 
             let genderStr = '—';
@@ -359,10 +334,6 @@ window.generatePassword = function (employeeId) {
                                 onclick="generatePassword(${row.employee_id})">
                             <i class="fas fa-key me-1"></i> Password
                         </button>
-                        <button type="button" class="btn-archive-inst"
-                                onclick="archiveInstructor(${row.employee_id},'${safeFname} ${safeLname}',${row.class_count})">
-                            <i class="fas fa-archive"></i> Archive
-                        </button>
                     </div>
                 </div>
             </div>`;
@@ -389,16 +360,10 @@ window.generatePassword = function (employeeId) {
                 <td><span class="badge bg-light text-dark border">${row.dept_name || 'Unassigned'}</span></td>
                 <td><span class="badge ${badgeClass} rounded-pill px-2">${row.class_count}</span></td>
                 <td class="text-end pe-4">
-                    <div class="d-flex justify-content-end gap-2 flex-wrap">
-                        <button class="btn-gen-pass"
-                                onclick="generatePassword(${row.employee_id})">
-                            <i class="fas fa-key"></i> Key
-                        </button>
-                        <button type="button" class="btn-archive-inst"
-                                onclick="archiveInstructor(${row.employee_id},'${safeFname} ${safeLname}',${row.class_count})">
-                            <i class="fas fa-archive"></i> Archive
-                        </button>
-                    </div>
+                    <button class="btn-gen-pass"
+                            onclick="generatePassword(${row.employee_id})">
+                        <i class="fas fa-key"></i> Key
+                    </button>
                 </td>
             </tr>`;
         });
@@ -448,10 +413,8 @@ window.generatePassword = function (employeeId) {
 
     function showToast(msg, type) {
         $('#toast').remove();
-        const bgClass     = type === 'archived' ? 'toast-arch' : (type === 'error' ? '' : 'toast-ok');
-        const icon        = type === 'error'
-            ? 'fa-exclamation-triangle'
-            : (type === 'archived' ? 'fa-archive' : 'fa-check-circle');
+        const bgClass     = type === 'error' ? '' : 'toast-ok';
+        const icon        = type === 'error' ? 'fa-exclamation-triangle' : 'fa-check-circle';
         const customStyle = type === 'error'
             ? 'background:#fee2e2;color:#be123c;border:1px solid #fecdd3;'
             : '';
