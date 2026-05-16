@@ -58,11 +58,21 @@
 <!-- ── Logout Confirmation Modal ── -->
 <style>
     #logoutConfirmModal { z-index: 999999 !important; }
-    #logoutConfirmModal .modal-dialog { z-index: 999999 !important; position: relative; }
-    body.modal-open .modal-backdrop { z-index: 999998 !important; }
+    #logoutConfirmModal .modal-dialog { position: relative; z-index: 999999 !important; }
+    /* Force backdrop above everything else */
+    .modal-backdrop { z-index: 999998 !important; }
 </style>
+<script>
+    // Move modal to <body> so it is never trapped inside a stacking context
+    document.addEventListener('DOMContentLoaded', function () {
+        var modal = document.getElementById('logoutConfirmModal');
+        if (modal && modal.parentNode !== document.body) {
+            document.body.appendChild(modal);
+        }
+    });
+</script>
 
-<div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmLabel" aria-hidden="true" style="z-index: 99999;">
+<div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmLabel" aria-hidden="true" style="z-index: 999999;">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
         <div class="modal-content border-0 rounded-4 overflow-hidden" style="font-family: 'Sora', sans-serif;">
 
