@@ -44,7 +44,6 @@
             </li>
             <li><hr class="dropdown-divider mx-3"></li>
             <li class="pb-1">
-                <!-- ── UPDATED: Opens confirmation modal instead of logging out directly ── -->
                 <a class="dropdown-item py-2 d-flex align-items-center gap-2 text-danger fw-medium"
                    href="#" data-bs-toggle="modal" data-bs-target="#logoutConfirmModal">
                     <i class="fas fa-sign-out-alt text-danger"></i> Logout
@@ -55,28 +54,10 @@
 
 </header>
 
-<!-- ── Logout Confirmation Modal ── -->
-<style>
-    #logoutConfirmModal { z-index: 999999 !important; }
-    #logoutConfirmModal .modal-dialog { position: relative; z-index: 999999 !important; }
-    /* Force backdrop above everything else */
-    .modal-backdrop { z-index: 999998 !important; }
-</style>
-<script>
-    // Move modal to <body> so it is never trapped inside a stacking context
-    document.addEventListener('DOMContentLoaded', function () {
-        var modal = document.getElementById('logoutConfirmModal');
-        if (modal && modal.parentNode !== document.body) {
-            document.body.appendChild(modal);
-        }
-    });
-</script>
-
-<div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmLabel" aria-hidden="true" style="z-index: 999999;">
+<div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
         <div class="modal-content border-0 rounded-4 overflow-hidden" style="font-family: 'Sora', sans-serif;">
 
-            <!-- Top bar -->
             <div style="background: #0f172a; padding: 22px 24px; display: flex; align-items: center; gap: 12px;">
                 <div style="width:36px; height:36px; border-radius:10px; background:rgba(239,68,68,.15); border:1px solid rgba(239,68,68,.25); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
                     <i class="fas fa-sign-out-alt" style="color:#f87171; font-size:.85rem;"></i>
@@ -93,7 +74,6 @@
                 </button>
             </div>
 
-            <!-- Body -->
             <div style="padding: 24px; text-align: center;">
                 <p style="font-size:.88rem; color:#475569; margin:0; line-height:1.6;">
                     Are you sure you want to sign out of your account?<br>
@@ -101,7 +81,6 @@
                 </p>
             </div>
 
-            <!-- Footer buttons -->
             <div style="padding: 0 24px 24px; display:flex; gap:10px;">
                 <button type="button" data-bs-dismiss="modal"
                     style="flex:1; padding:11px; border-radius:10px; border:1.5px solid #e2e8f0; background:#f8fafc; color:#475569; font-size:.82rem; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:.2s;"
@@ -109,7 +88,6 @@
                     onmouseout="this.style.background='#f8fafc';">
                     Cancel
                 </button>
-                <!-- ── id="logoutBtn" moved here so the existing JS handler still works ── -->
                 <button type="button" id="logoutBtn"
                     style="flex:1; padding:11px; border-radius:10px; border:none; background:#ef4444; color:#fff; font-size:.82rem; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:.2s;"
                     onmouseover="this.style.background='#dc2626';"
@@ -121,3 +99,12 @@
         </div>
     </div>
 </div>
+
+<script>
+    $(document).ready(function() {
+        const logoutModal = document.getElementById('logoutConfirmModal');
+        if (logoutModal) {
+            document.body.appendChild(logoutModal);
+        }
+    });
+</script>
