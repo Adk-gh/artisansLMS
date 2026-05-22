@@ -197,7 +197,7 @@
 
     <!-- Delete Confirm Modal -->
     <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg rounded-4">
                 <div class="modal-header border-0 pb-0 px-4 pt-4">
                     <h5 class="modal-title fw-bold text-dark d-flex align-items-center">
@@ -208,10 +208,10 @@
                 <div class="modal-body px-4 pt-3 pb-3">
                     <p class="text-muted mb-0" style="font-size: 0.95rem;">
                         Are you sure you want to permanently delete
-                        <strong>"<span id="deleteFileName" class="text-dark"></span>"</strong>? This action cannot be undone.
+                        <strong>"<span id="deleteFileName" class="text-dark" style="word-break: break-all;"></span>"</strong>? This action cannot be undone.
                     </p>
                 </div>
-                <div class="modal-footer border-0 px-4 pt-0 pb-4 d-flex flex-column align-items-end gap-2">
+                <div class="modal-footer border-0 px-4 pt-0 pb-4 d-flex justify-content-end gap-2">
                     <button type="button" class="btn btn-light rounded-pill px-4 fw-bold border-0" style="background-color: #f8f9fa;" data-bs-dismiss="modal">
                         Cancel
                     </button>
