@@ -40,52 +40,6 @@ $(document).ready(function() {
             showEmptyState();
         }
     });
-    
-    // ── Force Download Handler ────────────────────────────────────────────
-$(document).on('click', '.force-download-btn', function(e) {
-    e.preventDefault();
-
-    const $btn = $(this);
-    const fileUrl = $btn.data('filepath');
-    const fileName = $btn.data('filename');
-    const originalHtml = $btn.html();
-
-    // Set button to loading state
-    $btn.html('<i class="fas fa-spinner fa-spin me-1"></i> <span class="d-none d-sm-inline">Downloading...</span>')
-        .prop('disabled', true);
-
-    // Fetch the file as a Blob
-    fetch(fileUrl)
-        .then(response => {
-            if (!response.ok) throw new Error('Network response failed');
-            return response.blob();
-        })
-        .then(blob => {
-            // Create a temporary local URL for the blob
-            const blobUrl = window.URL.createObjectURL(blob);
-
-            // Create a hidden anchor and click it programmatically
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = blobUrl;
-            a.download = fileName; // Now the browser respects this!
-            document.body.appendChild(a);
-
-            a.click();
-
-            // Cleanup
-            window.URL.revokeObjectURL(blobUrl);
-            document.body.removeChild(a);
-        })
-        .catch(error => {
-            console.error('Download error:', error);
-            alert('Failed to download the file. Please try again.');
-        })
-        .finally(() => {
-            // Restore button state
-            $btn.html(originalHtml).prop('disabled', false);
-        });
-});
 
     // ── File category helper ────────────────────────────────────────────
     const EXT_MAP = {
@@ -166,9 +120,6 @@ $(document).on('click', '.force-download-btn', function(e) {
                 filePath = filePath.substring(filePath.indexOf('/backend/'));
             }
 
-            // Build a safe filename for the download attribute
-            const downloadName = file.file_name || filePath.split('/').pop();
-
             return `
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-2">
                 <div class="card-body p-3 d-flex align-items-center justify-content-between gap-2">
@@ -186,22 +137,12 @@ $(document).on('click', '.force-download-btn', function(e) {
                     </div>
 
                     <div class="d-flex gap-2 flex-shrink-0">
-                        <!-- View: opens in a new tab -->
                         <a href="${filePath}" target="_blank" rel="noopener noreferrer"
                            class="btn btn-light border text-primary fw-bold btn-sm rounded-3 px-3 py-2"
                            title="Open file in a new tab">
                             <i class="fas fa-external-link-alt me-1"></i>
                             <span class="d-none d-sm-inline">View</span>
                         </a>
-                        <!-- Download: forces file download -->
-                        <button type="button"
-                        data-filepath="${filePath}"
-                        data-filename="${downloadName}"
-                        class="btn btn-dark fw-bold btn-sm rounded-3 px-3 py-2 force-download-btn"
-                        title="Download this file">
-                            <i class="fas fa-download me-1"></i>
-                            <span class="d-none d-sm-inline">Download</span>
-                        </button>
                     </div>
                 </div>
             </div>`;
