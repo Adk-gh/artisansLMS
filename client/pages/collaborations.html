@@ -20,10 +20,8 @@
                 margin-left: 260px !important;
                 transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
             }
-
-            /* When the sidebar shrinks, reduce the margin to match the icon-only width */
             body.sidebar-collapsed #content {
-                margin-left: 80px !important; /* Adjust if your collapsed sidebar is wider/narrower */
+                margin-left: 80px !important;
             }
         }
 
@@ -39,17 +37,19 @@
         #chatView { display: none; }
         #chatView.visible { display: flex; }
 
-        /* ── Full-screen Call UI ── */
-        #callUI { display: none; }
+        /* ── Call UI — inline panel above chat ── */
+        #callUI {
+            display: none;
+            flex-shrink: 0;
+            height: 55vh;
+            background: #0a0a0a;
+            flex-direction: column;
+            padding: .75rem;
+            border-bottom: 1px solid rgba(255,255,255,.1);
+            position: relative;
+        }
         #callUI.active {
             display: flex;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            z-index: 9999;
-            background: rgba(0,0,0,.92);
-            flex-direction: column;
-            padding: 1rem;
         }
 
         /* ── Nav Tabs ── */
@@ -90,22 +90,14 @@
            MOBILE-FIRST RESPONSIVE ADDITIONS
         ════════════════════════════════════════════ */
 
-        /* ── Selection View grid card mobile ── */
         @media (max-width: 575.98px) {
             #selectionView { padding: 1rem !important; }
-
-            /* View toggle bar right-align on small screens */
             .view-toggle-bar { justify-content: flex-end !important; }
-
-            /* Cards fill full width */
             #gridViewContainer .col-md-6,
             #gridViewContainer .col-lg-4 { width: 100%; }
-
-            /* Shrink card padding */
             .collab-card .card-body { padding: 1rem !important; }
         }
 
-        /* ── Chat header responsive ── */
         #chatView header {
             flex-wrap: nowrap;
             gap: .5rem;
@@ -113,7 +105,6 @@
             min-height: 52px;
         }
 
-        /* Course code truncates cleanly */
         #chatCourseCode {
             flex: 1 1 0;
             min-width: 0;
@@ -123,18 +114,15 @@
             font-size: clamp(.75rem, 3.5vw, 1rem);
         }
 
-        /* Right-side action buttons: shrink text on very small screens */
         @media (max-width: 399.98px) {
             #actionLectureBtn .d-none { display: none !important; }
             #actionLectureBtn { padding: .3rem .5rem !important; }
         }
 
-        /* Back button text hidden on tiny screens */
         @media (max-width: 359.98px) {
             #backBtn .back-label { display: none !important; }
         }
 
-        /* ── Nav tab bar scrollable on mobile ── */
         #chatView nav {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
@@ -144,13 +132,11 @@
             padding: .65rem .75rem !important;
         }
 
-        /* ── Chat input bar ── */
         #chatInputBar {
             padding: .5rem .75rem .75rem !important;
         }
         #msgInput { font-size: .875rem; }
 
-        /* Emoji picker on mobile: cap width and shift right if needed */
         @media (max-width: 575.98px) {
             emoji-picker {
                 left: 0;
@@ -159,58 +145,54 @@
             }
         }
 
-        /* ── Offcanvas — full-width on mobile ── */
         @media (max-width: 575.98px) {
             #roomInfoOffcanvas { width: 100vw !important; }
         }
 
-        /* ── Modal responsive tweaks ── */
         @media (max-width: 575.98px) {
             .modal-dialog { margin: .5rem; }
-
-            /* Tab buttons wrap gracefully */
             #rrTabBar { flex-wrap: wrap; gap: .25rem; }
             .rr-tab-btn { flex: 1 1 auto; text-align: center; font-size: .8rem; padding: .5rem .75rem !important; }
-
-            /* Resource basket height */
             #rrResBasket { max-height: 140px; overflow-y: auto; }
-
-            /* Date/time row — stack fully */
             #rrTabRoom .row.g-3 .col-md-6,
             #rrTabRoom .row.g-3 .col-md-3,
             #rrTabResource .row.g-3 .col-md-6,
             #rrTabResource .row.g-3 .col-md-3 { width: 100%; }
         }
 
-        /* ── List view table — horizontal scroll on mobile ── */
         @media (max-width: 767.98px) {
             #listViewContainer .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
             #listViewContainer table { min-width: 540px; }
         }
 
-        /* ── Jitsi container mobile height ── */
         @media (max-width: 575.98px) {
-            #jitsiContainer { min-height: 300px; }
+            #callUI { height: 40vh; }
         }
 
         /* ── FIX: header must sit above everything and not clip dropdowns ── */
         #header-container {
             flex-shrink: 0;
-            overflow: visible;      /* was: hidden — clipped the profile dropdown */
+            overflow: visible;
             position: relative;
-            z-index: 200;           /* above sidebar z-index and page content */
+            z-index: 200;
         }
 
-        /* ── Content area fills viewport correctly on all sizes ── */
         #content {
-            min-width: 0;      /* prevent flex child overflow */
+            min-width: 0;
             overflow-x: hidden;
         }
 
-        /* ── appShell must sit below the header ── */
         #appShell {
             position: relative;
             z-index: 1;
+        }
+
+        /* ── Leave button overlay inside callUI ── */
+        #leaveLectureBtn {
+            position: absolute;
+            top: .75rem;
+            right: .75rem;
+            z-index: 10;
         }
     </style>
 </head>
@@ -299,6 +281,16 @@
                     </a>
                 </nav>
 
+                <!-- ✅ Call UI sits HERE — above the chat body -->
+                <div id="callUI" class="flex-column">
+                    <button class="btn btn-danger rounded-circle shadow-lg p-2 lh-1" id="leaveLectureBtn"
+                            title="Leave" style="width:40px;height:40px;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <div id="jitsiContainer" class="flex-grow-1 rounded-4 overflow-hidden shadow-lg border border-secondary" style="height:100%;"></div>
+                </div>
+
+                <!-- Chat body fills remaining space below the call -->
                 <div id="chatBody" class="d-flex flex-column flex-grow-1 bg-light position-relative overflow-hidden">
 
                     <div id="chatMessages" class="flex-grow-1 overflow-auto custom-scrollbar p-3 p-md-4 d-flex flex-column gap-2">
@@ -325,18 +317,10 @@
                         </div>
                     </div>
 
-                    <div id="callUI" class="flex-column p-3">
-                        <div class="d-flex justify-content-end mb-2 flex-shrink-0">
-                            <button class="btn btn-danger rounded-circle shadow-lg p-2 lh-1" id="leaveLectureBtn"
-                                    title="Leave" style="width:40px;height:40px;">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div id="jitsiContainer" class="flex-grow-1 rounded-4 overflow-hidden shadow-lg border border-secondary"></div>
-                    </div>
-
                 </div>
-            </div></div>
+
+            </div>
+        </div>
     </div>
 </div>
 
