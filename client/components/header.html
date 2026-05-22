@@ -89,9 +89,7 @@
                     Cancel
                 </button>
                 <button type="button" id="logoutBtn"
-                    style="flex:1; padding:11px; border-radius:10px; border:none; background:#ef4444; color:#fff; font-size:.82rem; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:.2s;"
-                    onmouseover="if(!this.disabled) this.style.background='#dc2626';"
-                    onmouseout="if(!this.disabled) this.style.background='#ef4444';">
+                    style="flex:1; padding:11px; border-radius:10px; border:none; background:#ef4444; color:#fff; font-size:.82rem; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:.2s;">
                     <i class="fas fa-sign-out-alt me-1"></i> Yes, Sign Out
                 </button>
             </div>
@@ -108,15 +106,32 @@
             document.body.appendChild(logoutModal);
         }
 
-        // Instant visual feedback when clicked
-        $('#logoutBtn').on('click', function() {
-            // Change text to spinner instantly so it feels responsive
-            $(this).html('<i class="fas fa-spinner fa-spin me-1"></i> Signing out...');
-            $(this).prop('disabled', true);
-            $(this).css({ 'opacity': '0.8', 'cursor': 'wait', 'background': '#dc2626' });
-            $('#cancelLogoutBtn').prop('disabled', true).css('opacity', '0.5');
+        // Unified, instant logout handler
+        $('#logoutBtn').off('click').on('click', function(e) {
+            e.preventDefault();
+            const btn = $(this);
 
-            // Note: Your main JavaScript file's `#logoutBtn` listener will still trigger the AJAX request.
+            // 1. Instant UI Feedback (Do not use .prop('disabled', true) here!)
+            btn.html('<i class="fas fa-spinner fa-spin me-1"></i> Signing out...');
+            btn.css({ 'opacity': '0.8', 'cursor': 'wait', 'background': '#dc2626', 'pointer-events': 'none' });
+            $('#cancelLogoutBtn').css({ 'opacity': '0.5', 'pointer-events': 'none' });
+
+            // 2. Immediate Server Request
+            $.ajax({
+                url: 'https://artisanslms.onrender.com/backend/index.php',
+                method: 'POST',
+                contentType: 'application/json',
+                dataType: 'json',
+                xhrFields: { withCredentials: true },
+                data: JSON.stringify({ route: 'auth', action: 'logout' }),
+                success: function() {
+                    window.location.replace('/client/pages/login.html');
+                },
+                error: function() {
+                    // Force redirect even if the server drops the connection
+                    window.location.replace('/client/pages/login.html');
+                }
+            });
         });
     });
 </script>

@@ -55,7 +55,21 @@ class AuthController {
     }
 
     public function logout(): void {
+        // 1. Clear session variables from memory instantly
+        $_SESSION = [];
+
+        // 2. Destroy the session cookie on the user's browser
+        if (ini_get("session.use_cookies")) {
+            $params = session_get_cookie_params();
+            setcookie(session_name(), '', time() - 42000,
+                $params["path"], $params["domain"],
+                $params["secure"], $params["httponly"]
+            );
+        }
+
+        // 3. Destroy the session file on the server
         session_destroy();
+
         json_response(['status' => 'success', 'redirect' => '../../client/pages/login.html']);
     }
 
@@ -69,17 +83,17 @@ class AuthController {
     }
 
     public function getDepartments(): void {
-    require_once __DIR__ . '/../config/db.php';
-    $conn = getConnection();
-    $departments = [];
-    $res = $conn->query("SELECT department_id, name FROM departments ORDER BY name ASC");
-    if ($res) {
-        while ($row = $res->fetch_assoc()) {
-            $departments[] = $row;
+        require_once __DIR__ . '/../config/db.php';
+        $conn = getConnection();
+        $departments = [];
+        $res = $conn->query("SELECT department_id, name FROM departments ORDER BY name ASC");
+        if ($res) {
+            while ($row = $res->fetch_assoc()) {
+                $departments[] = $row;
+            }
         }
+        json_response(['status' => 'success', 'departments' => $departments]);
     }
-    json_response(['status' => 'success', 'departments' => $departments]);
-}
 
     public function register(array $data): void {
         $firstName = trim($data['first_name'] ?? '');
@@ -122,7 +136,7 @@ class AuthController {
             'email'         => $email,
             'password'      => $hashed,
             'role'          => 'student',
-            'department_id' => $deptId   // ← fixed
+            'department_id' => $deptId
         ]);
 
         if ($created) {
