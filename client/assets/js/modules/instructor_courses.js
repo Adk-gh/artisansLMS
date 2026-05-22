@@ -21,7 +21,6 @@ const API_COURSES = 'https://artisanslms.onrender.com/backend/endpoints/instruct
 const API = 'https://artisanslms.onrender.com/backend/index.php';
 
 $(document).ready(function() {
-    // Moved load scripts into document ready to keep HTML clean
     $("#sidebar-container").load("../components/sidebar.html");
     $("#header-container").load("../components/header.html", function(res, status) {
         if (status !== 'error' && typeof initHeader === 'function') {
@@ -167,32 +166,30 @@ function buildResourceItem(file) {
 
     return `
     <div class="resource-item d-flex justify-content-between align-items-center py-2 border-bottom" id="resource-${rid}" style="border-color: #f1f5f9 !important; overflow: visible !important;">
-    <span onclick="viewFile('${path}', '${escAttr(file.file_name)}')"
-          class="file-link flex-grow-1 text-truncate pe-2 fw-medium text-dark" style="cursor: pointer; font-size: 0.85rem; text-decoration: none;">
-        <i class="fas ${icon} me-2"></i>${name}
-    </span>
+        <span onclick="viewFile('${path}', '${escAttr(file.file_name)}')"
+              class="file-link flex-grow-1 text-truncate pe-2 fw-medium text-dark" style="cursor: pointer; font-size: 0.85rem; text-decoration: none;">
+            <i class="fas ${icon} me-2"></i>${name}
+        </span>
 
-    <div class="dropdown" style="position: static;">
-
-        <a class="text-muted px-2" href="#" role="button" data-bs-toggle="dropdown" data-bs-boundary="window">
-            <i class="fas fa-ellipsis-v"></i>
-        </a>
-
-        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3" style="z-index: 9999 !important;">
-            <li>
-                <button class="dropdown-item small py-2" onclick="openEditModal(${rid}, this)" data-name="${escAttr(file.file_name)}" data-desc="${escAttr(file.description ?? '')}">
-                    <i class="fas fa-edit me-2 text-info"></i> Edit
-                </button>
-            </li>
-            <li><hr class="dropdown-divider"></li>
-            <li>
-                <button class="dropdown-item small py-2 text-danger" onclick="deleteResource(${rid}, '${escAttr(file.file_name)}', this)">
-                    <i class="fas fa-trash-alt me-2"></i> Delete
-                </button>
-            </li>
-        </ul>
-    </div>
-</div>`;
+        <div class="dropdown" style="position: static;">
+            <a class="text-muted px-2" href="#" role="button" data-bs-toggle="dropdown" data-bs-boundary="window">
+                <i class="fas fa-ellipsis-v"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3" style="z-index: 9999 !important;">
+                <li>
+                    <button class="dropdown-item small py-2" onclick="openEditModal(${rid}, this)" data-name="${escAttr(file.file_name)}" data-desc="${escAttr(file.description ?? '')}">
+                        <i class="fas fa-edit me-2 text-info"></i> Edit
+                    </button>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <button class="dropdown-item small py-2 text-danger" onclick="openDeleteModal(${rid}, '${escAttr(file.file_name)}')">
+                        <i class="fas fa-trash-alt me-2"></i> Delete
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>`;
 }
 
 window.filterCourses = function() {
@@ -288,7 +285,64 @@ window.openUploadModal = function(courseId) {
     new bootstrap.Modal(document.getElementById('uploadModal')).show();
 };
 
-// ── FIREBASE UPLOAD AND DELETE ────────────────────────────────────────────────
+// ── DELETE MODAL ──────────────────────────────────────────────────────────────
+window.openDeleteModal = function(resourceId, fileName) {
+    document.getElementById('deleteFileName').textContent = `"${fileName}"`;
+
+    const modal      = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    const confirmBtn = document.getElementById('deleteConfirmBtn');
+
+    // Clone to remove any previously attached listeners
+    const freshBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(freshBtn, confirmBtn);
+
+    freshBtn.addEventListener('click', async function() {
+        freshBtn.disabled  = true;
+        freshBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Deleting...';
+
+        try {
+            const fd = new FormData();
+            fd.append('action',      'delete_resource');
+            fd.append('resource_id', resourceId);
+
+            const response = await fetch(API_COURSES, { method: 'POST', body: fd });
+            const res      = await response.json();
+
+            if (res.status === 'success') {
+                if (res.file_path && res.file_path.includes('firebasestorage')) {
+                    try {
+                        const fileRef = ref(storage, res.file_path);
+                        await deleteObject(fileRef);
+                    } catch (fbErr) {
+                        console.warn('Deleted from DB, but failed to delete from Firebase Storage:', fbErr);
+                    }
+                }
+
+                modal.hide();
+
+                const row = document.getElementById(`resource-${resourceId}`);
+                if (row) {
+                    row.style.transition = 'opacity 0.3s';
+                    row.style.opacity    = '0';
+                    setTimeout(() => row.remove(), 320);
+                }
+
+                showAlert(`"${fileName}" deleted.`);
+            } else {
+                throw new Error(res.message);
+            }
+        } catch (err) {
+            modal.hide();
+            showAlert(`Error: ${err.message}`);
+            freshBtn.disabled  = false;
+            freshBtn.innerHTML = '<i class="fas fa-trash-alt me-2"></i> Delete';
+        }
+    });
+
+    modal.show();
+};
+
+// ── FIREBASE UPLOAD ───────────────────────────────────────────────────────────
 window.submitResourceUpload = function() {
     const file     = document.getElementById('res_file_input').files[0];
     const courseId = document.getElementById('res_course_id').value;
@@ -309,8 +363,8 @@ window.submitResourceUpload = function() {
     btn.innerHTML              = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading...';
 
     const safeFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`;
-    const storageRef = ref(storage, `course_resources/${safeFileName}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
+    const storageRef   = ref(storage, `course_resources/${safeFileName}`);
+    const uploadTask   = uploadBytesResumable(storageRef, file);
 
     uploadTask.on('state_changed',
         (snapshot) => {
@@ -327,10 +381,8 @@ window.submitResourceUpload = function() {
         },
         async () => {
             try {
-                // Get public URL from Firebase
                 const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
 
-                // Send ONLY the URL to PHP
                 const fd = new FormData();
                 fd.append('action',      'upload_resource');
                 fd.append('course_id',   courseId);
@@ -339,7 +391,7 @@ window.submitResourceUpload = function() {
                 fd.append('file_url',    downloadURL);
 
                 const response = await fetch(API_COURSES, { method: 'POST', body: fd });
-                const res = await response.json();
+                const res      = await response.json();
 
                 if (res.status !== 'success') throw new Error(res.message || 'Database save failed.');
 
@@ -371,48 +423,6 @@ window.submitResourceUpload = function() {
             }
         }
     );
-};
-
-window.deleteResource = async function(resourceId, fileName, btn) {
-    if (!confirm(`Permanently delete "${fileName}"?`)) return;
-
-    btn.disabled  = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Deleting...';
-
-    try {
-        const fd = new FormData();
-        fd.append('action', 'delete_resource');
-        fd.append('resource_id', resourceId);
-
-        const response = await fetch(API_COURSES, { method: 'POST', body: fd });
-        const res = await response.json();
-
-        if (res.status === 'success') {
-            // Check if file is stored in Firebase and delete it there too
-            if (res.file_path && res.file_path.includes('firebasestorage')) {
-                try {
-                    const fileRef = ref(storage, res.file_path);
-                    await deleteObject(fileRef);
-                } catch (fbErr) {
-                    console.warn("Deleted from DB, but failed to delete from Firebase Storage:", fbErr);
-                }
-            }
-
-            const row = document.getElementById(`resource-${resourceId}`);
-            if (row) {
-                row.style.transition = 'opacity 0.3s';
-                row.style.opacity    = '0';
-                setTimeout(() => row.remove(), 320);
-            }
-            showAlert(`"${fileName}" deleted.`);
-        } else {
-            throw new Error(res.message);
-        }
-    } catch (err) {
-        alert('Error: ' + err.message);
-        btn.disabled  = false;
-        btn.innerHTML = '<i class="fas fa-trash-alt me-2"></i> Delete';
-    }
 };
 
 // ── UTILITIES ─────────────────────────────────────────────────────────────────

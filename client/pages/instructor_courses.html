@@ -9,14 +9,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/client/assets/css/style.css">
     <style>
-        /* ── Layout Constraint (Freezes the page) ── */
         html, body { height: 100%; margin: 0; overflow: hidden; }
         body { font-family: 'Sora', sans-serif; background-color: #f8fafc; display: flex; flex-direction: column; }
 
         #content { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         main { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 1.5rem !important; }
 
-        /* Sidebar Offset */
         @media (min-width: 768px) {
             #content { margin-left: 260px !important; transition: margin-left .28s cubic-bezier(0.4, 0, 0.2, 1); }
             body.sidebar-collapsed #content { margin-left: 68px !important; }
@@ -24,16 +22,13 @@
 
         #header-container { position: relative; z-index: 1050; }
 
-        /* Hover Lift Animation for Cards */
         .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .hover-lift:hover { transform: translateY(-3px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important; }
 
-        /* Search Box Overrides */
         .search-wrap { position: relative; max-width: 400px; width: 100%; }
         .search-wrap i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
         .search-wrap input { padding-left: 44px; border-radius: 12px; }
 
-        /* Upload & File Interactive Elements */
         .file-link { cursor: pointer; transition: color 0.2s ease; word-break: break-all; }
         .file-link:hover { color: #0ea5e9 !important; }
 
@@ -42,7 +37,6 @@
 
         #fileViewerFrame { width: 100%; height: 75vh; min-height: 500px; border: none; }
 
-        /* ── Scrollable Grid Wrapper ── */
         .grid-scroll-wrapper {
             flex: 1;
             overflow-y: auto;
@@ -55,7 +49,6 @@
         .grid-scroll-wrapper::-webkit-scrollbar { width: 6px; }
         .grid-scroll-wrapper::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
 
-        /* Inner scroll for materials list inside cards */
         .resource-list-wrapper {
             max-height: 180px;
             overflow-y: auto;
@@ -64,13 +57,9 @@
         }
         .resource-list-wrapper::-webkit-scrollbar { width: 4px; }
         .resource-list-wrapper::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
-        /* Add this to your stylesheet */
-.dropdown-container {
-    overflow: visible !important;
-}
-.dropdown-menu {
-    z-index: 9999 !important;
-}
+
+        .dropdown-container { overflow: visible !important; }
+        .dropdown-menu { z-index: 9999 !important; }
     </style>
 </head>
 <body>
@@ -100,11 +89,11 @@
                         </div>
                     </div>
                 </div>
-
             </main>
         </div>
     </div>
 
+    <!-- View File Modal -->
     <div class="modal fade" id="viewFileModal" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-lg rounded-4 bg-dark">
@@ -119,6 +108,7 @@
         </div>
     </div>
 
+    <!-- Upload Modal -->
     <div class="modal fade" id="uploadModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg rounded-4">
@@ -128,10 +118,8 @@
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" title="Close"></button>
                 </div>
-
                 <div class="modal-body px-4 pt-3 pb-4">
                     <input type="hidden" id="res_course_id">
-
                     <div id="dropZone" class="drop-zone text-center bg-light px-3 py-4 mb-3"
                          onclick="document.getElementById('res_file_input').click()">
                         <i class="fas fa-cloud-upload-alt fa-2x text-primary mb-2 opacity-75"></i>
@@ -139,19 +127,16 @@
                         <div class="text-muted mt-1" id="dropZoneFileName" style="font-size:.8rem;"></div>
                     </div>
                     <input type="file" id="res_file_input" class="d-none" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.png,.jpg,.jpeg,.mp4">
-
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-muted">Title <span class="text-danger">*</span></label>
                         <input type="text" id="res_custom_name" class="form-control rounded-3 border-light-subtle shadow-sm"
                                placeholder="e.g. Week 1 Lecture Notes">
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-muted">Description <span class="text-muted fw-normal">(optional)</span></label>
                         <textarea id="res_file_desc" class="form-control rounded-3 border-light-subtle shadow-sm"
                                   rows="2" placeholder="Brief description of this resource..."></textarea>
                     </div>
-
                     <div id="uploadProgressWrap" style="display:none;" class="mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-1">
                             <small class="text-muted fw-semibold" id="uploadStatusText">Uploading...</small>
@@ -164,10 +149,8 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="modal-footer border-0 px-4 pt-0 pb-4 gap-2">
-                    <button type="button" class="btn btn-light rounded-pill px-4 fw-semibold"
-                            data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-semibold" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" id="uploadSubmitBtn"
                             class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm"
                             onclick="submitResourceUpload()">
@@ -178,6 +161,7 @@
         </div>
     </div>
 
+    <!-- Edit Modal -->
     <div class="modal fade" id="editModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg rounded-4">
@@ -187,26 +171,21 @@
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" title="Close"></button>
                 </div>
-
                 <div class="modal-body px-4 pt-3 pb-2">
                     <input type="hidden" id="edit_res_id">
-
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-muted">Title <span class="text-danger">*</span></label>
                         <input type="text" id="edit_res_name" class="form-control rounded-3 border-light-subtle shadow-sm"
                                placeholder="Resource title">
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label small fw-semibold text-muted">Description</label>
                         <textarea id="edit_res_desc" class="form-control rounded-3 border-light-subtle shadow-sm"
                                   rows="2" placeholder="Brief description..."></textarea>
                     </div>
                 </div>
-
                 <div class="modal-footer border-0 px-4 pt-0 pb-4 gap-2">
-                    <button type="button" class="btn btn-light rounded-pill px-4 fw-semibold"
-                            data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-semibold" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-info text-white rounded-pill px-4 fw-bold shadow-sm"
                             onclick="submitEditResource()">
                         <i class="fas fa-save me-2"></i> Save Changes
@@ -216,9 +195,31 @@
         </div>
     </div>
 
+    <!-- Delete Confirm Modal -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 pb-0 px-4 pt-4">
+                    <h5 class="modal-title fw-bold text-dark">
+                        <i class="fas fa-trash-alt me-2 text-danger"></i> Delete Resource
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" title="Close"></button>
+                </div>
+                <div class="modal-body px-4 pt-3 pb-2">
+                    <p class="text-muted small mb-0">Are you sure you want to permanently delete <span id="deleteFileName" class="fw-bold text-dark"></span>? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer border-0 px-4 pt-0 pb-4 gap-2">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-semibold" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="deleteConfirmBtn" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">
+                        <i class="fas fa-trash-alt me-2"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
         $(document).ready(function() {
             $("#sidebar-container").load("../components/sidebar.html");
@@ -229,7 +230,6 @@
             });
         });
     </script>
-
     <script type="module" src="/client/assets/js/modules/instructor_courses.js"></script>
 </body>
 </html>
