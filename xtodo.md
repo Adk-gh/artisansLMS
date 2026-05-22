@@ -13,4 +13,4 @@ integrate with schedule.
 
 ~~have email for instructors~~
 
-add a check for signup if the email is already used for both students table and employees
+~~add a check for signup if the email is already used for both students table and employees~~

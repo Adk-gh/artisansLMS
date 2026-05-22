@@ -362,21 +362,22 @@ server/ws/server.js
 
 ## Security Features
 
-| Feature                    | Implementation                                              |
-| -------------------------- | ---------------------------------------------------------- |
-| Session Authentication     | `$_SESSION['user_id']` checked on all protected endpoints |
-| Role-Based Access          | Role check (`$_SESSION['role']`) for admin-only endpoints |
-| CORS                       | Whitelist of allowed origins in `cors.php`                  |
-| API Key Authentication     | HRIS webhook uses `X-API-Key` header                        |
-| Password Hashing          | `password_hash()` with BCRYPT                              |
-| SQL Injection Prevention  | Prepared statements (`$stmt->bind_param()`)               |
-| JSON Error Shielding      | `error_reporting(0)` and `ini_set('display_errors', 0)`   |
+| Feature                  | Implementation                                            |
+| ------------------------ | --------------------------------------------------------- |
+| Session Authentication   | `$_SESSION['user_id']` checked on all protected endpoints |
+| Role-Based Access        | Role check (`$_SESSION['role']`) for admin-only endpoints |
+| CORS                     | Whitelist of allowed origins in `cors.php`                |
+| API Key Authentication   | HRIS webhook uses `X-API-Key` header                      |
+| Password Hashing         | `password_hash()` with BCRYPT                             |
+| SQL Injection Prevention | Prepared statements (`$stmt->bind_param()`)               |
+| JSON Error Shielding     | `error_reporting(0)` and `ini_set('display_errors', 0)`   |
 
 ### Authentication
 
 ArtisansLMS uses **session-based authentication** with PHP sessions. Users authenticate by providing email and password, which are verified against the database.
 
 **Login Flow:**
+
 ```
 1. User submits credentials (email + password) to auth endpoint
 2. AuthController->login() validates against database
@@ -400,7 +401,8 @@ ArtisansLMS uses **session-based authentication** with PHP sessions. Users authe
 | `student` | Enrolled student   | Access to courses, assignments, grades |
 
 Admin-only endpoints verify role:
-```php
+
+```PHP
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
     json_response(['status' => 'error', 'message' => 'Unauthorized access'], 401);
 }
@@ -426,7 +428,7 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 
 **Hashing Algorithm:** Uses Bcrypt via PHP's `password_hash()` function.
 
-```php
+```PHP
 // Registration - hash new password
 $hashed = password_hash($password, PASSWORD_BCRYPT);
 
@@ -437,11 +439,13 @@ if (password_verify($password, $user['password'])) {
 ```
 
 **Password Requirements:**
-- Minimum 8 characters
-- Email format validation
+
+* Minimum 8 characters
+* Email format validation
 
 **Temporary Password Generation (HRIS sync):**
-```php
+
+```PHP
 $chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 $tmp_pass = 'FAC-';
 for ($i = 0; $i < 6; $i++) {
@@ -452,7 +456,7 @@ $hashed = password_hash($tmp_pass, PASSWORD_DEFAULT);
 
 ### Session Management
 
-```php
+```PHP
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -472,7 +476,7 @@ session_destroy();
 
 External systems must authenticate using an **API Key**:
 
-```php
+```PHP
 define('HRIS_WEBHOOK_SECRET', getenv('HRIS_WEBHOOK_SECRET') ?: '81af90f1c04ba06b06bb79ac8c184794');
 
 $received_key = $_SERVER['HTTP_X_API_KEY'] ?? '';
@@ -483,6 +487,7 @@ if ($received_key !== HRIS_WEBHOOK_SECRET) {
 ```
 
 **HRIS Sync Request Flow:**
+
 ```
 External HRIS System
         │
@@ -500,7 +505,7 @@ External HRIS System
 
 `backend/middleware/cors.php` handles Cross-Origin Resource Sharing:
 
-```php
+```PHP
 $allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:5173',
@@ -523,7 +528,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 All database queries use **prepared statements**:
 
-```php
+```PHP
 // Safe query with prepared statement
 $stmt = $conn->prepare("INSERT INTO students (first_name, last_name, email, password_hash) VALUES (?, ?, ?, ?)");
 $stmt->bind_param("ssss", $firstName, $lastName, $email, $hashed);
@@ -534,7 +539,7 @@ $stmt->execute();
 
 ### Input Validation
 
-```php
+```PHP
 // Required field validation
 if (!$email || !$password) {
     json_response(['status' => 'error', 'message' => 'Email and password are required.']);
@@ -552,7 +557,7 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
 ### Error Handling
 
-```php
+```PHP
 // Shield JSON from HTML errors
 error_reporting(0);
 ini_set('display_errors', 0);
@@ -567,7 +572,7 @@ echo json_encode($response);
 
 ### File Upload Security
 
-```php
+```PHP
 // Validate upload
 if (!isset($_FILES['file_to_upload']) || $_FILES['file_to_upload']['error'] !== UPLOAD_ERR_OK) {
     echo json_encode(["status" => "error", "message" => "Invalid file or upload error."]);
@@ -585,28 +590,29 @@ if (move_uploaded_file($file['tmp_name'], $dest_path)) {
 
 ### Security Checklist
 
-| Security Feature      | Status | Implementation File(s)                    |
-| --------------------- | ------ | ------------------------------------------ |
-| Session Authentication | ✅     | All endpoint files                        |
-| Password Hashing      | ✅     | AuthController.php, profile.php           |
-| Role-Based Access     | ✅     | Admin endpoints                           |
-| SQL Injection Prevention | ✅  | All database queries                     |
-| CORS Protection       | ✅     | middleware/cors.php                       |
-| API Key Authentication | ✅    | api/get_faculty.php                       |
-| Input Validation      | ✅     | All endpoint files                        |
-| Error Shielding       | ✅     | All endpoint files                        |
-| File Upload Security  | ✅     | endpoints/courses.php                    |
+| Security Feature         | Status | Implementation File(s)          |
+| ------------------------ | ------ | ------------------------------- |
+| Session Authentication   | ✅      | All endpoint files              |
+| Password Hashing         | ✅      | AuthController.php, profile.php |
+| Role-Based Access        | ✅      | Admin endpoints                 |
+| SQL Injection Prevention | ✅      | All database queries            |
+| CORS Protection          | ✅      | middleware/cors.php             |
+| API Key Authentication   | ✅      | api/get\_faculty.php            |
+| Input Validation         | ✅      | All endpoint files              |
+| Error Shielding          | ✅      | All endpoint files              |
+| File Upload Security     | ✅      | endpoints/courses.php           |
 
 ### Recommended Enhancements
 
 For production deployment, consider adding:
-- HTTPS enforcement
-- Session timeout/expiration
-- Rate limiting (prevent brute force)
-- CSRF tokens for forms
-- Account lockout after failed attempts
-- Two-factor authentication for admin accounts
-- Security event logging
+
+* HTTPS enforcement
+* Session timeout/expiration
+* Rate limiting (prevent brute force)
+* CSRF tokens for forms
+* Account lockout after failed attempts
+* Two-factor authentication for admin accounts
+* Security event logging
 
 ***
 

@@ -235,13 +235,15 @@
                 </h5>
                 <div class="d-flex gap-2" id="teacherActions">
                     <a id="btnCreateTask" href="/client/pages/instructor_assignments.html"
-                       class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm fw-bold d-none">
+                    class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm fw-bold d-none">
                         <i class="fas fa-plus me-1"></i> Create Task
                     </a>
-                    <button id="btnCreateQuiz" class="btn btn-purple btn-sm rounded-pill px-4 shadow-sm fw-bold d-none"
-                            data-bs-toggle="modal" data-bs-target="#createQuizModal">
+
+                    <!-- Changed to an anchor tag, added href, removed modal data attributes -->
+                    <a id="btnCreateQuiz" href="/client/pages/instructor_assignments.html"
+                    class="btn btn-purple btn-sm rounded-pill px-4 shadow-sm fw-bold d-none">
                         <i class="fas fa-plus me-1"></i> Create Quiz
-                    </button>
+                    </a>
                 </div>
             </div>
 

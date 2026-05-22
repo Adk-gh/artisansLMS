@@ -54,7 +54,7 @@
 
 </header>
 
-<div class="modal fade" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmLabel" aria-hidden="true">
+<div class="modal" id="logoutConfirmModal" tabindex="-1" aria-labelledby="logoutConfirmLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" style="max-width: 380px;">
         <div class="modal-content border-0 rounded-4 overflow-hidden" style="font-family: 'Sora', sans-serif;">
 
@@ -82,7 +82,7 @@
             </div>
 
             <div style="padding: 0 24px 24px; display:flex; gap:10px;">
-                <button type="button" data-bs-dismiss="modal"
+                <button type="button" data-bs-dismiss="modal" id="cancelLogoutBtn"
                     style="flex:1; padding:11px; border-radius:10px; border:1.5px solid #e2e8f0; background:#f8fafc; color:#475569; font-size:.82rem; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:.2s;"
                     onmouseover="this.style.background='#f1f5f9';"
                     onmouseout="this.style.background='#f8fafc';">
@@ -90,8 +90,8 @@
                 </button>
                 <button type="button" id="logoutBtn"
                     style="flex:1; padding:11px; border-radius:10px; border:none; background:#ef4444; color:#fff; font-size:.82rem; font-weight:700; font-family:'Sora',sans-serif; cursor:pointer; transition:.2s;"
-                    onmouseover="this.style.background='#dc2626';"
-                    onmouseout="this.style.background='#ef4444';">
+                    onmouseover="if(!this.disabled) this.style.background='#dc2626';"
+                    onmouseout="if(!this.disabled) this.style.background='#ef4444';">
                     <i class="fas fa-sign-out-alt me-1"></i> Yes, Sign Out
                 </button>
             </div>
@@ -102,9 +102,21 @@
 
 <script>
     $(document).ready(function() {
+        // Move modal to body to fix z-index overlay issues
         const logoutModal = document.getElementById('logoutConfirmModal');
         if (logoutModal) {
             document.body.appendChild(logoutModal);
         }
+
+        // Instant visual feedback when clicked
+        $('#logoutBtn').on('click', function() {
+            // Change text to spinner instantly so it feels responsive
+            $(this).html('<i class="fas fa-spinner fa-spin me-1"></i> Signing out...');
+            $(this).prop('disabled', true);
+            $(this).css({ 'opacity': '0.8', 'cursor': 'wait', 'background': '#dc2626' });
+            $('#cancelLogoutBtn').prop('disabled', true).css('opacity', '0.5');
+
+            // Note: Your main JavaScript file's `#logoutBtn` listener will still trigger the AJAX request.
+        });
     });
 </script>
