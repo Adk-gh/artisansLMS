@@ -75,56 +75,6 @@
             display: flex; align-items: center; justify-content: center;
             font-weight: 700; font-size: .78rem; flex-shrink: 0;
         }
-
-        /* ════════════════════════════════════════════
-            PRINT STYLES
-        ════════════════════════════════════════════ */
-        @media print {
-            /* Force exact background colors to render */
-            * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-            }
-
-            /* Hide unnecessary UI */
-            #sidebar-placeholder,
-            #header-placeholder,
-            .btn-print {
-                display: none !important;
-            }
-
-            /* Reset Layout */
-            html, body, #content, main {
-                height: auto !important;
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                overflow: visible !important;
-                background: white !important;
-            }
-
-            main { padding: 0.5in !important; }
-
-            /* Simplify UI elements */
-            .shadow-sm { box-shadow: none !important; }
-            .report-card, .stat-pill {
-                border: 1px solid #cbd5e1 !important;
-                page-break-inside: avoid;
-                break-inside: avoid;
-            }
-
-            /* Force Grid Layouts (Prevents mobile stacking on print) */
-            .row { display: flex !important; flex-wrap: wrap !important; }
-            .col-lg-3 { width: 25% !important; flex: 0 0 25% !important; max-width: 25% !important; }
-            .col-md-4 { width: 33.333333% !important; flex: 0 0 33.333333% !important; max-width: 33.333333% !important; }
-            .col-lg-4 { width: 33.333333% !important; flex: 0 0 33.333333% !important; max-width: 33.333333% !important; }
-            .col-6 { width: 50% !important; flex: 0 0 50% !important; max-width: 50% !important; }
-            .col-12 { width: 100% !important; flex: 0 0 100% !important; max-width: 100% !important; }
-
-            /* Table adjustments */
-            table { page-break-inside: auto; }
-            tr { page-break-inside: avoid; page-break-after: auto; }
-        }
     </style>
 </head>
 <body>
@@ -135,216 +85,215 @@
         <div id="content" class="flex-grow-1 w-100">
             <div id="header-placeholder" class="flex-shrink-0"></div>
 
-            <main class="container-fluid p-4 p-md-5">
+            <main class="container-fluid p-4 p-md-5" id="mainScrollArea">
 
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h4 class="fw-bold m-0 text-dark d-none d-print-block">System Analytics Report</h4>
-                    <button class="btn btn-dark fw-bold rounded-pill px-4 shadow-sm btn-print hover-lift ms-auto" onclick="window.print()">
-                        <i class="fas fa-print me-2"></i> Print Report
+                    <h4 class="fw-bold m-0 text-dark">System Analytics Report</h4>
+                    <button id="btnDownloadReport" class="btn btn-dark fw-bold rounded-pill px-4 shadow-sm hover-lift ms-auto">
+                        <i class="fas fa-download me-2"></i> Download Report
                     </button>
                 </div>
 
-                <div class="row g-3 mb-5">
-                    <div class="col-6 col-lg-3">
-                        <div class="stat-pill shadow-sm">
-                            <div class="stat-pill-icon" style="background:#dbeafe;">
-                                <i class="fas fa-users" style="color:#1d4ed8;"></i>
-                            </div>
-                            <div>
-                                <div class="num" id="statStudents">0</div>
-                                <div class="lbl">Students</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-lg-3">
-                        <div class="stat-pill shadow-sm">
-                            <div class="stat-pill-icon" style="background:#dcfce7;">
-                                <i class="fas fa-chalkboard" style="color:#15803d;"></i>
-                            </div>
-                            <div>
-                                <div class="num" id="statClasses">0</div>
-                                <div class="lbl">Classes</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-lg-3">
-                        <div class="stat-pill shadow-sm">
-                            <div class="stat-pill-icon" style="background:#fef3c7;">
-                                <i class="fas fa-file-alt" style="color:#b45309;"></i>
-                            </div>
-                            <div>
-                                <div class="num" id="statTasks">0</div>
-                                <div class="lbl">Tasks Posted</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-lg-3">
-                        <div class="stat-pill shadow-sm">
-                            <div class="stat-pill-icon" style="background:#f3e8ff;">
-                                <i class="fas fa-brain" style="color:#7c3aed;"></i>
-                            </div>
-                            <div>
-                                <div class="num" id="statQuizzes">0</div>
-                                <div class="lbl">Quizzes</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row g-4 mb-5">
-
-                    <div class="col-md-4">
-                        <div class="report-card shadow-sm h-100">
-                            <div class="report-card-header">
-                                <h6 class="fw-bold m-0 small">Average Class Grade</h6>
-                                <span class="badge bg-primary-subtle text-primary">Assessment</span>
-                            </div>
-                            <div class="p-4 d-flex flex-column">
-                                <h2 class="fw-bold text-primary mb-1" id="avgGradeVal">--%</h2>
-                                <p class="small text-muted mb-0">Mean score across all graded assignments.</p>
-                                <div class="mt-auto pt-3">
-                                    <div class="d-flex justify-content-between small text-muted mb-1">
-                                        <span>Target: 85%</span>
-                                        <span id="avgGradeSub">--%</span>
-                                    </div>
-                                    <div class="prog-thin">
-                                        <div class="prog-thin-fill" id="avgGradeBar" style="width:0%;background:#e2e8f0;"></div>
-                                    </div>
-                                    <div class="mt-3" id="avgGradeStatus"></div>
+                <div id="captureArea" style="padding-bottom: 20px; background-color: #f8fafc;">
+                    <div class="row g-3 mb-5">
+                        <div class="col-6 col-lg-3">
+                            <div class="stat-pill shadow-sm">
+                                <div class="stat-pill-icon" style="background:#dbeafe;">
+                                    <i class="fas fa-users" style="color:#1d4ed8;"></i>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-4">
-                        <div class="report-card shadow-sm h-100">
-                            <div class="report-card-header">
-                                <h6 class="fw-bold m-0 small">Task Submission Rate</h6>
-                                <span class="badge bg-info-subtle text-info">Engagement</span>
-                            </div>
-                            <div class="p-4 d-flex flex-column">
-                                <h2 class="fw-bold text-info mb-1" id="subRateVal">--%</h2>
-                                <span>Target: 80%</span>
-                                <p class="small text-muted mb-0" id="subRateSub">Calculating expected submissions...</p>
-                                <div class="mt-auto pt-3">
-                                    <div class="prog-thin">
-                                        <div class="prog-thin-fill" id="subRateBar" style="width:0%;background:#e2e8f0;"></div>
-                                    </div>
-                                    <div class="mt-3" id="subRateStatus"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-4">
-                        <div class="report-card shadow-sm h-100">
-                            <div class="report-card-header">
-                                <h6 class="fw-bold m-0 small">Quiz Pass Rate</h6>
-                                <span class="badge" style="background:#f3e8ff;color:#7c3aed;">Quizzes</span>
-                            </div>
-                            <div class="p-4 d-flex flex-column">
-                                <h2 class="fw-bold mb-1" style="color:#7c3aed;" id="quizRateVal">--%</h2>
-                                <span>Target: 75%</span>
-                                <p class="small text-muted mb-0" id="quizRateSub">Calculating attempts scored ≥75%.</p>
-                                <div class="mt-auto pt-3">
-                                    <div class="prog-thin">
-                                        <div class="prog-thin-fill" id="quizRateBar" style="width:0%;background:#e2e8f0;"></div>
-                                    </div>
-                                    <div class="mt-3" id="quizRateStatus"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-
-                <div class="row g-4 mb-5">
-                    <div class="col-lg-4">
-                        <div class="report-card shadow-sm h-100">
-                            <div class="report-card-header">
-                                <h6 class="fw-bold m-0">Learning Progress</h6>
-                                <span class="badge bg-light text-dark border">Outcome</span>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="bg-light small text-muted">
-                                        <tr>
-                                            <th class="ps-3">Course</th>
-                                            <th>Subs</th>
-                                            <th>Avg Grade</th>
-                                            <th class="text-end pe-3">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="courseTableBody">
-                                        <tr><td colspan="4" class="text-center py-4 text-muted small">Loading Data...</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="report-card shadow-sm h-100">
-                            <div class="report-card-header">
-                                <h6 class="fw-bold m-0">Faculty Workload</h6>
-                                <span class="badge bg-light text-dark border">Top 5</span>
-                            </div>
-                            <div class="p-3" id="facultyLoadContainer">
-                                <p class="text-center text-muted small py-3 mb-0">Loading Data...</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="report-card shadow-sm h-100">
-                            <div class="report-card-header">
-                                <h6 class="fw-bold m-0">Top Students</h6>
-                                <span class="badge bg-light text-dark border">Top 5</span>
-                            </div>
-                            <div class="p-3" id="topStudentsContainer">
-                                <p class="text-center text-muted small py-3 mb-0">Loading Data...</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row g-4">
-                    <div class="col-12">
-                        <div class="report-card shadow-sm">
-                            <div class="report-card-header">
                                 <div>
-                                    <h6 class="fw-bold m-0">Instructor Performance</h6>
-                                    <p class="text-muted small mb-0 mt-1">Avg student grade, submission engagement, and quiz pass rate per faculty member.</p>
+                                    <div class="num" id="statStudents">0</div>
+                                    <div class="lbl">Students</div>
                                 </div>
-                                <span class="badge bg-light text-dark border">Faculty Report</span>
                             </div>
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="bg-light small text-muted">
-                                        <tr>
-                                            <th class="ps-4">Instructor</th>
-                                            <th>Department</th>
-                                            <th>Classes</th>
-                                            <th>Tasks / Quizzes</th>
-                                            <th>Submission Rate</th>
-                                            <th>Avg Grade</th>
-                                            <th>Quiz Pass Rate</th>
-                                            <th class="text-end pe-4">Rating</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="instructorPerfBody">
-                                        <tr><td colspan="8" class="text-center py-4 text-muted small">Loading Data...</td></tr>
-                                    </tbody>
-                                </table>
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <div class="stat-pill shadow-sm">
+                                <div class="stat-pill-icon" style="background:#dcfce7;">
+                                    <i class="fas fa-chalkboard" style="color:#15803d;"></i>
+                                </div>
+                                <div>
+                                    <div class="num" id="statClasses">0</div>
+                                    <div class="lbl">Classes</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <div class="stat-pill shadow-sm">
+                                <div class="stat-pill-icon" style="background:#fef3c7;">
+                                    <i class="fas fa-file-alt" style="color:#b45309;"></i>
+                                </div>
+                                <div>
+                                    <div class="num" id="statTasks">0</div>
+                                    <div class="lbl">Tasks Posted</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <div class="stat-pill shadow-sm">
+                                <div class="stat-pill-icon" style="background:#f3e8ff;">
+                                    <i class="fas fa-brain" style="color:#7c3aed;"></i>
+                                </div>
+                                <div>
+                                    <div class="num" id="statQuizzes">0</div>
+                                    <div class="lbl">Quizzes</div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-            </main>
+                    <div class="row g-4 mb-5">
+                        <div class="col-md-4">
+                            <div class="report-card shadow-sm h-100">
+                                <div class="report-card-header">
+                                    <h6 class="fw-bold m-0 small">Average Class Grade</h6>
+                                    <span class="badge bg-primary-subtle text-primary">Assessment</span>
+                                </div>
+                                <div class="p-4 d-flex flex-column">
+                                    <h2 class="fw-bold text-primary mb-1" id="avgGradeVal">--%</h2>
+                                    <p class="small text-muted mb-0">Mean score across all graded assignments.</p>
+                                    <div class="mt-auto pt-3">
+                                        <div class="d-flex justify-content-between small text-muted mb-1">
+                                            <span>Target: 85%</span>
+                                            <span id="avgGradeSub">--%</span>
+                                        </div>
+                                        <div class="prog-thin">
+                                            <div class="prog-thin-fill" id="avgGradeBar" style="width:0%;background:#e2e8f0;"></div>
+                                        </div>
+                                        <div class="mt-3" id="avgGradeStatus"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="report-card shadow-sm h-100">
+                                <div class="report-card-header">
+                                    <h6 class="fw-bold m-0 small">Task Submission Rate</h6>
+                                    <span class="badge bg-info-subtle text-info">Engagement</span>
+                                </div>
+                                <div class="p-4 d-flex flex-column">
+                                    <h2 class="fw-bold text-info mb-1" id="subRateVal">--%</h2>
+                                    <span>Target: 80%</span>
+                                    <p class="small text-muted mb-0" id="subRateSub">Calculating expected submissions...</p>
+                                    <div class="mt-auto pt-3">
+                                        <div class="prog-thin">
+                                            <div class="prog-thin-fill" id="subRateBar" style="width:0%;background:#e2e8f0;"></div>
+                                        </div>
+                                        <div class="mt-3" id="subRateStatus"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="report-card shadow-sm h-100">
+                                <div class="report-card-header">
+                                    <h6 class="fw-bold m-0 small">Quiz Pass Rate</h6>
+                                    <span class="badge" style="background:#f3e8ff;color:#7c3aed;">Quizzes</span>
+                                </div>
+                                <div class="p-4 d-flex flex-column">
+                                    <h2 class="fw-bold mb-1" style="color:#7c3aed;" id="quizRateVal">--%</h2>
+                                    <span>Target: 75%</span>
+                                    <p class="small text-muted mb-0" id="quizRateSub">Calculating attempts scored ≥75%.</p>
+                                    <div class="mt-auto pt-3">
+                                        <div class="prog-thin">
+                                            <div class="prog-thin-fill" id="quizRateBar" style="width:0%;background:#e2e8f0;"></div>
+                                        </div>
+                                        <div class="mt-3" id="quizRateStatus"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mb-5">
+                        <div class="col-lg-4">
+                            <div class="report-card shadow-sm h-100">
+                                <div class="report-card-header">
+                                    <h6 class="fw-bold m-0">Learning Progress</h6>
+                                    <span class="badge bg-light text-dark border">Outcome</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="bg-light small text-muted">
+                                            <tr>
+                                                <th class="ps-3">Course</th>
+                                                <th>Subs</th>
+                                                <th>Avg Grade</th>
+                                                <th class="text-end pe-3">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="courseTableBody">
+                                            <tr><td colspan="4" class="text-center py-4 text-muted small">Loading Data...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="report-card shadow-sm h-100">
+                                <div class="report-card-header">
+                                    <h6 class="fw-bold m-0">Faculty Workload</h6>
+                                    <span class="badge bg-light text-dark border">Top 5</span>
+                                </div>
+                                <div class="p-3" id="facultyLoadContainer">
+                                    <p class="text-center text-muted small py-3 mb-0">Loading Data...</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="report-card shadow-sm h-100">
+                                <div class="report-card-header">
+                                    <h6 class="fw-bold m-0">Top Students</h6>
+                                    <span class="badge bg-light text-dark border">Top 5</span>
+                                </div>
+                                <div class="p-3" id="topStudentsContainer">
+                                    <p class="text-center text-muted small py-3 mb-0">Loading Data...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-12">
+                            <div class="report-card shadow-sm">
+                                <div class="report-card-header">
+                                    <div>
+                                        <h6 class="fw-bold m-0">Instructor Performance</h6>
+                                        <p class="text-muted small mb-0 mt-1">Avg student grade, submission engagement, and quiz pass rate per faculty member.</p>
+                                    </div>
+                                    <span class="badge bg-light text-dark border">Faculty Report</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="bg-light small text-muted">
+                                            <tr>
+                                                <th class="ps-4">Instructor</th>
+                                                <th>Department</th>
+                                                <th>Classes</th>
+                                                <th>Tasks / Quizzes</th>
+                                                <th>Submission Rate</th>
+                                                <th>Avg Grade</th>
+                                                <th>Quiz Pass Rate</th>
+                                                <th class="text-end pe-4">Rating</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="instructorPerfBody">
+                                            <tr><td colspan="8" class="text-center py-4 text-muted small">Loading Data...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div> </main>
         </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <script>
         $(document).ready(function() {
@@ -352,6 +301,59 @@
             $("#header-placeholder").load("../components/header.html", function(res, status) {
                 if (status !== 'error' && typeof window.initHeader === 'function') {
                     window.initHeader();
+                }
+            });
+
+            // ─── Image Download Logic ──────────────────────────────────────────────────
+            $('#btnDownloadReport').on('click', async function() {
+                const btn = $(this);
+                const originalContent = btn.html();
+
+                // Show loading state
+                btn.prop('disabled', true);
+                btn.html('<i class="fas fa-spinner fa-spin me-2"></i> Generating...');
+
+                try {
+                    const captureArea = document.getElementById('captureArea');
+                    const mainContainer = document.getElementById('mainScrollArea');
+
+                    // Temporarily remove scroll limits so the entire page renders
+                    const origOverflow = mainContainer.style.overflow;
+                    const origHeight = mainContainer.style.height;
+
+                    mainContainer.style.overflow = 'visible';
+                    mainContainer.style.height = 'auto';
+
+                    // Capture the image
+                    const canvas = await html2canvas(captureArea, {
+                        scale: 2,
+                        useCORS: true,
+                        backgroundColor: '#f8fafc',
+                        windowWidth: captureArea.scrollWidth,
+                        windowHeight: captureArea.scrollHeight
+                    });
+
+                    // Restore original scrolling behavior
+                    mainContainer.style.overflow = origOverflow;
+                    mainContainer.style.height = origHeight;
+
+                    // Trigger the download
+                    const imageURI = canvas.toDataURL('image/png');
+                    const link = document.createElement('a');
+
+                    const dateStr = new Date().toISOString().split('T')[0];
+                    link.download = `System_Analytics_Report_${dateStr}.png`;
+                    link.href = imageURI;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                } catch (err) {
+                    console.error('[Download Error]', err);
+                    alert('Failed to generate the report image. Please try again.');
+                } finally {
+                    btn.html(originalContent);
+                    btn.prop('disabled', false);
                 }
             });
         });

@@ -24,7 +24,6 @@
                 margin-left: 260px !important;
                 transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
             }
-            /* FIX: collapse state mirrors collaborations.html */
             body.sidebar-collapsed #content {
                 margin-left: 68px !important;
             }
@@ -73,8 +72,9 @@
         .day-pill.is-today { border-color:#86efac;color:#15803d;background:#f0fdf4; }
         .day-pill.is-today.active { background:#1e293b;color:#fff;border-color:#1e293b; }
 
-        .btn-print { display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:10px;border:1.5px solid #e9ecef;background:#f8fafc;color:#475569;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s;font-family:'Sora',sans-serif; }
-        .btn-print:hover { background:#1e293b;color:#fff;border-color:#1e293b; }
+        .btn-download { display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:10px;border:1.5px solid #e9ecef;background:#f8fafc;color:#475569;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .15s;font-family:'Sora',sans-serif; }
+        .btn-download:hover { background:#1e293b;color:#fff;border-color:#1e293b; }
+        .btn-download:disabled { opacity: 0.7; cursor: not-allowed; }
 
         /* ── Timetable Wrapper ── */
         .schedule-wrap { flex:1;min-height:0;background:#fff;border:1px solid #e2e8f0;border-radius:16px 16px 0 0;border-bottom:none;overflow:hidden;display:flex;flex-direction:column; }
@@ -158,14 +158,14 @@
             .day-pill-wrap::-webkit-scrollbar { display: none; }
 
             .day-pill { padding: 5px 12px; font-size: .68rem; flex-shrink: 0; }
-            .btn-print-label { display: none; }
+            .btn-download-label { display: none; }
         }
 
         @media (max-width: 400px) {
             .sf-bar { flex-direction: row; flex-wrap: wrap; }
             .sf-select { flex: 1 1 calc(50% - 4px); min-width: 0; }
             .day-pill-wrap { width: 100%; }
-            .btn-print { width: 100%; justify-content: center; margin-top: 4px; }
+            .btn-download { width: 100%; justify-content: center; margin-top: 4px; }
         }
 
         /* ── Main padding ── */
@@ -196,14 +196,6 @@
             .schedule-footer { padding: 8px 12px; border-radius: 0 0 12px 12px; }
             .legend-item { font-size: .68rem; padding: 2px 8px 2px 5px; }
         }
-
-        /* ── Print ── */
-        @media print {
-            #sidebar-container, .sf-bar, .stats-row { display: none !important; }
-            #content { margin-left: 0 !important; }
-            .schedule-wrap { border-radius: 0; overflow: visible; }
-            .sched-session { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        }
     </style>
 </head>
 <body>
@@ -216,7 +208,6 @@
 
             <main class="container-fluid p-3 p-md-4 p-lg-5 d-flex flex-column">
 
-                <!-- Stats -->
                 <div class="stats-row">
                     <div class="stat-card">
                         <div class="stat-icon blue"><i class="fas fa-calendar-check"></i></div>
@@ -236,7 +227,6 @@
                     </div>
                 </div>
 
-                <!-- Controls -->
                 <div class="sf-bar">
                     <select class="sf-select" id="semesterSelect">
                         <option value="1st Semester">1st Semester</option>
@@ -260,30 +250,31 @@
                         <button class="day-pill" data-day="Sunday">Sun</button>
                     </div>
 
-                    <button class="btn-print" onclick="window.print()">
-                        <i class="fas fa-print"></i>
-                        <span class="btn-print-label"> Print</span>
+                    <button class="btn-download" id="btnDownloadSchedule">
+                        <i class="fas fa-download"></i>
+                        <span class="btn-download-label"> Download</span>
                     </button>
                 </div>
 
-                <!-- Timetable -->
-                <div class="schedule-wrap shadow-sm">
-                    <div id="schedLoader">
-                        <div class="spinner"></div>
-                        <span class="small fw-bold text-muted">Loading your schedule…</span>
+                <div id="captureArea" class="d-flex flex-column" style="flex: 1; min-height: 0;">
+                    <div class="schedule-wrap shadow-sm">
+                        <div id="schedLoader">
+                            <div class="spinner"></div>
+                            <span class="small fw-bold text-muted">Loading your schedule…</span>
+                        </div>
+                        <div id="schedError"></div>
+                        <div class="timetable-scroll" id="timetableScroll" style="display:none;">
+                            <div id="schedGrid"></div>
+                        </div>
+                        <div class="no-schedule" id="schedEmpty" style="display:none;">
+                            <i class="fas fa-calendar-times"></i>
+                            No classes scheduled for this period.
+                        </div>
                     </div>
-                    <div id="schedError"></div>
-                    <div class="timetable-scroll" id="timetableScroll" style="display:none;">
-                        <div id="schedGrid"></div>
-                    </div>
-                    <div class="no-schedule" id="schedEmpty" style="display:none;">
-                        <i class="fas fa-calendar-times"></i>
-                        No classes scheduled for this period.
-                    </div>
-                </div>
 
-                <div class="schedule-footer shadow-sm" id="schedLegend">
-                    <span class="legend-lbl">Subjects:</span>
+                    <div class="schedule-footer shadow-sm" id="schedLegend">
+                        <span class="legend-lbl">Subjects:</span>
+                    </div>
                 </div>
 
             </main>
@@ -292,6 +283,7 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="/client/assets/js/modules/instructors.schedule.js"></script>
 </body>
 </html>

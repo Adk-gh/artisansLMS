@@ -321,6 +321,62 @@ $(document).ready(function() {
         });
     }
 
+    // ─── Image Download Logic ──────────────────────────────────────────────────
+    $('#btnDownloadSchedule').on('click', async function() {
+        const btn = $(this);
+        const originalContent = btn.html();
+
+        // Prevent multiple clicks and show loading state
+        btn.prop('disabled', true);
+        btn.html('<i class="fas fa-spinner fa-spin"></i><span class="btn-download-label"> Generating...</span>');
+
+        try {
+            const captureArea = $el('captureArea');
+            const scrollArea = $el('timetableScroll');
+            const wrapArea = document.querySelector('.schedule-wrap');
+
+            // 1. Temporarily remove scrollbars and force full height so nothing gets cropped
+            const origScrollOverflow = scrollArea.style.overflow;
+            const origWrapFlex = wrapArea.style.flex;
+
+            scrollArea.style.overflow = 'visible';
+            wrapArea.style.flex = 'none'; // Disable flex shrinking
+            wrapArea.style.height = 'auto';
+
+            // 2. Capture the image using html2canvas
+            const canvas = await html2canvas(captureArea, {
+                scale: 2, // High resolution for better text clarity
+                useCORS: true,
+                backgroundColor: '#f8fafc' // Matches your body background
+            });
+
+            // 3. Restore original styles immediately
+            scrollArea.style.overflow = origScrollOverflow;
+            wrapArea.style.flex = origWrapFlex;
+            wrapArea.style.height = '';
+
+            // 4. Create a virtual link and trigger the download
+            const imageURI = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+
+            // Format filename safely: Schedule_1st_Semester_2025-2026.png
+            const safeSemester = S.semester.replace(/\s+/g, '_');
+            link.download = `Schedule_${safeSemester}_${S.schoolYear}.png`;
+            link.href = imageURI;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+        } catch (err) {
+            console.error('[Download Error]', err);
+            alert('Failed to generate the schedule image. Please try again.');
+        } finally {
+            // Restore button state
+            btn.html(originalContent);
+            btn.prop('disabled', false);
+        }
+    });
+
     async function boot(isReload = false) {
         showLoader(true); hideError();
         try {
@@ -339,4 +395,4 @@ $(document).ready(function() {
     }
 
     boot(false);
-});
+}); 

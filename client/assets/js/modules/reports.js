@@ -31,6 +31,112 @@ $(document).ready(function() {
         });
     }
 
+    // ── Download PDF ──────────────────────────────────────────────────────────
+    window.downloadReport = function() {
+        const btn = document.getElementById('btnDownloadReport');
+        const originalHtml = btn.innerHTML;
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Generating PDF...';
+
+        // The element to capture — the full <main> scrollable content
+        const target = document.querySelector('main');
+
+        // Temporarily expand main to full scroll height so nothing is clipped
+        const prevOverflow = target.style.overflow;
+        const prevHeight   = target.style.height;
+        target.style.overflow = 'visible';
+        target.style.height   = 'auto';
+
+        html2canvas(target, {
+            scale: 2,                  // retina quality
+            useCORS: true,
+            allowTaint: true,
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth:  target.scrollWidth,
+            windowHeight: target.scrollHeight,
+            backgroundColor: '#f8fafc'
+        }).then(canvas => {
+            // Restore styles
+            target.style.overflow = prevOverflow;
+            target.style.height   = prevHeight;
+
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+            const pageW  = pdf.internal.pageSize.getWidth();   // 210 mm
+            const pageH  = pdf.internal.pageSize.getHeight();  // 297 mm
+            const margin = 10; // mm
+            const usableW = pageW - margin * 2;
+
+            const imgData   = canvas.toDataURL('image/jpeg', 0.92);
+            const imgW      = canvas.width;
+            const imgH      = canvas.height;
+
+            // How tall is one A4 page worth of canvas pixels?
+            const scale      = usableW / (imgW * 0.264583); // px → mm
+            const totalMmH   = imgH * 0.264583 * scale;
+            const usablePageH = pageH - margin * 2;
+
+            let yOffset = 0; // mm already rendered
+
+            while (yOffset < totalMmH) {
+                if (yOffset > 0) pdf.addPage();
+
+                // Add header watermark on each page
+                pdf.setFontSize(7);
+                pdf.setTextColor(180, 180, 180);
+                pdf.text('ARTISANS LMS — System Analytics Report', margin, margin - 3);
+                const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                pdf.text(`Generated: ${today}`, pageW - margin, margin - 3, { align: 'right' });
+
+                // Clip the canvas slice for this page
+                const srcYpx     = (yOffset / (imgH * 0.264583 * scale)) * imgH;
+                const srcHeightPx = Math.min((usablePageH / (imgH * 0.264583 * scale)) * imgH, imgH - srcYpx);
+
+                if (srcHeightPx <= 0) break;
+
+                // Create a temporary canvas for this slice
+                const sliceCanvas = document.createElement('canvas');
+                sliceCanvas.width  = imgW;
+                sliceCanvas.height = Math.ceil(srcHeightPx);
+                const ctx = sliceCanvas.getContext('2d');
+                ctx.drawImage(canvas, 0, -srcYpx);
+
+                const sliceData   = sliceCanvas.toDataURL('image/jpeg', 0.92);
+                const sliceHeightMm = (sliceCanvas.height * 0.264583) * scale;
+
+                pdf.addImage(sliceData, 'JPEG', margin, margin, usableW, Math.min(sliceHeightMm, usablePageH));
+
+                yOffset += usablePageH;
+            }
+
+            // Page numbers
+            const totalPages = pdf.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                pdf.setPage(i);
+                pdf.setFontSize(7);
+                pdf.setTextColor(180, 180, 180);
+                pdf.text(`Page ${i} of ${totalPages}`, pageW / 2, pageH - 4, { align: 'center' });
+            }
+
+            const filename = `ArtisansLMS_Report_${new Date().toISOString().slice(0,10)}.pdf`;
+            pdf.save(filename);
+
+            btn.disabled  = false;
+            btn.innerHTML = originalHtml;
+        }).catch(err => {
+            console.error('PDF generation failed:', err);
+            target.style.overflow = prevOverflow;
+            target.style.height   = prevHeight;
+            btn.disabled  = false;
+            btn.innerHTML = originalHtml;
+            alert('Failed to generate PDF. Please try again.');
+        });
+    };
+
+    // ── Summary Pills ─────────────────────────────────────────────────────────
     function renderSummaryPills(summary) {
         $('#statStudents').text(summary.total_students);
         $('#statClasses').text(summary.total_classes);
@@ -38,6 +144,7 @@ $(document).ready(function() {
         $('#statQuizzes').text(summary.total_quizzes);
     }
 
+    // ── Performance Cards ─────────────────────────────────────────────────────
     function renderPerformanceCards(summary) {
         $('#avgGradeVal').text(summary.avg_grade + '%');
         $('#avgGradeSub').text(summary.avg_grade + '%');
@@ -76,6 +183,7 @@ $(document).ready(function() {
         $('#quizRateStatus').html(quizStatus);
     }
 
+    // ── Course Table ──────────────────────────────────────────────────────────
     function renderCourseTable(courses) {
         const $tbody = $('#courseTableBody');
         $tbody.empty();
@@ -107,20 +215,21 @@ $(document).ready(function() {
             if (avg >= 75)     statusCell = '<span class="status-good"><i class="fas fa-check-circle me-1"></i>Meeting Targets</span>';
             else if (avg > 0)  statusCell = '<span class="status-bad"><i class="fas fa-exclamation-triangle me-1"></i>Intervention Needed</span>';
 
-           html += `
-        <tr>
-            <td class="ps-3">
-                <div class="fw-bold">${c.course_code}</div>
-                <small class="text-muted">${c.name}</small>
-            </td>
-            <td><span class="badge bg-light text-dark border">${c.sub_count}</span></td>
-            <td>${gradeCell}</td>
-            <td class="text-end pe-3">${statusCell}</td>
-        </tr>`;
+            html += `
+            <tr>
+                <td class="ps-3">
+                    <div class="fw-bold">${c.course_code}</div>
+                    <small class="text-muted">${c.name}</small>
+                </td>
+                <td><span class="badge bg-light text-dark border">${c.sub_count}</span></td>
+                <td>${gradeCell}</td>
+                <td class="text-end pe-3">${statusCell}</td>
+            </tr>`;
         });
         $tbody.html(html);
     }
 
+    // ── Faculty Workload ──────────────────────────────────────────────────────
     function renderFacultyWorkload(loads) {
         const $container = $('#facultyLoadContainer');
         $container.empty();
@@ -149,6 +258,7 @@ $(document).ready(function() {
         $container.html(html);
     }
 
+    // ── Top Students ──────────────────────────────────────────────────────────
     function renderTopStudents(students) {
         const $container = $('#topStudentsContainer');
         $container.empty();
@@ -189,16 +299,14 @@ $(document).ready(function() {
 
         let html = '';
         instructors.forEach(inst => {
-            const avg       = parseFloat(inst.avg_grade) || 0;
-            const subRate   = parseFloat(inst.submission_rate) || 0;
-            const quizRate  = inst.quiz_pass_rate !== null ? parseFloat(inst.quiz_pass_rate) : null;
+            const avg      = parseFloat(inst.avg_grade) || 0;
+            const subRate  = parseFloat(inst.submission_rate) || 0;
+            const quizRate = inst.quiz_pass_rate !== null ? parseFloat(inst.quiz_pass_rate) : null;
 
-            // Avatar initials + colour
             const initials  = (inst.first_name.charAt(0) + inst.last_name.charAt(0)).toUpperCase();
             const avatarBg  = avg >= 80 ? '#dcfce7' : (avg >= 65 ? '#fef3c7' : (avg > 0 ? '#fee2e2' : '#f1f5f9'));
             const avatarCol = avg >= 80 ? '#15803d' : (avg >= 65 ? '#b45309' : (avg > 0 ? '#b91c1c' : '#64748b'));
 
-            // Avg grade cell
             const gradeColor = avg >= 80 ? '#22c55e' : (avg >= 65 ? '#f59e0b' : (avg > 0 ? '#ef4444' : '#e2e8f0'));
             const gradeCell  = avg > 0
                 ? `<div class="fw-bold" style="color:${avg >= 80 ? '#15803d' : (avg >= 65 ? '#b45309' : '#b91c1c')};">${avg}%</div>
@@ -207,25 +315,21 @@ $(document).ready(function() {
                    </div>`
                 : '<span class="text-muted small">No grades</span>';
 
-            // Submission rate cell
-            const subColor  = subRate >= 80 ? '#22c55e' : (subRate >= 60 ? '#f59e0b' : '#ef4444');
-            const subCell   = inst.task_count > 0
+            const subColor = subRate >= 80 ? '#22c55e' : (subRate >= 60 ? '#f59e0b' : '#ef4444');
+            const subCell  = inst.task_count > 0
                 ? `<div class="fw-bold" style="color:${subRate >= 80 ? '#15803d' : (subRate >= 60 ? '#b45309' : '#b91c1c')};">${subRate}%</div>
                    <div class="prog-thin" style="width:80px;">
                        <div class="prog-thin-fill" style="width:${Math.min(subRate,100)}%;background:${subColor};"></div>
                    </div>`
                 : '<span class="text-muted small">No tasks</span>';
 
-            // Quiz pass rate cell
-            const quizCell  = quizRate !== null
+            const quizCell = quizRate !== null
                 ? `<span class="badge rounded-pill px-2 py-1" style="background:${quizRate >= 75 ? '#dcfce7' : (quizRate >= 50 ? '#fef3c7' : '#fee2e2')};color:${quizRate >= 75 ? '#15803d' : (quizRate >= 50 ? '#b45309' : '#b91c1c')};">${quizRate}%</span>`
                 : '<span class="text-muted small">—</span>';
 
-            // Overall rating — weighted: grade 50%, submission 30%, quiz 20%
-            let score = 0;
-            let factors = 0;
-            if (avg > 0)          { score += avg * 0.5;      factors += 0.5; }
-            if (inst.task_count > 0) { score += subRate * 0.3; factors += 0.3; }
+            let score = 0, factors = 0;
+            if (avg > 0)             { score += avg * 0.5;      factors += 0.5; }
+            if (inst.task_count > 0) { score += subRate * 0.3;  factors += 0.3; }
             if (quizRate !== null)   { score += quizRate * 0.2; factors += 0.2; }
             const rating = factors > 0 ? Math.round(score / factors) : null;
 
@@ -247,21 +351,13 @@ $(document).ready(function() {
                     <div class="d-flex align-items-center gap-2">
                         <div class="inst-avatar" style="background:${avatarBg};color:${avatarCol};">${initials}</div>
                         <div>
-                            <div class="fw-bold text-dark" style="font-size:.85rem;">
-                                ${inst.first_name} ${inst.last_name}
-                            </div>
+                            <div class="fw-bold text-dark" style="font-size:.85rem;">${inst.first_name} ${inst.last_name}</div>
                             <div style="font-size:.68rem;color:#94a3b8;">ID #${inst.employee_id}</div>
                         </div>
                     </div>
                 </td>
-                <td>
-                    <span class="badge bg-light text-dark border" style="font-size:.7rem;">
-                        ${inst.dept_name || 'Unassigned'}
-                    </span>
-                </td>
-                <td>
-                    <span class="badge bg-primary-subtle text-primary rounded-pill px-2">${inst.class_count}</span>
-                </td>
+                <td><span class="badge bg-light text-dark border" style="font-size:.7rem;">${inst.dept_name || 'Unassigned'}</span></td>
+                <td><span class="badge bg-primary-subtle text-primary rounded-pill px-2">${inst.class_count}</span></td>
                 <td>
                     <span class="small text-dark fw-medium">${inst.task_count} tasks</span>
                     <span class="text-muted small"> / </span>
@@ -284,21 +380,21 @@ const AUTH_API = 'https://artisanslms.onrender.com/backend/index.php';
 function initHeader() {
     const PAGE_TITLES = {
         'dashboard.html':              { title: 'Dashboard',               subtitle: 'Overview of your academic progress and activities.' },
-        'collaborations.html':         { title: 'Collaboration Spaces',   subtitle: 'Select a class to enter the live chat and video space.' },
-        'messages.html':               { title: 'Direct Messages',        subtitle: 'Communicate privately with instructors and peers.' },
-        'my_grades.html':              { title: 'My Grades',              subtitle: 'Track your academic performance and feedback.' },
-        'my_analytics.html':           { title: 'Achievement Board',      subtitle: 'View your milestones, badges, and learning statistics.' },
-        'instructor_dashboard.html':   { title: 'Instructor Dashboard',   subtitle: 'Manage your assigned courses and student spaces.' },
-        'instructor_courses.html':     { title: 'Course Materials',       subtitle: 'Upload and organize files, lectures, and resources.' },
-        'instructor_assignments.html': { title: 'Task Manager',           subtitle: 'Create and manage assignments for your assigned classes.' },
-        'students.html':               { title: 'Manage Students',        subtitle: 'Manage student profiles, accounts, and records.' },
-        'instructors.html':            { title: 'Master Instructors',     subtitle: 'Manage faculty accounts, profiles, and subject loads.' },
-        'enrollment.html':             { title: 'Student Enrollment',     subtitle: 'Manage and track student class enrollments.' },
-        'classes.html':                { title: 'Class Management',       subtitle: 'Create and manage class sections by course.' },
-        'courses.html':                { title: 'Course Management',      subtitle: 'Create, edit, and organize system courses and materials.' },
-        'reports.html':                { title: 'System Reports',         subtitle: 'Generate insights and analytics on system activity.' },
-        'profile.html':                { title: 'My Profile',             subtitle: 'Manage your personal information and account settings.' },
-        'archived.html':               { title: 'Archives',               subtitle: 'All archived records are stored here. Restore or permanently delete them.' }
+        'collaborations.html':         { title: 'Collaboration Spaces',    subtitle: 'Select a class to enter the live chat and video space.' },
+        'messages.html':               { title: 'Direct Messages',         subtitle: 'Communicate privately with instructors and peers.' },
+        'my_grades.html':              { title: 'My Grades',               subtitle: 'Track your academic performance and feedback.' },
+        'my_analytics.html':           { title: 'Achievement Board',       subtitle: 'View your milestones, badges, and learning statistics.' },
+        'instructor_dashboard.html':   { title: 'Instructor Dashboard',    subtitle: 'Manage your assigned courses and student spaces.' },
+        'instructor_courses.html':     { title: 'Course Materials',        subtitle: 'Upload and organize files, lectures, and resources.' },
+        'instructor_assignments.html': { title: 'Task Manager',            subtitle: 'Create and manage assignments for your assigned classes.' },
+        'students.html':               { title: 'Manage Students',         subtitle: 'Manage student profiles, accounts, and records.' },
+        'instructors.html':            { title: 'Master Instructors',      subtitle: 'Manage faculty accounts, profiles, and subject loads.' },
+        'enrollment.html':             { title: 'Student Enrollment',      subtitle: 'Manage and track student class enrollments.' },
+        'classes.html':                { title: 'Class Management',        subtitle: 'Create and manage class sections by course.' },
+        'courses.html':                { title: 'Course Management',       subtitle: 'Create, edit, and organize system courses and materials.' },
+        'reports.html':                { title: 'System Reports',          subtitle: 'Generate insights and analytics on system activity.' },
+        'profile.html':                { title: 'My Profile',              subtitle: 'Manage your personal information and account settings.' },
+        'archived.html':               { title: 'Archives',                subtitle: 'All archived records are stored here. Restore or permanently delete them.' }
     };
 
     const currentPage = window.location.pathname.split('/').pop() || 'reports.html';

@@ -338,7 +338,8 @@ function populateRoomInfo(data) {
     // ── Member list ───────────────────────────────────────────────────────────
     const mList = document.getElementById('memberListContainer');
     mList.innerHTML = data.members.map(m => {
-        const isMe = m.student_id == currentUser.id;
+        const isMe     = m.student_id == currentUser.id;
+        const paddedId = 'STU-' + String(m.student_id).padStart(4, '0');
         return `
             <div class="d-flex align-items-center gap-3 p-2 rounded-3 member-item"
                  data-name="${(m.first_name + ' ' + m.last_name).toLowerCase()}">
@@ -349,7 +350,9 @@ function populateRoomInfo(data) {
                         ${m.first_name} ${m.last_name}
                         ${isMe ? '<span class="badge bg-primary rounded-pill ms-1" style="font-size:.55rem;">You</span>' : ''}
                     </div>
-                    <div class="text-muted fw-semibold" style="font-size:.65rem;">Student</div>
+                    <div class="text-muted fw-semibold" style="font-size:.65rem;">
+                        Student &nbsp;·&nbsp; <span class="font-monospace">${paddedId}</span>
+                    </div>
                 </div>
             </div>`;
     }).join('');

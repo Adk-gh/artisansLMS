@@ -1,18 +1,28 @@
 const API = 'https://artisanslms.onrender.com/backend/index.php';
 
-// Helper function to validate email format strictly
+// Known valid TLDs — blocks common typos like .con, .cpm, .ocm
+const KNOWN_TLDS = [
+    'com', 'net', 'org', 'edu', 'gov', 'mil', 'int',
+    'io', 'co', 'ai', 'app', 'dev', 'info', 'biz',
+    'ph', 'us', 'uk', 'ca', 'au', 'de', 'fr', 'jp',
+    'me', 'tv', 'online', 'site', 'tech', 'store', 'shop',
+    'ac', 'sch', 'ngo', 'xyz', 'design', 'studio'
+];
+
+// Validates email format and checks TLD against known list
 function isValidEmail(email) {
+    // Structural check: proper characters, one @, dot in domain
     const emailRegex = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(email)) return false;
+    if (!emailRegex.test(email)) return { valid: false, warning: false };
 
-    // Common TLD typo guard
-    const commonTLDs = ['com', 'net', 'org', 'edu', 'gov', 'io', 'co', 'ph'];
     const tld = email.split('.').pop().toLowerCase();
-    if (!commonTLDs.includes(tld)) {
-        return false; // blocks .con, .cpm, .ocm, etc.
-    }
+    const isKnownTLD = KNOWN_TLDS.includes(tld);
 
-    return true;
+    return {
+        valid: true,
+        warning: !isKnownTLD, // Valid format but suspicious TLD
+        tld: tld
+    };
 }
 
 $(function () {
@@ -50,7 +60,6 @@ $(function () {
         dataType: 'json',
         success: function (res) {
             if (res.status === 'success' && res.logged_in) {
-                // If already logged in, move to the dashboard
                 window.location.href = res.redirect;
             }
         }
@@ -96,18 +105,46 @@ $(function () {
         });
     });
 
+    // --- Real-Time Email TLD Warning ---
+    $('#regEmail').on('blur', function () {
+        const email = $(this).val().trim();
+        if (!email) return;
+
+        const result = isValidEmail(email);
+        const $warning = $('#emailWarning');
+
+        if (!result.valid) {
+            $warning.removeClass('d-none text-warning text-success')
+                    .addClass('text-danger')
+                    .html('<i class="fas fa-times me-1"></i> Please enter a valid email address.');
+        } else if (result.warning) {
+            $warning.removeClass('d-none text-danger text-success')
+                    .addClass('text-warning')
+                    .html(`<i class="fas fa-exclamation-triangle me-1"></i> ".${result.tld}" looks unusual — did you mean .com or .net?`);
+        } else {
+            $warning.removeClass('d-none text-danger text-warning')
+                    .addClass('text-success')
+                    .html('<i class="fas fa-check me-1"></i> Email looks good.');
+        }
+
+        $warning.removeClass('d-none');
+    });
+
+    // Clear warning while user is typing again
+    $('#regEmail').on('input', function () {
+        $('#emailWarning').addClass('d-none');
+    });
+
     // --- Real-Time Password Strength Validation ---
     let isPasswordStrong = false;
-    $('#regPassword').on('input', function() {
+    $('#regPassword').on('input', function () {
         const pass = $(this).val();
 
-        // Regex rules
-        const hasLength = pass.length >= 8;
-        const hasUpper = /[A-Z]/.test(pass);
-        const hasNumber = /[0-9]/.test(pass);
+        const hasLength  = pass.length >= 8;
+        const hasUpper   = /[A-Z]/.test(pass);
+        const hasNumber  = /[0-9]/.test(pass);
         const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
 
-        // Helper function to toggle UI classes
         const toggleRule = (elementId, isValid, text) => {
             if (isValid) {
                 $(`#${elementId}`).removeClass('text-danger').addClass('text-success')
@@ -118,9 +155,9 @@ $(function () {
             }
         };
 
-        toggleRule('rule-length', hasLength, 'At least 8 characters');
-        toggleRule('rule-upper', hasUpper, 'At least 1 uppercase letter');
-        toggleRule('rule-number', hasNumber, 'At least 1 number');
+        toggleRule('rule-length',  hasLength,  'At least 8 characters');
+        toggleRule('rule-upper',   hasUpper,   'At least 1 uppercase letter');
+        toggleRule('rule-number',  hasNumber,  'At least 1 number');
         toggleRule('rule-special', hasSpecial, 'At least 1 special character');
 
         isPasswordStrong = hasLength && hasUpper && hasNumber && hasSpecial;
@@ -129,30 +166,42 @@ $(function () {
     // --- Register ---
     $('#registerForm').submit(function (e) {
         e.preventDefault();
-        $('#alertMsg').addClass('d-none').removeClass('alert-danger alert-success');
+        $('#alertMsg').addClass('d-none').removeClass('alert-danger alert-success alert-warning');
 
-        const email = $('#regEmail').val();
+        const email    = $('#regEmail').val().trim();
         const password = $('#regPassword').val();
         const confirmPassword = $('#regConfirmPassword').val();
 
         // 1. Validate Email Format
-        if (!isValidEmail(email)) {
-            $('#alertMsg').removeClass('d-none alert-success')
-                          .addClass('alert-danger').text('Please enter a valid email address.');
+        const emailCheck = isValidEmail(email);
+        if (!emailCheck.valid) {
+            $('#alertMsg').removeClass('d-none alert-success alert-warning')
+                          .addClass('alert-danger')
+                          .text('Please enter a valid email address.');
             return;
         }
 
-        // 2. Validate Password Strength
+        // 2. Block suspicious TLDs (e.g. .con instead of .com)
+        if (emailCheck.warning) {
+            $('#alertMsg').removeClass('d-none alert-success alert-danger')
+                          .addClass('alert-warning')
+                          .text(`".${emailCheck.tld}" doesn't look like a valid domain. Did you mean .com or .net?`);
+            return;
+        }
+
+        // 3. Validate Password Strength
         if (!isPasswordStrong) {
-            $('#alertMsg').removeClass('d-none alert-success')
-                          .addClass('alert-danger').text('Please ensure your password meets all strength requirements.');
+            $('#alertMsg').removeClass('d-none alert-success alert-warning')
+                          .addClass('alert-danger')
+                          .text('Please ensure your password meets all strength requirements.');
             return;
         }
 
-        // 3. Validate Passwords Match
+        // 4. Validate Passwords Match
         if (password !== confirmPassword) {
-            $('#alertMsg').removeClass('d-none alert-success')
-                          .addClass('alert-danger').text('Passwords do not match!');
+            $('#alertMsg').removeClass('d-none alert-success alert-warning')
+                          .addClass('alert-danger')
+                          .text('Passwords do not match!');
             return;
         }
 
@@ -178,18 +227,20 @@ $(function () {
             }),
             success: function (res) {
                 if (res.status === 'success') {
-                    $('#alertMsg').removeClass('d-none alert-danger')
-                                  .addClass('alert-success').text(res.message);
+                    $('#alertMsg').removeClass('d-none alert-danger alert-warning')
+                                  .addClass('alert-success')
+                                  .text(res.message);
 
-                    // Reset form and UI
+                    // Reset form and password rules UI
                     $('#registerForm').trigger('reset');
                     $('#regPassword').trigger('input');
+                    $('#emailWarning').addClass('d-none');
 
                     setTimeout(() => {
                         window.location.href = '/client/pages/login.html';
                     }, 2000);
                 } else {
-                    $('#alertMsg').removeClass('d-none alert-success')
+                    $('#alertMsg').removeClass('d-none alert-success alert-warning')
                                   .addClass('alert-danger')
                                   .text(res.message || 'Registration failed.');
                     $('#regBtn').prop('disabled', false)
