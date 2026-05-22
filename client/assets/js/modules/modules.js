@@ -111,37 +111,53 @@ $(document).ready(function() {
         $('#moduleLoadingState').remove();
 
         $container.html(files.map(file => {
-        const ext    = file.file_path.split('.').pop().toLowerCase();
-        const config = getFileIconConfig(ext);
+            const ext    = file.file_path.split('.').pop().toLowerCase();
+            const config = getFileIconConfig(ext);
 
-        // FIX: Force the path to start from /backend/ regardless of what the DB saved
-        let filePath = file.file_path;
-        if (filePath.includes('/backend/')) {
-            // This strips anything before '/backend/' (like '/artisansLMS')
-            filePath = filePath.substring(filePath.indexOf('/backend/'));
-        }
+            // Force the path to start from /backend/ regardless of what the DB saved
+            let filePath = file.file_path;
+            if (filePath.includes('/backend/')) {
+                filePath = filePath.substring(filePath.indexOf('/backend/'));
+            }
 
-        return `
-                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-2">
-                    <div class="card-body p-3 d-flex align-items-center justify-content-between">
-                        <div class="d-flex align-items-center gap-3 overflow-hidden">
-                            <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
-                                 style="width:48px;height:48px;background-color:${config.bg};color:${config.color};">
-                                <i class="fas ${config.icon} fa-lg"></i>
-                            </div>
-                            <div class="overflow-hidden">
-                                <h6 class="mb-0 fw-bold text-dark text-truncate">${file.file_name}</h6>
-                                <small class="text-muted text-uppercase fw-bold" style="font-size:.65rem;letter-spacing:.5px;">
-                                    ${file.description || (ext.toUpperCase() + ' File')}
-                                </small>
-                            </div>
+            // Build a safe filename for the download attribute
+            const downloadName = file.file_name || filePath.split('/').pop();
+
+            return `
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-2">
+                <div class="card-body p-3 d-flex align-items-center justify-content-between gap-2">
+                    <div class="d-flex align-items-center gap-3 overflow-hidden flex-grow-1">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                             style="width:48px;height:48px;background-color:${config.bg};color:${config.color};">
+                            <i class="fas ${config.icon} fa-lg"></i>
                         </div>
-                        <a href="${filePath}" target="_blank"
-                           class="btn btn-light border text-primary fw-bold btn-sm rounded-3 px-3 py-2">
-                            <i class="fas fa-external-link-alt me-1"></i> View
+                        <div class="overflow-hidden">
+                            <h6 class="mb-0 fw-bold text-dark text-truncate">${file.file_name}</h6>
+                            <small class="text-muted text-uppercase fw-bold" style="font-size:.65rem;letter-spacing:.5px;">
+                                ${file.description || (ext.toUpperCase() + ' File')}
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 flex-shrink-0">
+                        <!-- View: opens in a new tab -->
+                        <a href="${filePath}" target="_blank" rel="noopener noreferrer"
+                           class="btn btn-light border text-primary fw-bold btn-sm rounded-3 px-3 py-2"
+                           title="Open file in a new tab">
+                            <i class="fas fa-external-link-alt me-1"></i>
+                            <span class="d-none d-sm-inline">View</span>
+                        </a>
+
+                        <!-- Download: forces file download -->
+                        <a href="${filePath}" download="${downloadName}"
+                           class="btn btn-dark fw-bold btn-sm rounded-3 px-3 py-2"
+                           title="Download this file">
+                            <i class="fas fa-download me-1"></i>
+                            <span class="d-none d-sm-inline">Download</span>
                         </a>
                     </div>
-                </div>`;
+                </div>
+            </div>`;
         }).join(''));
     }
 

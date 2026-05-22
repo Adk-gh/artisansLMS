@@ -64,7 +64,7 @@ window.initHeader = function() {
 // ─── Schedule Rendering Logic ─────────────────────────────────────────────────
 $(document).ready(function() {
 
-    // ── Load UI Components (Matches Task Manager EXACTLY) ──
+    // ── Load UI Components ──
     $("#sidebar-container").load("../components/sidebar.html");
     $("#header-container").load("../components/header.html", function(res, status) {
         if (status !== 'error' && typeof initHeader === 'function') {
@@ -72,9 +72,9 @@ $(document).ready(function() {
         }
     });
 
-    const API_BASE = '/backend/endpoints/instructors.schedule.php';
-    const DAYS      = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-    const DAY_SHORT = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+    const API_BASE   = '/backend/endpoints/instructors.schedule.php';
+    const DAYS       = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+    const DAY_SHORT  = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
     const GRID_START = 7, GRID_END = 20, SLOT_MIN = 30, SLOT_PX = 44;
     const TOTAL_SLOTS = ((GRID_END - GRID_START) * 60) / SLOT_MIN;
 
@@ -127,10 +127,8 @@ $(document).ready(function() {
     function hideError()    { const e=$el('schedError'); if(e) e.style.display = 'none'; }
 
     async function getSchedule() {
-        // SIMULATED NETWORK DELAY
         await new Promise(resolve => setTimeout(resolve, 600));
 
-        // MOCK DATA BASED ON YOUR CLASSES
         const mockData = {
             stats: {
                 total_sessions: 8,
@@ -193,7 +191,6 @@ $(document).ready(function() {
             }
         };
 
-        // If the user tries to look at a different semester, show the empty state
         if (S.semester !== "1st Semester" || S.schoolYear !== "2025-2026") {
             return {
                 stats: { total_sessions: 0, total_hours: 0, unique_subjects: 0, unique_rooms: 0 },
@@ -321,60 +318,158 @@ $(document).ready(function() {
         });
     }
 
-    // ─── Image Download Logic ──────────────────────────────────────────────────
-    $('#btnDownloadSchedule').on('click', async function() {
+    // ─── PDF Download Logic ────────────────────────────────────────────────────
+    $('#btnDownloadSchedule').on('click', function() {
         const btn = $(this);
         const originalContent = btn.html();
 
-        // Prevent multiple clicks and show loading state
         btn.prop('disabled', true);
-        btn.html('<i class="fas fa-spinner fa-spin"></i><span class="btn-download-label"> Generating...</span>');
+        btn.html('<i class="fas fa-spinner fa-spin"></i><span class="btn-download-label"> Generating PDF...</span>');
 
-        try {
-            const captureArea = $el('captureArea');
-            const scrollArea = $el('timetableScroll');
-            const wrapArea = document.querySelector('.schedule-wrap');
+        // Elements we need to temporarily expand
+        const captureEl    = $el('captureArea');
+        const scrollEl     = $el('timetableScroll');
+        const schedWrapEl  = document.querySelector('.schedule-wrap');
+        const schedGridEl  = $el('schedGrid');
 
-            // 1. Temporarily remove scrollbars and force full height so nothing gets cropped
-            const origScrollOverflow = scrollArea.style.overflow;
-            const origWrapFlex = wrapArea.style.flex;
+        // ── Save original styles ──
+        const orig = {
+            captureDisplay  : captureEl.style.display,
+            captureMinHeight: captureEl.style.minHeight,
+            captureHeight   : captureEl.style.height,
+            scrollOverflow  : scrollEl.style.overflow,
+            scrollHeight    : scrollEl.style.height,
+            wrapFlex        : schedWrapEl.style.flex,
+            wrapOverflow    : schedWrapEl.style.overflow,
+            wrapHeight      : schedWrapEl.style.height,
+        };
 
-            scrollArea.style.overflow = 'visible';
-            wrapArea.style.flex = 'none'; // Disable flex shrinking
-            wrapArea.style.height = 'auto';
+        // ── Expand everything so html2canvas sees the full grid ──
+        captureEl.style.minHeight   = 'unset';
+        captureEl.style.height      = 'auto';
+        scrollEl.style.overflow     = 'visible';
+        scrollEl.style.height       = 'auto';
+        schedWrapEl.style.flex      = 'none';
+        schedWrapEl.style.overflow  = 'visible';
+        schedWrapEl.style.height    = 'auto';
 
-            // 2. Capture the image using html2canvas
-            const canvas = await html2canvas(captureArea, {
-                scale: 2, // High resolution for better text clarity
-                useCORS: true,
-                backgroundColor: '#f8fafc' // Matches your body background
+        // Use the grid's natural scroll dimensions for the canvas window size
+        const gridW = schedGridEl ? schedGridEl.scrollWidth  : captureEl.scrollWidth;
+        const gridH = schedGridEl ? schedGridEl.scrollHeight : captureEl.scrollHeight;
+
+        html2canvas(captureEl, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth:  gridW,
+            windowHeight: gridH,
+            backgroundColor: '#f8fafc'
+        }).then(function(canvas) {
+
+            // ── Restore styles immediately after capture ──
+            captureEl.style.display     = orig.captureDisplay;
+            captureEl.style.minHeight   = orig.captureMinHeight;
+            captureEl.style.height      = orig.captureHeight;
+            scrollEl.style.overflow     = orig.scrollOverflow;
+            scrollEl.style.height       = orig.scrollHeight;
+            schedWrapEl.style.flex      = orig.wrapFlex;
+            schedWrapEl.style.overflow  = orig.wrapOverflow;
+            schedWrapEl.style.height    = orig.wrapHeight;
+
+            // ── Build PDF ──
+            const { jsPDF } = window.jspdf;
+
+            // Use landscape for the wide timetable grid
+            const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+            const pageW       = pdf.internal.pageSize.getWidth();   // 297 mm (landscape)
+            const pageH       = pdf.internal.pageSize.getHeight();  // 210 mm
+            const margin      = 12;
+            const headerH     = 8;
+            const footerH     = 8;
+            const usableW     = pageW - margin * 2;
+            const usablePageH = pageH - margin * 2 - headerH - footerH;
+
+            const imgW     = canvas.width;
+            const imgH     = canvas.height;
+            const mmPerPx  = usableW / imgW;
+            const totalMmH = imgH * mmPerPx;
+            const pxPerPage = usablePageH / mmPerPx;
+
+            const today = new Date().toLocaleDateString('en-US', {
+                year: 'numeric', month: 'long', day: 'numeric'
             });
 
-            // 3. Restore original styles immediately
-            scrollArea.style.overflow = origScrollOverflow;
-            wrapArea.style.flex = origWrapFlex;
-            wrapArea.style.height = '';
+            let pageIndex = 0;
 
-            // 4. Create a virtual link and trigger the download
-            const imageURI = canvas.toDataURL('image/png');
-            const link = document.createElement('a');
+            while (pageIndex * pxPerPage < imgH) {
+                if (pageIndex > 0) pdf.addPage();
 
-            // Format filename safely: Schedule_1st_Semester_2025-2026.png
-            const safeSemester = S.semester.replace(/\s+/g, '_');
-            link.download = `Schedule_${safeSemester}_${S.schoolYear}.png`;
-            link.href = imageURI;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+                // ── Header watermark ──
+                pdf.setFontSize(7);
+                pdf.setTextColor(180, 180, 180);
+                pdf.text(
+                    `ARTISANS LMS — My Schedule · ${S.semester} · SY ${S.schoolYear}`,
+                    margin, margin + 3
+                );
+                pdf.text(`Generated: ${today}`, pageW - margin, margin + 3, { align: 'right' });
 
-        } catch (err) {
-            console.error('[Download Error]', err);
-            alert('Failed to generate the schedule image. Please try again.');
-        } finally {
-            // Restore button state
+                // ── Slice canvas for this page ──
+                const srcY = Math.floor(pageIndex * pxPerPage);
+                const srcH = Math.min(Math.ceil(pxPerPage), imgH - srcY);
+                if (srcH <= 0) break;
+
+                const sliceCanvas    = document.createElement('canvas');
+                sliceCanvas.width    = imgW;
+                sliceCanvas.height   = srcH;
+                const ctx            = sliceCanvas.getContext('2d');
+                ctx.drawImage(canvas, 0, -srcY);
+
+                const sliceData     = sliceCanvas.toDataURL('image/jpeg', 0.92);
+                const sliceHeightMm = srcH * mmPerPx;
+                const drawY         = margin + headerH;
+
+                pdf.addImage(sliceData, 'JPEG', margin, drawY, usableW, Math.min(sliceHeightMm, usablePageH));
+
+                pageIndex++;
+            }
+
+            // ── Page numbers ──
+            const totalPages = pdf.internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                pdf.setPage(i);
+                pdf.setFontSize(7);
+                pdf.setTextColor(180, 180, 180);
+                pdf.text(`Page ${i} of ${totalPages}`, pageW / 2, pageH - margin + 2, { align: 'center' });
+            }
+
+            // ── Save ──
+            const safeSem  = S.semester.replace(/\s+/g, '_');
+            const filename = `Schedule_${safeSem}_${S.schoolYear}.pdf`;
+            pdf.save(filename);
+
             btn.html(originalContent);
             btn.prop('disabled', false);
-        }
+
+        }).catch(function(err) {
+            console.error('[PDF Error]', err);
+
+            // Restore styles on error too
+            captureEl.style.display     = orig.captureDisplay;
+            captureEl.style.minHeight   = orig.captureMinHeight;
+            captureEl.style.height      = orig.captureHeight;
+            scrollEl.style.overflow     = orig.scrollOverflow;
+            scrollEl.style.height       = orig.scrollHeight;
+            schedWrapEl.style.flex      = orig.wrapFlex;
+            schedWrapEl.style.overflow  = orig.wrapOverflow;
+            schedWrapEl.style.height    = orig.wrapHeight;
+
+            btn.html(originalContent);
+            btn.prop('disabled', false);
+            alert('Failed to generate the schedule PDF. Please try again.');
+        });
     });
 
     async function boot(isReload = false) {
@@ -395,4 +490,4 @@ $(document).ready(function() {
     }
 
     boot(false);
-}); 
+});

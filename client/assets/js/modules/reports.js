@@ -1,6 +1,6 @@
-$(document).ready(function() {
+$(document).ready(function () {
     $("#sidebar-placeholder").load("../components/sidebar.html");
-    $("#header-placeholder").load("../components/header.html", function(res, status) {
+    $("#header-placeholder").load("../components/header.html", function (res, status) {
         if (status !== 'error') initHeader();
     });
 
@@ -13,7 +13,7 @@ $(document).ready(function() {
             url: `${API_URL}?action=get_dashboard_data`,
             method: 'GET',
             dataType: 'json',
-            success: function(json) {
+            success: function (json) {
                 if (json.status === 'success') {
                     renderSummaryPills(json.data.summary);
                     renderPerformanceCards(json.data.summary);
@@ -25,31 +25,34 @@ $(document).ready(function() {
                     console.error("Failed to load report data:", json.message);
                 }
             },
-            error: function(xhr, status, error) {
+            error: function (xhr, status, error) {
                 console.error("AJAX Error:", error);
             }
         });
     }
 
     // ── Download PDF ──────────────────────────────────────────────────────────
-    window.downloadReport = function() {
+    window.downloadReport = function () {
         const btn = document.getElementById('btnDownloadReport');
         const originalHtml = btn.innerHTML;
 
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Generating PDF...';
 
-        // The element to capture — the full <main> scrollable content
-        const target = document.querySelector('main');
+        // Capture the full captureArea div (not the scrollable main),
+        // so ALL content is rendered regardless of scroll position.
+        const target = document.getElementById('captureArea');
+        const mainEl = document.getElementById('mainScrollArea');
 
-        // Temporarily expand main to full scroll height so nothing is clipped
-        const prevOverflow = target.style.overflow;
-        const prevHeight   = target.style.height;
-        target.style.overflow = 'visible';
-        target.style.height   = 'auto';
+        // Temporarily expand the scrollable container so html2canvas
+        // can see the full height of the content.
+        const prevMainOverflow = mainEl.style.overflow;
+        const prevMainHeight   = mainEl.style.height;
+        mainEl.style.overflow  = 'visible';
+        mainEl.style.height    = 'auto';
 
         html2canvas(target, {
-            scale: 2,                  // retina quality
+            scale: 2,
             useCORS: true,
             allowTaint: true,
             scrollX: 0,
@@ -57,79 +60,91 @@ $(document).ready(function() {
             windowWidth:  target.scrollWidth,
             windowHeight: target.scrollHeight,
             backgroundColor: '#f8fafc'
-        }).then(canvas => {
-            // Restore styles
-            target.style.overflow = prevOverflow;
-            target.style.height   = prevHeight;
+        }).then(function (canvas) {
+            // Restore scrollable container styles
+            mainEl.style.overflow = prevMainOverflow;
+            mainEl.style.height   = prevMainHeight;
 
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-            const pageW  = pdf.internal.pageSize.getWidth();   // 210 mm
-            const pageH  = pdf.internal.pageSize.getHeight();  // 297 mm
-            const margin = 10; // mm
-            const usableW = pageW - margin * 2;
+            const pageW       = pdf.internal.pageSize.getWidth();   // 210 mm
+            const pageH       = pdf.internal.pageSize.getHeight();  // 297 mm
+            const margin      = 12; // mm
+            const headerH     = 8;  // mm reserved at top for watermark text
+            const footerH     = 8;  // mm reserved at bottom for page numbers
+            const usableW     = pageW - margin * 2;
+            const usablePageH = pageH - margin * 2 - headerH - footerH;
 
-            const imgData   = canvas.toDataURL('image/jpeg', 0.92);
-            const imgW      = canvas.width;
-            const imgH      = canvas.height;
+            const imgW = canvas.width;
+            const imgH = canvas.height;
 
-            // How tall is one A4 page worth of canvas pixels?
-            const scale      = usableW / (imgW * 0.264583); // px → mm
-            const totalMmH   = imgH * 0.264583 * scale;
-            const usablePageH = pageH - margin * 2;
+            // mm per canvas pixel (horizontal)
+            const mmPerPx    = usableW / imgW;
+            const totalMmH   = imgH * mmPerPx;
 
-            let yOffset = 0; // mm already rendered
+            // How many canvas pixels fit in one usable page height
+            const pxPerPage  = usablePageH / mmPerPx;
 
-            while (yOffset < totalMmH) {
-                if (yOffset > 0) pdf.addPage();
+            let pageIndex = 0;
 
-                // Add header watermark on each page
+            while (pageIndex * pxPerPage < imgH) {
+                if (pageIndex > 0) pdf.addPage();
+
+                // ── Header watermark ──
                 pdf.setFontSize(7);
                 pdf.setTextColor(180, 180, 180);
-                pdf.text('ARTISANS LMS — System Analytics Report', margin, margin - 3);
-                const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-                pdf.text(`Generated: ${today}`, pageW - margin, margin - 3, { align: 'right' });
+                const today = new Date().toLocaleDateString('en-US', {
+                    year: 'numeric', month: 'long', day: 'numeric'
+                });
+                pdf.text('ARTISANS LMS — System Analytics Report', margin, margin + 3);
+                pdf.text(`Generated: ${today}`, pageW - margin, margin + 3, { align: 'right' });
 
-                // Clip the canvas slice for this page
-                const srcYpx     = (yOffset / (imgH * 0.264583 * scale)) * imgH;
-                const srcHeightPx = Math.min((usablePageH / (imgH * 0.264583 * scale)) * imgH, imgH - srcYpx);
+                // ── Slice the canvas for this page ──
+                const srcY  = Math.floor(pageIndex * pxPerPage);
+                const srcH  = Math.min(Math.ceil(pxPerPage), imgH - srcY);
 
-                if (srcHeightPx <= 0) break;
+                if (srcH <= 0) break;
 
-                // Create a temporary canvas for this slice
-                const sliceCanvas = document.createElement('canvas');
-                sliceCanvas.width  = imgW;
-                sliceCanvas.height = Math.ceil(srcHeightPx);
-                const ctx = sliceCanvas.getContext('2d');
-                ctx.drawImage(canvas, 0, -srcYpx);
+                const sliceCanvas        = document.createElement('canvas');
+                sliceCanvas.width        = imgW;
+                sliceCanvas.height       = srcH;
+                const ctx                = sliceCanvas.getContext('2d');
+                ctx.drawImage(canvas, 0, -srcY);
 
-                const sliceData   = sliceCanvas.toDataURL('image/jpeg', 0.92);
-                const sliceHeightMm = (sliceCanvas.height * 0.264583) * scale;
+                const sliceData      = sliceCanvas.toDataURL('image/jpeg', 0.92);
+                const sliceHeightMm  = srcH * mmPerPx;
+                const drawY          = margin + headerH;
 
-                pdf.addImage(sliceData, 'JPEG', margin, margin, usableW, Math.min(sliceHeightMm, usablePageH));
+                pdf.addImage(sliceData, 'JPEG', margin, drawY, usableW, sliceHeightMm);
 
-                yOffset += usablePageH;
+                pageIndex++;
             }
 
-            // Page numbers
+            // ── Page numbers ──
             const totalPages = pdf.internal.getNumberOfPages();
             for (let i = 1; i <= totalPages; i++) {
                 pdf.setPage(i);
                 pdf.setFontSize(7);
                 pdf.setTextColor(180, 180, 180);
-                pdf.text(`Page ${i} of ${totalPages}`, pageW / 2, pageH - 4, { align: 'center' });
+                pdf.text(
+                    `Page ${i} of ${totalPages}`,
+                    pageW / 2,
+                    pageH - margin + 2,
+                    { align: 'center' }
+                );
             }
 
-            const filename = `ArtisansLMS_Report_${new Date().toISOString().slice(0,10)}.pdf`;
+            const filename = `ArtisansLMS_Report_${new Date().toISOString().slice(0, 10)}.pdf`;
             pdf.save(filename);
 
             btn.disabled  = false;
             btn.innerHTML = originalHtml;
-        }).catch(err => {
+
+        }).catch(function (err) {
             console.error('PDF generation failed:', err);
-            target.style.overflow = prevOverflow;
-            target.style.height   = prevHeight;
+            mainEl.style.overflow = prevMainOverflow;
+            mainEl.style.height   = prevMainHeight;
             btn.disabled  = false;
             btn.innerHTML = originalHtml;
             alert('Failed to generate PDF. Please try again.');
@@ -194,12 +209,8 @@ $(document).ready(function() {
         }
 
         let html = '';
-        courses.forEach(c => {
+        courses.forEach(function (c) {
             const avg = parseFloat(c.avg_g);
-            let quizCell = '<span class="text-muted small">—</span>';
-            if (c.quiz_attempts > 0) {
-                quizCell = `<span class="badge bg-light border" style="color:#7c3aed;">${c.quiz_passed}/${c.quiz_attempts} passed</span>`;
-            }
 
             let gradeCell = '<div class="fw-bold text-primary">—</div>';
             if (avg > 0) {
@@ -212,8 +223,8 @@ $(document).ready(function() {
             }
 
             let statusCell = '<span class="text-muted small">No grades yet</span>';
-            if (avg >= 75)     statusCell = '<span class="status-good"><i class="fas fa-check-circle me-1"></i>Meeting Targets</span>';
-            else if (avg > 0)  statusCell = '<span class="status-bad"><i class="fas fa-exclamation-triangle me-1"></i>Intervention Needed</span>';
+            if (avg >= 75)    statusCell = '<span class="status-good"><i class="fas fa-check-circle me-1"></i>Meeting Targets</span>';
+            else if (avg > 0) statusCell = '<span class="status-bad"><i class="fas fa-exclamation-triangle me-1"></i>Intervention Needed</span>';
 
             html += `
             <tr>
@@ -241,7 +252,7 @@ $(document).ready(function() {
 
         const maxLoad = parseInt(loads[0].class_count) || 1;
         let html = '';
-        loads.forEach(l => {
+        loads.forEach(function (l) {
             const cnt = parseInt(l.class_count);
             const pct = Math.round((cnt / maxLoad) * 100);
             html += `
@@ -270,7 +281,7 @@ $(document).ready(function() {
 
         const medals = ['🥇', '🥈', '🥉', '#4', '#5'];
         let html = '';
-        students.forEach((st, idx) => {
+        students.forEach(function (st, idx) {
             const borderCls = idx < students.length - 1 ? 'border-bottom' : '';
             html += `
             <div class="d-flex justify-content-between align-items-center py-2 ${borderCls}">
@@ -298,7 +309,7 @@ $(document).ready(function() {
         }
 
         let html = '';
-        instructors.forEach(inst => {
+        instructors.forEach(function (inst) {
             const avg      = parseFloat(inst.avg_grade) || 0;
             const subRate  = parseFloat(inst.submission_rate) || 0;
             const quizRate = inst.quiz_pass_rate !== null ? parseFloat(inst.quiz_pass_rate) : null;
@@ -311,7 +322,7 @@ $(document).ready(function() {
             const gradeCell  = avg > 0
                 ? `<div class="fw-bold" style="color:${avg >= 80 ? '#15803d' : (avg >= 65 ? '#b45309' : '#b91c1c')};">${avg}%</div>
                    <div class="prog-thin" style="width:80px;">
-                       <div class="prog-thin-fill" style="width:${Math.min(avg,100)}%;background:${gradeColor};"></div>
+                       <div class="prog-thin-fill" style="width:${Math.min(avg, 100)}%;background:${gradeColor};"></div>
                    </div>`
                 : '<span class="text-muted small">No grades</span>';
 
@@ -319,7 +330,7 @@ $(document).ready(function() {
             const subCell  = inst.task_count > 0
                 ? `<div class="fw-bold" style="color:${subRate >= 80 ? '#15803d' : (subRate >= 60 ? '#b45309' : '#b91c1c')};">${subRate}%</div>
                    <div class="prog-thin" style="width:80px;">
-                       <div class="prog-thin-fill" style="width:${Math.min(subRate,100)}%;background:${subColor};"></div>
+                       <div class="prog-thin-fill" style="width:${Math.min(subRate, 100)}%;background:${subColor};"></div>
                    </div>`
                 : '<span class="text-muted small">No tasks</span>';
 
@@ -411,7 +422,7 @@ function initHeader() {
         contentType: 'application/json',
         dataType: 'json',
         data: JSON.stringify({ route: 'auth', action: 'checkSession' }),
-        success: function(res) {
+        success: function (res) {
             if (res.status === 'success' && res.logged_in) {
                 const u     = res.user;
                 const smAvt = `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name)}&background=e2e8f0&color=475569`;
@@ -427,17 +438,17 @@ function initHeader() {
                 window.location.href = '/client/pages/login.html';
             }
         },
-        error: function() {
+        error: function () {
             window.location.href = '/client/pages/login.html';
         }
     });
 
-    $(document).on('click', '#logoutBtn', function(e) {
+    $(document).on('click', '#logoutBtn', function (e) {
         e.preventDefault();
         $.ajax({
             url: AUTH_API, method: 'POST', contentType: 'application/json', dataType: 'json',
             data: JSON.stringify({ route: 'auth', action: 'logout' }),
-            complete: function() { window.location.href = '/client/pages/login.html'; }
+            complete: function () { window.location.href = '/client/pages/login.html'; }
         });
     });
 }
