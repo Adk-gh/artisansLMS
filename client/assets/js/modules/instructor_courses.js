@@ -287,7 +287,7 @@ window.openUploadModal = function(courseId) {
 
 // ── DELETE MODAL ──────────────────────────────────────────────────────────────
 window.openDeleteModal = function(resourceId, fileName) {
-    document.getElementById('deleteFileName').textContent = `"${fileName}"`;
+    document.getElementById('deleteFileName').textContent = fileName;
 
     const modal      = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
     const confirmBtn = document.getElementById('deleteConfirmBtn');
