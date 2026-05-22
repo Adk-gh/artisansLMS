@@ -166,20 +166,33 @@ function buildResourceItem(file) {
     const path = escAttr(resolveFilePath(file.file_path));
 
     return `
-    <div class="resource-item d-flex justify-content-between align-items-center py-2 border-bottom" id="resource-${rid}" style="border-color: #f1f5f9 !important;">
-        <span onclick="viewFile('${path}', '${escAttr(file.file_name)}')"
-              class="file-link flex-grow-1 text-truncate pe-2 fw-medium text-dark" style="cursor: pointer; font-size: 0.85rem; text-decoration: none;">
-            <i class="fas ${icon} me-2"></i>${name}
-        </span>
-        <div class="dropdown">
-            <a class="text-muted px-2" href="#" role="button" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-v"></i></a>
-            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3">
-                <li><button class="dropdown-item small py-2" onclick="openEditModal(${rid}, this)" data-name="${escAttr(file.file_name)}" data-desc="${escAttr(file.description ?? '')}"><i class="fas fa-edit me-2 text-info"></i> Edit</button></li>
-                <li><hr class="dropdown-divider"></li>
-                <li><button class="dropdown-item small py-2 text-danger" onclick="deleteResource(${rid}, '${escAttr(file.file_name)}', this)"><i class="fas fa-trash-alt me-2"></i> Delete</button></li>
-            </ul>
-        </div>
-    </div>`;
+    <div class="resource-item d-flex justify-content-between align-items-center py-2 border-bottom" id="resource-${rid}" style="border-color: #f1f5f9 !important; overflow: visible !important;">
+    <span onclick="viewFile('${path}', '${escAttr(file.file_name)}')"
+          class="file-link flex-grow-1 text-truncate pe-2 fw-medium text-dark" style="cursor: pointer; font-size: 0.85rem; text-decoration: none;">
+        <i class="fas ${icon} me-2"></i>${name}
+    </span>
+
+    <div class="dropdown" style="position: static;">
+
+        <a class="text-muted px-2" href="#" role="button" data-bs-toggle="dropdown" data-bs-boundary="window">
+            <i class="fas fa-ellipsis-v"></i>
+        </a>
+
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3" style="z-index: 9999 !important;">
+            <li>
+                <button class="dropdown-item small py-2" onclick="openEditModal(${rid}, this)" data-name="${escAttr(file.file_name)}" data-desc="${escAttr(file.description ?? '')}">
+                    <i class="fas fa-edit me-2 text-info"></i> Edit
+                </button>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+                <button class="dropdown-item small py-2 text-danger" onclick="deleteResource(${rid}, '${escAttr(file.file_name)}', this)">
+                    <i class="fas fa-trash-alt me-2"></i> Delete
+                </button>
+            </li>
+        </ul>
+    </div>
+</div>`;
 }
 
 window.filterCourses = function() {

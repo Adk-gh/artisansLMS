@@ -2,8 +2,17 @@ const API = 'https://artisanslms.onrender.com/backend/index.php';
 
 // Helper function to validate email format strictly
 function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    const emailRegex = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) return false;
+
+    // Common TLD typo guard
+    const commonTLDs = ['com', 'net', 'org', 'edu', 'gov', 'io', 'co', 'ph'];
+    const tld = email.split('.').pop().toLowerCase();
+    if (!commonTLDs.includes(tld)) {
+        return false; // blocks .con, .cpm, .ocm, etc.
+    }
+
+    return true;
 }
 
 $(function () {
