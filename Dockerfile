@@ -14,8 +14,8 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Copy your local code into the web server directory
 COPY . /var/www/html/
 
-# Install dependencies + add Resend PHP SDK
-RUN cd /var/www/html && composer require resend/resend-php --no-interaction && composer install --no-dev --optimize-autoloader
+# Install dependencies + add Brevo PHP SDK
+RUN cd /var/www/html && composer require getbrevo/brevo-php --no-interaction && composer install --no-dev --optimize-autoloader
 
 # Set correct permissions
 RUN chown -R www-data:www-data /var/www/html
